@@ -167,50 +167,26 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
         className="cw-preview-pane shrink-0 border-cw-border xl:border-r bg-white flex flex-col overflow-hidden min-w-0 min-h-0"
         style={{ width: leftWidth }}
       >
-        {/* Patient info header */}
-        <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between">
-          <p className="text-sm font-medium text-cw-blue">{t('simulateAnswers', uiLang)}</p>
-          {availableLangs.length > 1 && (
-            <select
-              value={lang}
-              onChange={(e) => setLang(e.target.value as LanguageType)}
-              className="text-xs border border-cw-border rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-              title={t('selectAssessmentLang', uiLang)}
-            >
-              {availableLangs.map((l) => (
-                <option key={l} value={l}>{LANG_LABELS[l] ?? l}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Compact patient fields */}
-        <div className="px-4 py-3 border-b border-cw-border bg-white shrink-0 space-y-2">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-xs text-cw-gray-text block mb-1">{t('name', uiLang)}</label>
-              <input
-                type="text"
-                value={patient.name}
-                onChange={(e) => setPatient((p) => ({ ...p, name: e.target.value }))}
-                className="w-full text-sm border border-cw-border rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue"
-              />
-            </div>
-            <div className="w-28">
-              <label className="text-xs text-cw-gray-text block mb-1">{t('dob', uiLang)}</label>
-              <input
-                type="text"
-                value={patient.dob}
-                onChange={(e) => setPatient((p) => ({ ...p, dob: e.target.value }))}
-                placeholder="DD.MM.YYYY"
-                className="w-full text-sm border border-cw-border rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-cw-gray-text">{t('genderColon', uiLang)}</span>
+        <div className="cw-studio-bar" data-testid="studio-sim-bar">
+          <span className="font-semibold text-cw-blue shrink-0">{t('simulateAnswers', uiLang)}</span>
+          <input
+            type="text"
+            value={patient.name}
+            aria-label={t('name', uiLang)}
+            onChange={(e) => setPatient((p) => ({ ...p, name: e.target.value }))}
+            className="cw-studio-input flex-1"
+          />
+          <input
+            type="text"
+            value={patient.dob}
+            aria-label={t('dob', uiLang)}
+            onChange={(e) => setPatient((p) => ({ ...p, dob: e.target.value }))}
+            placeholder="DD.MM.YYYY"
+            className="cw-studio-input w-24"
+          />
+          <span className="flex items-center gap-2 shrink-0">
             {([0, 1, 2] as const).map((g) => (
-              <label key={g} className="flex items-center gap-1.5 text-sm cursor-pointer">
+              <label key={g} className="flex items-center gap-1 cursor-pointer">
                 <input
                   type="radio"
                   name="sim-gender"
@@ -218,10 +194,22 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
                   onChange={() => setPatient((p) => ({ ...p, gender: g }))}
                   className="accent-cw-blue"
                 />
-                {g === 0 ? (t('female', uiLang)) : g === 1 ? (t('male', uiLang)) : (t('unknownGender', uiLang))}
+                {g === 0 ? t('female', uiLang) : g === 1 ? t('male', uiLang) : t('unknownGender', uiLang)}
               </label>
             ))}
-          </div>
+          </span>
+          {availableLangs.length > 1 && (
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as LanguageType)}
+              className="cw-studio-input"
+              title={t('selectAssessmentLang', uiLang)}
+            >
+              {availableLangs.map((l) => (
+                <option key={l} value={l}>{LANG_LABELS[l] ?? l}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Assessment preview for answering */}

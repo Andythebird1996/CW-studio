@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { respondentProgress } from './AssessmentPreview';
+import { respondentProgress, showRespondentBackArrow } from './AssessmentPreview';
 
 // ── Types (minimal, mirroring questionnaire.ts) ───────────────────────────────
 
@@ -456,5 +456,14 @@ describe('respondentProgress', () => {
   it('returns 0 when there is nothing to measure', () => {
     expect(respondentProgress([], 0)).toBe(0);
     expect(respondentProgress([0, 0], 1)).toBe(0);
+  });
+});
+
+describe('showRespondentBackArrow', () => {
+  it('follows the reference pages: hidden at 27 and 50, shown at 73 and 100', () => {
+    expect(showRespondentBackArrow(0, 27)).toBe(false);
+    expect(showRespondentBackArrow(1, 50)).toBe(false);
+    expect(showRespondentBackArrow(2, 73)).toBe(true);
+    expect(showRespondentBackArrow(3, 100)).toBe(true);
   });
 });

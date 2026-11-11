@@ -75,6 +75,18 @@ export function respondentProgress(pageItemCounts: number[], pageIndex: number):
   return Math.round((through / total) * 100);
 }
 
+/**
+ * The arrow beside the percent is not the same control as the circled back
+ * icon. On the reference pages it is absent at 27% and 50%, and present at
+ * 73% and 100%. The forward arrow is omitted on the last page by the caller.
+ */
+export function showRespondentBackArrow(pageIndex: number, progressPercent: number): boolean {
+  return pageIndex > 0 && progressPercent > 50;
+}
+
+/** Preview placeholder so the task badge matches the portal. Not live data. */
+const PREVIEW_TASK_COUNT = 24;
+
 // ── Live-scoring evaluator ───────────────────────────────────────────────────
 
 interface AnswerEntry {
@@ -258,6 +270,33 @@ function TasksGlyph() {
       <rect x="6" y="3.5" width="12" height="17" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
       <path d="M9 3.5h6v2.2H9z" stroke="currentColor" strokeWidth="1.6" />
       <path d="M9 11h6M9 14.5h6M9 18h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MailGlyph() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m4.5 7 7.5 6 7.5-6" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ProfileGlyph() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <circle cx="12" cy="9" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5.5 19.2c1.4-2.6 3.6-3.8 6.5-3.8s5.1 1.2 6.5 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LogoutGlyph() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M10 6.5H6.8A1.8 1.8 0 0 0 5 8.3v7.4c0 1 .8 1.8 1.8 1.8H10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M13 12h6.5M16.5 8.8 19.7 12l-3.2 3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -963,6 +1002,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Previ
   const [pending, setPending] = useState<PendingNav | null>(null);
   const [attention, setAttention] = useState<Attention | null>(null);
   const [finished, setFinished] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const yesRef = useRef<HTMLButtonElement>(null);
 
   const allSections = useMemo(() => flattenSections(questionnaire.sections), [questionnaire.sections]);
@@ -1021,6 +1061,15 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Previ
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [pending]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   function goBack() {
     if (idx <= 0) return;
@@ -1107,28 +1156,81 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Previ
   ) : null;
 
   const calcs = questionnaire.calculations?.calculations ?? [];
+  const showHeaderBack = showRespondentBackArrow(idx, progress);
+  const menuItems: { key: 'respHome' | 'respTasks' | 'respMessages' | 'respProfile' | 'respLogOut'; icon: ReactNode; separated?: boolean }[] = [
+    { key: 'respHome', icon: <HomeGlyph /> },
+    { key: 'respTasks', icon: <TasksGlyph /> },
+    { key: 'respMessages', icon: <MailGlyph /> },
+    { key: 'respProfile', icon: <ProfileGlyph /> },
+    { key: 'respLogOut', icon: <LogoutGlyph />, separated: true },
+  ];
 
   return (
+    <div className="cw-resp-frame" data-testid="respondent-frame">
+    {calcs.length > 0 && (
+      <details className="cw-studio-bar cw-resp-score" open={scoringOpen} onToggle={(e) => setScoringOpen(e.currentTarget.open)}>
+        <summary>{t('showCalculations', uiLang)}</summary>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: 12 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '4px 8px' }}>{t('name', uiLang)}</th>
+              <th style={{ textAlign: 'left', padding: '4px 8px' }}>{t('code', uiLang)}</th>
+              <th style={{ textAlign: 'right', padding: '4px 8px' }}>{t('result', uiLang)}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {calcs.map((calc) => {
+              const result = liveCalcResults.get(calc.code);
+              return (
+                <tr key={calc.code}>
+                  <td style={{ padding: '4px 8px' }}>{calc.name || calc.code}</td>
+                  <td style={{ padding: '4px 8px', fontFamily: 'monospace', color: 'var(--color-cw-blue)' }}>{calc.code}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
+                    {calc.type === 'CUSTOM' || result == null
+                      ? '—'
+                      : Number.isInteger(result) ? result : result.toFixed(3)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </details>
+    )}
     <div className={pending ? 'cw-resp is-validating' : 'cw-resp'} data-testid="respondent-view">
       <header className="cw-resp-top">
-        <button type="button" className="cw-resp-menu" aria-label={t('respMenu', uiLang)}>
+        <button
+          type="button"
+          className="cw-resp-menu"
+          aria-label={t('respMenu', uiLang)}
+          aria-expanded={menuOpen}
+          data-testid="respondent-menu"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
           <MenuGlyph />
         </button>
         <div className="cw-resp-tools">
-          <button type="button" className="cw-resp-icon" aria-label={t('respHome', uiLang)} onClick={goHome} disabled={total === 0}>
+          <button type="button" className="cw-resp-icon" aria-label={t('respHome', uiLang)} onClick={goHome}>
             <HomeGlyph />
           </button>
-          <button type="button" className="cw-resp-icon" aria-label={t('respBack', uiLang)} onClick={goBack} disabled={idx === 0}>
+          <button
+            type="button"
+            className="cw-resp-icon"
+            aria-label={t('respBack', uiLang)}
+            aria-disabled={idx === 0}
+            onClick={() => { if (idx > 0) goBack(); }}
+          >
             <BackGlyph />
           </button>
-          <button type="button" className="cw-resp-icon cw-resp-icon-extra" aria-label={t('respTasks', uiLang)} tabIndex={-1}>
+          <button type="button" className="cw-resp-icon" aria-label={tf('respTasksCount', uiLang, { n: PREVIEW_TASK_COUNT })}>
             <TasksGlyph />
+            <span className="cw-resp-badge" data-testid="respondent-badge">{PREVIEW_TASK_COUNT}</span>
           </button>
         </div>
         {total > 0 && (
           <div className="cw-resp-progress">
-            {idx > 0 && (
-              <button type="button" className="cw-resp-arrow cw-resp-arrow-left" aria-label={t('respBack', uiLang)} onClick={goBack}>
+            {showHeaderBack && (
+              <button type="button" className="cw-resp-arrow cw-resp-arrow-left" aria-label={t('respBack', uiLang)} data-testid="respondent-header-back" onClick={goBack}>
                 <ArrowGlyph dir="left" />
               </button>
             )}
@@ -1183,36 +1285,6 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Previ
               actions={actions}
               showCopyright
             />
-            {calcs.length > 0 && (
-              <details className="cw-resp-score" open={scoringOpen} onToggle={(e) => setScoringOpen(e.currentTarget.open)}>
-                <summary>{t('showCalculations', uiLang)}</summary>
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: 12 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>{t('name', uiLang)}</th>
-                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>{t('code', uiLang)}</th>
-                      <th style={{ textAlign: 'right', padding: '4px 8px' }}>{t('result', uiLang)}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {calcs.map((calc) => {
-                      const result = liveCalcResults.get(calc.code);
-                      return (
-                        <tr key={calc.code}>
-                          <td style={{ padding: '4px 8px' }}>{calc.name || calc.code}</td>
-                          <td style={{ padding: '4px 8px', fontFamily: 'monospace', color: 'var(--color-cw-blue)' }}>{calc.code}</td>
-                          <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
-                            {calc.type === 'CUSTOM' || result == null
-                              ? '—'
-                              : Number.isInteger(result) ? result : result.toFixed(3)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </details>
-            )}
           </div>
         )}
       </div>
@@ -1244,6 +1316,43 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Previ
           </div>
         </div>
       )}
+      {menuOpen && (
+        <div className="cw-resp-drawer-layer">
+          <button
+            type="button"
+            className="cw-resp-drawer-scrim"
+            aria-label={t('respMenuClose', uiLang)}
+            onClick={() => setMenuOpen(false)}
+          />
+          <nav className="cw-resp-drawer" aria-label={t('respMenu', uiLang)} data-testid="respondent-drawer">
+            <div className="cw-resp-drawer-head">
+              <button
+                type="button"
+                className="cw-resp-menu"
+                aria-label={t('respMenuClose', uiLang)}
+                onClick={() => setMenuOpen(false)}
+              >
+                <MenuGlyph />
+              </button>
+            </div>
+            <ul className="cw-resp-drawer-list">
+              {menuItems.map((item) => (
+                <li key={item.key}>
+                  <button
+                    type="button"
+                    className={item.separated ? 'cw-resp-drawer-item is-sep' : 'cw-resp-drawer-item'}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item.icon}
+                    {t(item.key, uiLang)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      )}
+    </div>
     </div>
   );
 }

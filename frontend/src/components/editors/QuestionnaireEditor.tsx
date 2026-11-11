@@ -2644,11 +2644,9 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
           style={{ width: previewWidth }}
           className={`cw-preview-pane shrink-0 border-cw-border flex flex-col overflow-hidden min-w-0 xl:border-l max-xl:border-t ${previewCollapsed ? 'max-xl:hidden' : ''}`}
         >
-          <div className="px-3 py-2 border-b border-cw-border bg-white shrink-0 flex items-center gap-2">
-            <span className="text-sm font-medium text-cw-blue flex-1 min-w-0 truncate">
-              {t('previewPanel', uiLang)}
-              <span className="ml-2 font-normal text-cw-gray-text">{t('previewHint', uiLang)}</span>
-            </span>
+          <div className="cw-studio-bar" data-testid="studio-preview-bar">
+            <span className="font-semibold text-cw-blue shrink-0">{t('previewPanel', uiLang)}</span>
+            <span className="text-cw-gray-text truncate min-w-0 flex-1 hidden sm:block">{t('previewHint', uiLang)}</span>
             <button
               type="button"
               className="xl:hidden p-1.5 text-gray-500 border border-cw-border rounded"
