@@ -1,20 +1,40 @@
 @import "tailwindcss";
 
+/* Open Sans (variable, latin + latin-ext). Same family as Checkware. */
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("./fonts/open-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("./fonts/open-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
-  /* ── Structural blues ─────────────────────────────── */
-  --color-cw-blue:       #1a5276;   /* dark navy — toolbar, primary buttons     */
-  --color-cw-blue-light: #25b8ec;   /* Checkware brand cyan — accents, focus    */
-  --color-cw-link:       #3c73b7;   /* interactive link blue (from theme.css)   */
+  /* ── Checkware portal palette ─────────────────────── */
+  --color-cw-blue:       #006393;   /* navigation, buttons, links               */
+  --color-cw-blue-light: #1a7eab;   /* hover, focus, secondary accent           */
+  --color-cw-link:       #006393;   /* interactive links                        */
+  --color-cw-cyan:       #25b8ec;   /* brand cyan used in generated reports     */
+  --color-cw-yellow:     #f6dc6b;   /* selected navigation row                  */
 
   /* ── Surfaces ─────────────────────────────────────── */
-  --color-cw-gray:       #f4f4f4;   /* page/panel background (theme.css match)  */
-  --color-cw-border:     #e0e3e6;   /* borders — lighter than before            */
+  --color-cw-gray:       #e8e9e9;   /* page background                          */
+  --color-cw-border:     #d5d6d7;   /* card and field borders                   */
 
   /* ── Semantic ─────────────────────────────────────── */
-  --color-cw-gray-text:  #808080;   /* labels, metadata, table headers          */
-  --color-cw-positive:   #008800;   /* positive / OK states                     */
-  --color-cw-negative:   #880000;   /* negative / error states                  */
-  --color-cw-orange:     #f78d28;   /* callout accent (sup, highlights)         */
+  --color-cw-gray-text:  #6b6e71;   /* labels, metadata, table headers          */
+  --color-cw-positive:   #1f7a34;   /* positive / OK states                     */
+  --color-cw-negative:   #a32020;   /* negative / error states                  */
+  --color-cw-orange:     #e07b00;   /* callout accent                           */
 }
 
 * {
@@ -28,7 +48,30 @@ body,
   margin: 0;
   max-width: 100%;
   overflow: hidden;
-  font-family: Calibri, 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  font-family: "Open Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 400;
+  color: #333;
+  background: #e8e9e9;
+}
+
+/* Primary actions follow the portal's pill buttons. Segmented toggles opt out. */
+button.bg-cw-blue {
+  border-radius: 9999px;
+  font-weight: 500;
+}
+button.bg-cw-blue:hover:not(:disabled) {
+  background-color: #00547d;
+}
+.overflow-hidden.rounded > button {
+  border-radius: 0;
+}
+button.rounded.border:not(.rounded-lg):not(.rounded-xl):not(.rounded-l):not(.rounded-r):not(.rounded-t):not(.rounded-b) {
+  border-radius: 9999px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #006393;
 }
 
 /* Dialogs keep their authored width on desktop. The cap only binds when the

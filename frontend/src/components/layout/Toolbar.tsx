@@ -41,7 +41,7 @@ function Btn({
             data-testid={testId}
             onClick={onClick}
             disabled={disabled}
-            className="flex items-center justify-center w-10 h-10 xl:w-8 xl:h-8 rounded hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+            className="flex items-center justify-center w-10 h-10 xl:w-8 xl:h-8 rounded text-cw-blue hover:bg-cw-gray disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
             aria-label={label}
           >
             {icon}
@@ -96,26 +96,26 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
   }
 
   return (
-    <header data-testid="toolbar" className="bg-cw-blue flex items-stretch h-12 xl:h-10 shrink-0 min-w-0">
+    <header data-testid="toolbar" className="bg-white border-b border-cw-border flex items-stretch h-12 shrink-0 min-w-0">
       {/* Left cluster scrolls when the window is narrower than the buttons */}
       <div className="flex flex-1 min-w-0 items-center overflow-x-auto px-1 gap-0.5">
         <button
           type="button"
           data-testid="explorer-toggle"
           onClick={onToggleExplorer}
-          className="xl:hidden flex items-center justify-center w-10 h-10 rounded hover:bg-white/20 text-white shrink-0"
+          className="xl:hidden flex items-center justify-center w-10 h-10 rounded text-cw-blue hover:bg-cw-gray shrink-0"
           aria-label={t('explorerTitle', lang)}
         >
           <PanelLeft className="w-4 h-4" />
         </button>
 
         {/* Logo — shrinks to just "CW" at narrow widths */}
-        <span className="text-white font-bold text-sm select-none px-2 shrink-0">
+        <span className="text-cw-blue font-semibold text-sm select-none px-2 shrink-0">
           <span className="hidden lg:inline">{t('appTitle', lang)}</span>
           <span className="lg:hidden">CW</span>
         </span>
 
-        <div className="w-px h-5 bg-white/30 mx-1 shrink-0" />
+        <div className="w-px h-5 bg-cw-border mx-1 shrink-0" />
 
         {/* File group */}
         <Btn testId="toolbar-new" icon={<FilePlus className="w-4 h-4" />} label={t('newQuestionnaire', lang)} onClick={onNewQuestionnaire} />
@@ -125,7 +125,7 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
         <Btn icon={<Printer className="w-4 h-4" />} label={t('printPdf', lang)} onClick={onPrint} disabled={!activeTab} />
         <Btn icon={<Upload className="w-4 h-4" />} label={t('publish', lang)} onClick={onPublish} disabled={!activeTab} />
 
-        <div className="w-px h-5 bg-white/30 mx-1 shrink-0" />
+        <div className="w-px h-5 bg-cw-border mx-1 shrink-0" />
 
         {/* Undo/Redo */}
         <Btn icon={<Undo2 className="w-4 h-4" />} label={t('undo', lang)} onClick={() => activeTabId && undo(activeTabId)} disabled={!undoable} />
@@ -141,7 +141,7 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
         {isConnected && (
           <>
             {cacheStatus ? (
-              <span className="text-xs text-white/80 px-2 shrink-0 max-w-[8rem] truncate">{cacheStatus}</span>
+              <span className="text-xs text-cw-gray-text px-2 shrink-0 max-w-[8rem] truncate">{cacheStatus}</span>
             ) : (
               <Btn
                 icon={<RefreshCw className={`w-4 h-4 ${clearingCache ? 'animate-spin' : ''}`} />}
@@ -150,14 +150,14 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
                 disabled={clearingCache}
               />
             )}
-            <div className="w-px h-5 bg-white/30 mx-1 shrink-0" />
+            <div className="w-px h-5 bg-cw-border mx-1 shrink-0" />
           </>
         )}
 
         <button
           type="button"
           onClick={onToggleLang}
-          className="px-2 h-10 xl:h-auto xl:py-1 text-xs font-semibold rounded border border-white/30 text-white hover:bg-white/20 transition-colors select-none shrink-0"
+          className="px-2.5 h-8 text-xs font-semibold rounded-full border border-cw-blue/30 text-cw-blue hover:bg-cw-gray transition-colors select-none shrink-0"
           title={lang === 'NO' ? t('switchToEnglish', lang) : t('switchToNorwegian', lang)}
         >
           {lang === 'NO' ? 'EN' : 'NO'}

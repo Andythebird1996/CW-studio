@@ -6,15 +6,17 @@ export default {
     extend: {
       colors: {
         cw: {
-          blue:       '#1a5276',   // dark navy — toolbar, primary buttons
-          'blue-light': '#25b8ec', // Checkware brand cyan — accents, focus
-          link:       '#3c73b7',   // interactive link blue
-          gray:       '#f4f4f4',   // page/panel background
-          border:     '#e0e3e6',   // borders
-          'gray-text': '#808080',  // labels, metadata
-          positive:   '#008800',
-          negative:   '#880000',
-          orange:     '#f78d28',
+          blue:         '#006393', // navigation, buttons, links
+          'blue-light': '#1a7eab', // hover, focus, secondary accent
+          link:         '#006393',
+          cyan:         '#25b8ec', // brand cyan used in generated reports
+          yellow:       '#f6dc6b', // selected navigation row
+          gray:         '#e8e9e9', // page background
+          border:       '#d5d6d7',
+          'gray-text':  '#6b6e71',
+          positive:     '#1f7a34',
+          negative:     '#a32020',
+          orange:       '#e07b00',
         },
       },
     },
