@@ -120,7 +120,10 @@ export function SpreadsheetOptionsEditor({
   return (
     <div ref={containerRef} onPaste={handlePaste}>
       <div className="overflow-x-auto rounded border border-cw-border">
-        <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
+        <table
+          className="w-full border-collapse text-xs"
+          style={{ tableLayout: 'fixed', minWidth: 220 + languages.length * 140 }}
+        >
           <colgroup>
             {/* code */}
             <col style={{ width: 80 }} />

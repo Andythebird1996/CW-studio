@@ -108,7 +108,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Dialog.Content aria-describedby={undefined} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[640px] h-[500px] flex flex-col z-50">
+        <Dialog.Content aria-describedby={undefined} className="cw-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[640px] h-[min(500px,calc(100dvh-1rem))] flex flex-col z-50 overflow-hidden">
           <div className="p-4 border-b border-cw-border">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
               {t('importFromStore', uiLang)}
@@ -125,7 +125,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto min-h-0">
             {loading && (
               <div className="flex items-center justify-center h-full text-sm text-gray-500">
                 {t('loadingPackages', uiLang)}

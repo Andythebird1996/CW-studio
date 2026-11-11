@@ -9,6 +9,9 @@ backend/node_modules/
 dist-electron/
 releases/
 electron/dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
 *.log
 .env.*
 !.env.example

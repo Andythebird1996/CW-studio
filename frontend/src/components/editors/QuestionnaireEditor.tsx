@@ -22,6 +22,7 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Clipboard,
   Copy,
   FileText,
@@ -303,7 +304,7 @@ function QuestionRow({
     >
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2 cursor-pointer select-none hover:bg-cw-gray"
+        className="flex flex-wrap xl:flex-nowrap items-center gap-2 px-3 py-2 cursor-pointer select-none hover:bg-cw-gray"
         onClick={(e) => {
           // Only select if not clicking inside an input/button/select/textarea
           const tag = (e.target as HTMLElement).tagName.toLowerCase();
@@ -331,7 +332,7 @@ function QuestionRow({
         <span className="text-xs bg-cw-gray border border-cw-border text-gray-500 px-1.5 py-0.5 rounded">
           {typeLabel}
         </span>
-        <span className="flex-1 text-sm text-gray-700 truncate">
+        <span className="flex-1 min-w-0 text-sm text-gray-700 truncate">
           {question.texts[lang] || (
             <span className="text-gray-400 italic">{t('noText', uiLang)}</span>
           )}
@@ -1193,7 +1194,7 @@ function SectionEditor({
     <div className={borderClass} data-element-id={section.id}>
       {/* Section header */}
       <div
-        className={`flex items-center gap-2 ${headerBg} px-3 py-2 rounded-t-lg`}
+        className={`flex flex-wrap xl:flex-nowrap items-center gap-2 ${headerBg} px-3 py-2 rounded-t-lg`}
         onContextMenu={
           onSectionContextMenu
             ? (e) => onSectionContextMenu(e, section.id)
@@ -1226,7 +1227,7 @@ function SectionEditor({
             onChange({ ...section, titles: { ...section.titles, [lang]: e.target.value } })
           }
           placeholder={t('sectionTitle', uiLang)}
-          className="flex-1 bg-transparent text-sm font-medium text-gray-700 focus:outline-none border-b border-transparent focus:border-cw-blue"
+          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-gray-700 focus:outline-none border-b border-transparent focus:border-cw-blue"
           onClick={(e) => e.stopPropagation()}
         />
 
@@ -1568,9 +1569,9 @@ function ResponseTemplatesEditor({
       </button>
 
       {open && (
-        <div className="px-3 pb-3 flex gap-3">
+        <div className="px-3 pb-3 flex flex-col sm:flex-row gap-3 min-w-0">
           {/* List */}
-          <div className="w-40 shrink-0 space-y-1">
+          <div className="w-full sm:w-40 sm:shrink-0 space-y-1">
             {templates.length === 0 ? (
               <p className="text-xs text-gray-400 italic">{t('noResponseTpls', uiLang)}</p>
             ) : (
@@ -2089,6 +2090,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
   // ── Resizable preview panel ───────────────────────────────────────────────
   const [previewWidth, setPreviewWidth] = useState(420);
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
 
@@ -2407,7 +2409,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
   const clipboardKind: 'question' | 'section' | null = clipboard.item?.kind ?? null;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       {/* ── Generate codes toast ── */}
       {generateToast && (
         <div className="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-white text-xs px-3 py-1.5 rounded shadow-lg pointer-events-none select-none">
@@ -2418,7 +2420,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
       {/* ── Questionnaire metadata ── */}
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0">
         {/* Toolbar row: generate-codes + validation badge */}
-        <div className="flex items-center gap-2 mb-2.5">
+        <div className="flex flex-wrap items-center gap-2 mb-2.5">
           {/* Split button: main = fill empty, dropdown = overwrite all */}
           <div className="relative flex shrink-0">
             <button
@@ -2524,11 +2526,11 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
       </div>
 
       {/* ── Split: Editor | Preview ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col xl:flex-row flex-1 overflow-hidden min-h-0 min-w-0">
 
         {/* Left: editor */}
         <div
-          className="flex-1 overflow-auto p-4 min-w-0"
+          className="flex-1 overflow-auto p-4 min-w-0 min-h-0"
           onClick={() => {
             // Clicking empty space in the editor clears context menu
             if (contextMenu) setContextMenu(null);
@@ -2578,7 +2580,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
             </SortableContext>
           </DndContext>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={addSection}
               className="flex items-center justify-center gap-2 flex-1 border-2 border-dashed border-cw-border rounded-lg py-3 text-sm text-gray-400 hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
@@ -2633,17 +2635,28 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
         {/* Drag handle */}
         <div
           onMouseDown={handlePreviewDragStart}
-          className="w-1.5 shrink-0 cursor-col-resize bg-cw-border hover:bg-cw-blue transition-colors"
+          className="hidden xl:block w-1.5 shrink-0 cursor-col-resize bg-cw-border hover:bg-cw-blue transition-colors"
           title={t('dragResize', uiLang)}
         />
 
-        {/* Right: Checkware preview */}
-        <div style={{ width: previewWidth }} className="shrink-0 border-l border-cw-border flex flex-col overflow-hidden">
+        {/* Right: Checkware preview. Stacked under the editor below xl. */}
+        <div
+          style={{ width: previewWidth }}
+          className={`cw-preview-pane shrink-0 border-cw-border flex flex-col overflow-hidden min-w-0 xl:border-l max-xl:border-t ${previewCollapsed ? 'max-xl:hidden' : ''}`}
+        >
           <div className="px-3 py-2 border-b border-cw-border bg-white shrink-0 flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex-1">
               {t('previewPanel', uiLang)}
               <span className="ml-2 normal-case tracking-normal font-normal">{t('previewHint', uiLang)}</span>
             </span>
+            <button
+              type="button"
+              className="xl:hidden p-1.5 text-gray-500 border border-cw-border rounded"
+              onClick={() => setPreviewCollapsed(true)}
+              aria-label={t('previewPanel', uiLang)}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
             {availableLangs.length > 1 && (
               <select
                 value={previewLang}
@@ -2657,10 +2670,21 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
               </select>
             )}
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden min-h-0">
             <AssessmentPreview questionnaire={questionnaire} lang={previewLang} />
           </div>
         </div>
+
+        {previewCollapsed && (
+          <button
+            type="button"
+            className="xl:hidden shrink-0 flex items-center justify-center gap-1 border-t border-cw-border bg-white px-3 py-2 text-xs font-semibold text-gray-500"
+            onClick={() => setPreviewCollapsed(false)}
+          >
+            <ChevronUp className="w-4 h-4" />
+            {t('previewPanel', uiLang)}
+          </button>
+        )}
 
       </div>
 

@@ -73,11 +73,11 @@ export function SettingsDialog({ open, onClose }: Props) {
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 flex overflow-hidden"
+          className="cw-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 flex flex-col md:flex-row overflow-hidden"
           style={{ width: 640, maxHeight: '90vh' }}
         >
           {/* ── Left: saved profiles ─────────────────────────────────────── */}
-          <div className="w-52 bg-cw-gray border-r border-cw-border flex flex-col shrink-0">
+          <div className="w-full max-h-40 md:max-h-none md:w-52 bg-cw-gray border-b md:border-b-0 md:border-r border-cw-border flex flex-col shrink-0 min-h-0">
             <div className="px-3 py-3 border-b border-cw-border">
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                 {t('savedProfiles', lang)}
@@ -155,7 +155,7 @@ export function SettingsDialog({ open, onClose }: Props) {
           </div>
 
           {/* ── Right: form ──────────────────────────────────────────────── */}
-          <div className="flex-1 flex flex-col p-6 min-w-0">
+          <div className="flex-1 flex flex-col p-4 sm:p-6 min-w-0 min-h-0 overflow-y-auto">
             <Dialog.Title className="text-lg font-semibold text-cw-blue mb-5">
               {t('serverSettings', lang)}
             </Dialog.Title>
@@ -207,7 +207,7 @@ export function SettingsDialog({ open, onClose }: Props) {
               )}
             </div>
 
-            <div className="flex justify-between mt-6 pt-4 border-t border-cw-border">
+            <div className="flex flex-wrap justify-between gap-2 mt-6 pt-4 border-t border-cw-border">
               <button
                 onClick={testConnection}
                 disabled={testing || !form.storeUrl}

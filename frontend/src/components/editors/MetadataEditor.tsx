@@ -46,7 +46,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0">
         <h2 className="text-sm font-semibold text-cw-blue">{t('tabMetadata', uiLang)}</h2>
         <p className="text-xs text-gray-500 mt-0.5">

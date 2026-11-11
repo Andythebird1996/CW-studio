@@ -260,7 +260,7 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
     >
       {/* Panel */}
       <div
-        className="absolute top-14 right-4 w-[480px] bg-white border border-cw-border rounded-lg shadow-2xl flex flex-col overflow-hidden"
+        className="absolute top-14 left-2 right-2 sm:left-auto sm:right-4 sm:w-[min(480px,calc(100vw-2rem))] bg-white border border-cw-border rounded-lg shadow-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-4.5rem)]"
         style={{ maxHeight: 'calc(100vh - 80px)' }}
         onKeyDown={handleKeyDown}
         role="dialog"

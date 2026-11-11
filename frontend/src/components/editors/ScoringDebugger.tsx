@@ -600,9 +600,9 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
   const totalCount = allQuestions.length;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       {/* Header bar */}
-      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between gap-4">
+      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-cw-blue">
             {t('scoringDebugger', lang)}
@@ -630,10 +630,10 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
       </div>
 
       {/* Body: split — left inputs, right results */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 min-w-0">
 
-        {/* Left: question inputs */}
-        <div className="w-[480px] shrink-0 border-r border-cw-border overflow-auto bg-white">
+        {/* Left: question inputs. Full width on phones, at most half the pane on larger screens. */}
+        <div className="w-full max-h-[42vh] md:max-h-none md:w-[480px] md:max-w-[50%] shrink-0 border-b md:border-b-0 md:border-r border-cw-border overflow-auto bg-white min-h-0">
           {allQuestions.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
               {t('noQuestionsWithCode', lang)}
@@ -653,7 +653,7 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
         </div>
 
         {/* Right: results */}
-        <div className="flex-1 overflow-auto bg-cw-gray/30">
+        <div className="flex-1 overflow-auto bg-cw-gray/30 min-w-0 min-h-0">
           {!hasRun ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 select-none gap-3">
               <Play className="w-10 h-10 opacity-30" />

@@ -363,7 +363,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 flex flex-col"
+          className="cw-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 flex flex-col overflow-hidden"
           style={{ width: 560, maxHeight: '85vh' }}
         >
           {/* Header */}
@@ -381,7 +381,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-5 py-4 space-y-4">
 
             {/* Find / Replace inputs */}
             <div className="space-y-3">

@@ -157,14 +157,14 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
 
   return (
     <div
-      className="flex h-full overflow-hidden"
+      className="flex flex-col xl:flex-row h-full overflow-hidden min-w-0 min-h-0"
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
     >
-      {/* ── Left panel: patient info + assessment preview ── */}
+      {/* ── Left panel: patient info + assessment preview. Stacks below xl. ── */}
       <div
-        className="shrink-0 border-r border-cw-border bg-white flex flex-col overflow-hidden"
+        className="cw-preview-pane shrink-0 border-cw-border xl:border-r bg-white flex flex-col overflow-hidden min-w-0 min-h-0"
         style={{ width: leftWidth }}
       >
         {/* Patient info header */}
@@ -236,14 +236,14 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
 
       {/* ── Drag handle ── */}
       <div
-        className="w-1.5 shrink-0 cursor-col-resize bg-cw-border hover:bg-cw-blue transition-colors"
+        className="hidden xl:block w-1.5 shrink-0 cursor-col-resize bg-cw-border hover:bg-cw-blue transition-colors"
         onMouseDown={onMouseDown}
         title={t('dragResize', uiLang)}
       />
 
       {/* ── Right panel: rendered report ── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 min-w-0">
-        <div className="bg-white border-b border-cw-border px-4 py-2 shrink-0 flex items-center justify-between gap-2">
+      <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 min-w-0 min-h-0">
+        <div className="bg-white border-b border-cw-border px-3 py-2 shrink-0 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-cw-blue">{t('livePreview', uiLang)}</span>
             <span className="text-[10px] text-gray-400">{t('livePreviewHint', uiLang)}</span>

@@ -244,7 +244,8 @@ function NormForm({
           </div>
         )}
 
-        <table className="w-full text-sm border border-cw-border rounded overflow-hidden">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm border border-cw-border rounded" style={{ minWidth: '28rem' }}>
           <thead className="bg-cw-gray">
             <tr>
               <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">{t('rawScore', uiLang)}</th>
@@ -315,6 +316,7 @@ function NormForm({
             )}
           </tbody>
         </table>
+        </div>
         <button
           onClick={addRow}
           className="mt-2 flex items-center gap-1 text-xs text-cw-blue-light hover:underline"
@@ -393,9 +395,9 @@ export function NormEditor({ questionnaire, onChange }: Props) {
   const selected = selectedIdx !== null ? norms[selectedIdx] : null;
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left: norm list */}
-      <div className="w-60 border-r border-cw-border flex flex-col bg-cw-gray shrink-0">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden min-w-0 min-h-0">
+      {/* Left: norm list. Stacks above the form on phones. */}
+      <div className="w-full max-h-[40vh] md:max-h-none md:w-60 border-b md:border-b-0 md:border-r border-cw-border flex flex-col bg-cw-gray shrink-0 min-h-0">
         <div className="px-3 py-3 border-b border-cw-border bg-white">
           <h2 className="text-sm font-semibold text-cw-blue">{t('normsHeader', uiLang)}</h2>
           <p className="text-xs text-gray-500 mt-0.5">{t('normsSubtitle', uiLang)}</p>
@@ -454,7 +456,7 @@ export function NormEditor({ questionnaire, onChange }: Props) {
       />
 
       {/* Right: editor */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
         {selected !== null && selectedIdx !== null ? (
           <>
             <div className="bg-white border-b border-cw-border px-5 py-3 flex items-center justify-between shrink-0">

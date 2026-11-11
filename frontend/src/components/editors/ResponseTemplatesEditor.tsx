@@ -75,9 +75,9 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
   const altCountSuffix = t('optionsWord', uiLang);
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left: template list */}
-      <div className="w-60 border-r border-cw-border flex flex-col bg-cw-gray shrink-0">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden min-w-0 min-h-0">
+      {/* Left: template list. Stacks above the form on phones. */}
+      <div className="w-full max-h-[40vh] md:max-h-none md:w-60 border-b md:border-b-0 md:border-r border-cw-border flex flex-col bg-cw-gray shrink-0 min-h-0">
         <div className="px-3 py-3 border-b border-cw-border bg-white">
           <h2 className="text-sm font-semibold text-cw-blue">{listLabel}</h2>
           <p className="text-xs text-gray-500 mt-0.5">{listSubtitle}</p>
@@ -124,7 +124,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
       </div>
 
       {/* Right: editor for selected template */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
         {selected !== null && selectedIdx !== null ? (
           <>
             <div className="bg-white border-b border-cw-border px-5 py-3 flex items-center justify-between shrink-0">

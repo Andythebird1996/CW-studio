@@ -114,7 +114,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Dialog.Content aria-describedby={undefined} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[500px] p-6 z-50">
+        <Dialog.Content aria-describedby={undefined} className="cw-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[500px] p-4 sm:p-6 z-50 overflow-y-auto">
           <Dialog.Title className="text-lg font-semibold text-cw-blue mb-4 flex items-center gap-2">
             <Upload className="w-5 h-5" /> {t('publishToStore', uiLang)}
           </Dialog.Title>

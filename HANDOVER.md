@@ -86,6 +86,19 @@ cd frontend && bun run test
 Status 2026-11-11: **332 bestått, 10 hoppet over, 2 feilet** (344 totalt, 11 filer).
 De 2 som feiler er integrasjonstester i `src/services/store-api.test.ts`. De forventer at backend kjører på `localhost:3001` (feilen er `ECONNREFUSED`). Start `bun run dev` i et annet terminalvindu før testene, så skal de bestå. Dette er ikke en kodefeil.
 
+### Ende-til-ende (Playwright)
+
+Frontend-røyktester i tre viewporter: mobil 375×812, nettbrett 768×1024 og desktop 1440×900. De åpner appen, oppretter en kartlegging, åpner hovededitorene og innstillingsdialogen, og sjekker at siden ikke får horisontal scroll og at kontrollene er synlige. Backend kalles ikke.
+
+```bash
+cd frontend && bunx playwright install chromium   # én gang, laster ned nettleser
+cd frontend && bun run test:e2e                   # eller `bun run test:e2e` fra rot
+```
+
+Vite startes automatisk. Skjermbildene ligger i `frontend/e2e/*-snapshots/`. Oppdater dem med `cd frontend && bun run test:e2e:update` når layouten med vilje endres.
+
+Fra 1280 px og opp er desktop-oppsettet som før (fast sidemeny, forhåndsvisning ved siden av editoren). Under 1280 px er pakkeutforskeren et overlay, forhåndsvisning stables, og dialoger begrenses til viewporten.
+
 ---
 
 ## 5. Bygg og distribusjon
