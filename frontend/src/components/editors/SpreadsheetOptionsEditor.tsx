@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp, PlusCircle, X } from 'lucide-react';
 import type { TextOption, LanguageType } from '../../types/questionnaire';
+import { t, tf, useUILang } from '../../i18n';
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ export function SpreadsheetOptionsEditor({
   languages,
   onChange,
 }: SpreadsheetOptionsEditorProps) {
+  const uiLang = useUILang();
   // Track which row index currently has focus (used for paste insertion point)
   const [focusedRow, setFocusedRow] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,9 +145,9 @@ export function SpreadsheetOptionsEditor({
 
           <thead>
             <tr className="bg-cw-gray border-b border-cw-border">
-              <th className={thCell}>Code</th>
-              <th className={thCell}>Score</th>
-              <th className={thCell} title="Reverse value">Rev.</th>
+              <th className={thCell}>{t('code', uiLang)}</th>
+              <th className={thCell}>{t('score', uiLang)}</th>
+              <th className={thCell} title={t('reverseScoreTitle', uiLang)}>{t('revShort', uiLang)}</th>
               {languages.map((l) => (
                 <th key={l} className={thCell}>{l}</th>
               ))}
@@ -163,7 +165,7 @@ export function SpreadsheetOptionsEditor({
                   colSpan={3 + languages.length + 3}
                   className="px-3 py-3 text-xs text-gray-400 italic text-center border-b border-cw-border"
                 >
-                  Ingen rader — klikk «Legg til» eller lim inn fra Excel
+                  {t('noRowsPaste', uiLang)}
                 </td>
               </tr>
             )}
@@ -182,7 +184,7 @@ export function SpreadsheetOptionsEditor({
                     type="text"
                     value={opt.code}
                     onChange={(e) => updateOption(i, { code: e.target.value })}
-                    placeholder="kode"
+                    placeholder={t('codePh', uiLang)}
                     className={`${cellInput} font-mono`}
                     spellCheck={false}
                   />
@@ -210,7 +212,7 @@ export function SpreadsheetOptionsEditor({
                       updateOption(i, { reverseValue: e.target.checked || undefined })
                     }
                     className="accent-cw-blue"
-                    title="Reverser skår"
+                    title={t('reverseScoreTitle', uiLang)}
                   />
                 </td>
 
@@ -221,7 +223,7 @@ export function SpreadsheetOptionsEditor({
                       type="text"
                       value={(opt.texts as Record<string, string>)[lang] ?? ''}
                       onChange={(e) => updateText(i, lang, e.target.value)}
-                      placeholder={`Tekst (${lang})...`}
+                      placeholder={tf('textLangPh', uiLang, { lang })}
                       className={cellInput}
                     />
                   </td>
@@ -233,7 +235,7 @@ export function SpreadsheetOptionsEditor({
                     onClick={() => moveRow(i, -1)}
                     disabled={i === 0}
                     className="w-full h-full flex items-center justify-center py-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 disabled:cursor-default"
-                    title="Flytt opp"
+                    title={t('moveUp', uiLang)}
                     tabIndex={-1}
                   >
                     <ChevronUp className="w-3 h-3" />
@@ -246,7 +248,7 @@ export function SpreadsheetOptionsEditor({
                     onClick={() => moveRow(i, 1)}
                     disabled={i === options.length - 1}
                     className="w-full h-full flex items-center justify-center py-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 disabled:cursor-default"
-                    title="Flytt ned"
+                    title={t('moveDown', uiLang)}
                     tabIndex={-1}
                   >
                     <ChevronDown className="w-3 h-3" />
@@ -258,7 +260,7 @@ export function SpreadsheetOptionsEditor({
                   <button
                     onClick={() => removeRow(i)}
                     className="w-full h-full flex items-center justify-center py-0.5 text-gray-300 hover:text-red-500"
-                    title="Slett rad"
+                    title={t('deleteRow', uiLang)}
                     tabIndex={-1}
                   >
                     <X className="w-3 h-3" />
@@ -275,12 +277,12 @@ export function SpreadsheetOptionsEditor({
         onClick={addRow}
         className="mt-2 flex items-center gap-1 text-xs text-cw-blue-light hover:underline"
       >
-        <PlusCircle className="w-3.5 h-3.5" /> Legg til rad
+        <PlusCircle className="w-3.5 h-3.5" /> {t('addRow', uiLang)}
       </button>
 
       {/* Paste hint */}
       <p className="mt-1 text-[10px] text-gray-400">
-        Tips: Lim inn TSV fra Excel direkte i tabellen (kolonner: code, score, tekst per språk).
+        {t('pasteHint', uiLang)}
       </p>
     </div>
   );

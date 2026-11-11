@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Copy, List, PlusCircle, Trash2 } from 'lucide-react';
 import type { Questionnaire, ResponseTemplate, TextOption } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 import { ItemContextMenu } from './ItemContextMenu';
 import { SpreadsheetOptionsEditor } from './SpreadsheetOptionsEditor';
 
@@ -62,23 +62,17 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
 
   const selected = selectedIdx !== null ? templates[selectedIdx] : null;
 
-  const listLabel = uiLang === 'NO' ? 'Svarmaler' : 'Response Templates';
-  const listSubtitle = uiLang === 'NO'
-    ? 'Gjenbrukbare svaralternativer for spørsmål'
-    : 'Reusable answer options for questions';
-  const newLabel = uiLang === 'NO' ? 'Ny svarmal' : 'New template';
-  const noTemplatesLabel = uiLang === 'NO'
-    ? 'Ingen svarmaler — opprett en ny'
-    : 'No templates — create one';
-  const selectOrCreateLabel = uiLang === 'NO'
-    ? 'Velg eller opprett en svarmal'
-    : 'Select or create a response template';
-  const codeLabel = uiLang === 'NO' ? 'Kode' : 'Code';
-  const nameLabel = uiLang === 'NO' ? 'Navn' : 'Name';
-  const optionsLabel = uiLang === 'NO' ? 'Svaralternativer' : 'Options';
-  const deleteLabel = uiLang === 'NO' ? 'Slett' : 'Delete';
-  const noCodeLabel = uiLang === 'NO' ? '(ingen kode)' : '(no code)';
-  const altCountSuffix = uiLang === 'NO' ? 'alternativer' : 'options';
+  const listLabel = t('responseTpls', uiLang);
+  const listSubtitle = t('responseTplSubtitle', uiLang);
+  const newLabel = t('newTplBtn', uiLang);
+  const noTemplatesLabel = t('noTemplatesCreate', uiLang);
+  const selectOrCreateLabel = t('selectOrCreateTpl', uiLang);
+  const codeLabel = t('code', uiLang);
+  const nameLabel = t('name', uiLang);
+  const optionsLabel = t('optionsLabel', uiLang);
+  const deleteLabel = t('deleteBtn', uiLang);
+  const noCodeLabel = t('noCode', uiLang);
+  const altCountSuffix = t('optionsWord', uiLang);
 
   return (
     <div className="flex flex-col md:flex-row h-full overflow-hidden min-w-0 min-h-0">
@@ -164,7 +158,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
                     value={selected.name}
                     onChange={(e) => updateTemplate(selectedIdx, { ...selected, name: e.target.value })}
                     className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-                    placeholder={uiLang === 'NO' ? 'Likert 5-punkt' : 'Likert 5-point'}
+                    placeholder={t('likert5', uiLang)}
                   />
                 </div>
               </div>
@@ -195,13 +189,13 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
           onClose={() => setCtxMenu(null)}
           items={[
             {
-              label: uiLang === 'NO' ? 'Dupliser' : 'Duplicate',
+              label: t('duplicate', uiLang),
               icon: <Copy className="w-3.5 h-3.5 text-gray-400" />,
               onClick: () => dupTemplate(ctxMenu.idx),
             },
             { separator: true },
             {
-              label: uiLang === 'NO' ? 'Slett' : 'Delete',
+              label: t('deleteBtn', uiLang),
               icon: <Trash2 className="w-3.5 h-3.5" />,
               onClick: () => deleteTemplate(ctxMenu.idx),
               danger: true,

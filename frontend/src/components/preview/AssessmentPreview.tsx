@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { t, tf, useUILang } from '../../i18n';
 import type {
   Questionnaire,
   Question,
@@ -149,6 +150,7 @@ function RankWidget({
   value: string;         // comma-separated option codes in current order
   onAnswer: (v: string) => void;
 }) {
+  const uiLang = useUILang();
   // Derive ordered list from stored value, falling back to original option order
   const orderedCodes: string[] = useMemo(() => {
     if (value) {
@@ -215,7 +217,7 @@ function RankWidget({
                 type="button"
                 onClick={() => move(i, -1)}
                 disabled={i === 0}
-                title="Flytt opp"
+                title={t('moveUp', uiLang)}
                 style={{
                   width: 22,
                   height: 18,
@@ -235,7 +237,7 @@ function RankWidget({
                 type="button"
                 onClick={() => move(i, 1)}
                 disabled={i === orderedCodes.length - 1}
-                title="Flytt ned"
+                title={t('moveDown', uiLang)}
                 style={{
                   width: 22,
                   height: 18,
@@ -281,6 +283,7 @@ function CountryWidget({
   value: string | null;
   onAnswer: (v: string) => void;
 }) {
+  const uiLang = useUILang();
   return (
     <select
       value={value ?? ''}
@@ -296,7 +299,7 @@ function CountryWidget({
         maxWidth: '100%',
       }}
     >
-      <option value="">— Velg land —</option>
+      <option value="">{t('selectCountry', uiLang)}</option>
       {COUNTRIES_NO.map((c) => (
         <option key={c} value={c}>{c}</option>
       ))}
@@ -313,10 +316,11 @@ function ImageWidget({
   imageSrc?: string;
   altText?: string;
 }) {
+  const uiLang = useUILang();
   if (!imageSrc) {
     return (
       <span style={{ fontSize: 12, color: '#bbb', fontStyle: 'italic' }}>
-        (Ingen bilde spesifisert)
+        {t('noImageSpecified', uiLang)}
       </span>
     );
   }
@@ -594,9 +598,10 @@ function hasCwTags(text: string): boolean {
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
 function EmptyOptions() {
+  const uiLang = useUILang();
   return (
     <span style={{ fontSize: 12, color: '#bbb', fontStyle: 'italic' }}>
-      Ingen svaralternativer ennå
+      {t('noOptionsYet', uiLang)}
     </span>
   );
 }
@@ -618,6 +623,7 @@ function QuestionPreview({
   answers: AnswerMap;
   onAnswer: (code: string, value: string | string[]) => void;
 }) {
+  const uiLang = useUILang();
   const text = question.texts[lang] || '';
   const isText = question.type === 'text';
 
@@ -660,7 +666,7 @@ function QuestionPreview({
             )
           ) : (
             <span style={{ fontSize: 13, color: '#ccc', fontStyle: 'italic' }}>
-              {isText ? '(Tekstblokk uten innhold)' : '(Ingen spørsmålstekst)'}
+              {isText ? t('textBlockEmpty', uiLang) : t('noQuestionText', uiLang)}
             </span>
           )}
           {!isText && question.required && (
@@ -679,7 +685,7 @@ function QuestionPreview({
         <textarea
           rows={3}
           value={(answers.get(question.code) as string) ?? ''}
-          placeholder="Skriv inn svar..."
+          placeholder={t('enterAnswer', uiLang)}
           onChange={(e) => onAnswer(question.code, e.target.value)}
           style={{
             width: '100%',
@@ -768,7 +774,7 @@ function QuestionPreview({
               <textarea
                 rows={3}
                 value={(answers.get(question.code) as string) ?? ''}
-                placeholder="Skriv inn tekst..."
+                placeholder={t('enterText', uiLang)}
                 onChange={(e) => onAnswer(question.code, e.target.value)}
                 style={{
                   width: '100%',
@@ -785,7 +791,7 @@ function QuestionPreview({
               <input
                 type="text"
                 value={(answers.get(question.code) as string) ?? ''}
-                placeholder="Skriv inn..."
+                placeholder={t('enterShort', uiLang)}
                 onChange={(e) => onAnswer(question.code, e.target.value)}
                 style={{
                   width:
@@ -868,6 +874,7 @@ function flattenSections(secs: Section[]): Section[] {
 }
 
 export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props) {
+  const uiLang = useUILang();
   const [sectionIndex, setSectionIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerMap>(new Map());
   // sectionId → number of repetitions (default 1 — always show first instance)
@@ -945,7 +952,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
         <div style={{ fontSize: 14, fontWeight: 600 }}>{name}</div>
         {total > 0 && (
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
-            Side {idx + 1} av {total}
+            {tf('pageOf', uiLang, { page: idx + 1, total })}
           </div>
         )}
       </div>
@@ -967,8 +974,8 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
         {total === 0 ? (
           <div style={{ textAlign: 'center', color: '#aaa', marginTop: 60 }}>
             <div style={{ fontSize: 36, marginBottom: 10 }}>📋</div>
-            <p style={{ fontSize: 13 }}>Legg til seksjoner og spørsmål</p>
-            <p style={{ fontSize: 11, marginTop: 4 }}>for å se forhåndsvisning her</p>
+            <p style={{ fontSize: 13 }}>{t('addSectionsHint', uiLang)}</p>
+            <p style={{ fontSize: 11, marginTop: 4 }}>{t('previewEmptyHint', uiLang)}</p>
           </div>
         ) : (
           <div
@@ -990,7 +997,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
             {/* Questions — with REPEATED section support */}
             {currentSection.questions.length === 0 ? (
               <p style={{ color: '#ccc', fontStyle: 'italic', textAlign: 'center', padding: '24px 0', fontSize: 13 }}>
-                Ingen spørsmål i denne seksjonen
+                {t('noQuestionsInSection', uiLang)}
               </p>
             ) : currentSection.type === 'REPEATED' ? (
               (() => {
@@ -1022,7 +1029,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                             >
                               <div style={{ flex: 1, height: 1, background: CW_BORDER }} />
                               <span style={{ fontSize: 12, color: '#888', fontStyle: 'italic' }}>
-                                Repetisjon {ri + 1}
+                                {tf('repetition', uiLang, { n: ri + 1 })}
                               </span>
                               <div style={{ flex: 1, height: 1, background: CW_BORDER }} />
                               <button
@@ -1062,7 +1069,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                                   cursor: 'pointer',
                                 }}
                               >
-                                × Fjern
+                                × {t('remove', uiLang)}
                               </button>
                             </div>
                           )}
@@ -1112,7 +1119,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                         gap: 6,
                       }}
                     >
-                      + Legg til repetisjon
+                      + {t('addRepetition', uiLang)}
                     </button>
                   </div>
                 );
@@ -1167,7 +1174,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                   <span style={{ fontSize: 10, display: 'inline-block', transform: scoringOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
                     ▸
                   </span>
-                  Vis beregninger
+                  {t('showCalculations', uiLang)}
                 </button>
                 {scoringOpen && (
                   <div
@@ -1182,9 +1189,9 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ background: '#f4f7fa', borderBottom: `1px solid ${CW_BORDER}` }}>
-                          <th style={{ padding: '5px 10px', textAlign: 'left', fontWeight: 600, color: '#555', fontSize: 11 }}>Navn</th>
-                          <th style={{ padding: '5px 10px', textAlign: 'left', fontWeight: 600, color: '#555', fontSize: 11 }}>Kode</th>
-                          <th style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 600, color: '#555', fontSize: 11 }}>Resultat</th>
+                          <th style={{ padding: '5px 10px', textAlign: 'left', fontWeight: 600, color: '#555', fontSize: 11 }}>{t('name', uiLang)}</th>
+                          <th style={{ padding: '5px 10px', textAlign: 'left', fontWeight: 600, color: '#555', fontSize: 11 }}>{t('code', uiLang)}</th>
+                          <th style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 600, color: '#555', fontSize: 11 }}>{t('result', uiLang)}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1249,7 +1256,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
               color: idx === 0 ? '#ccc' : '#444',
             }}
           >
-            ← Forrige
+            ← {t('previous', uiLang)}
           </button>
 
           {/* Page indicator: dots for few pages, numeric counter for many */}
@@ -1259,7 +1266,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                 <button
                   key={i}
                   onClick={() => setSectionIndex(i)}
-                  title={sections[i].titles[lang] || `Side ${i + 1}`}
+                  title={sections[i].titles[lang] || tf('pageTitle', uiLang, { n: i + 1 })}
                   style={{
                     width: i === idx ? 10 : 8,
                     height: i === idx ? 10 : 8,
@@ -1283,7 +1290,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
           <button
             onClick={() => setSectionIndex((i) => Math.min(total - 1, i + 1))}
             disabled={idx === total - 1 || !canContinue(currentSection, answers)}
-            title={!canContinue(currentSection, answers) ? 'Betingelser for å gå videre er ikke oppfylt' : undefined}
+            title={!canContinue(currentSection, answers) ? t('cannotContinue', uiLang) : undefined}
             style={{
               padding: '7px 16px',
               background: (idx === total - 1 || !canContinue(currentSection, answers)) ? '#f5f5f5' : CW_BLUE,
@@ -1295,7 +1302,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
               color: (idx === total - 1 || !canContinue(currentSection, answers)) ? '#ccc' : 'white',
             }}
           >
-            Neste →
+            {t('next', uiLang)} →
           </button>
         </div>
       )}

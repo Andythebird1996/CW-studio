@@ -79,7 +79,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                   className={INPUT + (readOnly ? ' bg-gray-50' : '')}
                 />
               </Field>
-              <Field label={uiLang === 'NO' ? 'Release' : 'Release'}>
+              <Field label={t('release', uiLang)}>
                 <input
                   value={questionnaire.release ?? ''}
                   onChange={(e) => updateQ({ release: e.target.value || undefined })}
@@ -140,11 +140,11 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 readOnly={readOnly}
                 rows={2}
                 className={INPUT + ' resize-none' + (readOnly ? ' bg-gray-50' : '')}
-                placeholder={uiLang === 'NO' ? 'Valgfri beskrivelse...' : 'Optional description...'}
+                placeholder={t('optionalDescription', uiLang)}
               />
             </Field>
 
-            <Field label="Copyright / $COPYRIGHT">
+            <Field label={t('copyrightField', uiLang)}>
               <input
                 value={questionnaire.copyright ?? ''}
                 onChange={(e) => updateQ({ copyright: e.target.value || undefined })}
@@ -153,15 +153,15 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 placeholder="© 2024 Checkware AS"
               />
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {uiLang === 'NO' ? 'Tilgjengelig i RAP som $COPYRIGHT' : 'Available in RAP as $COPYRIGHT'}
+                {t('copyrightHint', uiLang)}
               </p>
             </Field>
 
             <div className="pt-1 border-t border-cw-border">
               <p className="text-xs text-gray-400">
-                {uiLang === 'NO' ? 'Støttede språk' : 'Supported languages'}: <span className="font-mono">{questionnaire.supportedLanguages.join(', ')}</span>
+                {t('supportedLanguages', uiLang)}: <span className="font-mono">{questionnaire.supportedLanguages.join(', ')}</span>
                 {' · '}
-                {uiLang === 'NO' ? 'Seksjoner' : 'Sections'}: <span className="font-mono">{questionnaire.sections.length}</span>
+                {t('sections', uiLang)}: <span className="font-mono">{questionnaire.sections.length}</span>
                 {questionnaire.dimensions?.length ? (
                   <>{' · '}{t('dimsHeader', uiLang)}: <span className="font-mono">{questionnaire.dimensions.length}</span></>
                 ) : null}
@@ -192,7 +192,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 readOnly={readOnly}
                 rows={2}
                 className={INPUT + ' resize-none' + (readOnly ? ' bg-gray-50' : '')}
-                placeholder={uiLang === 'NO' ? 'Pakkebeskrivelse...' : 'Package description...'}
+                placeholder={t('packageDescriptionPh', uiLang)}
               />
             </Field>
 
@@ -228,7 +228,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
           <details className="group">
             <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 select-none">
               <span className="group-open:rotate-90 transition-transform inline-block">&#9654;</span>
-              {uiLang === 'NO' ? 'Navigasjon og visning' : 'Navigation and display'}
+              {t('navigationDisplay', uiLang)}
             </summary>
             <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
               <Field label={t('visualizeProgress', uiLang)}>
@@ -250,12 +250,12 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
               <div className="space-y-2 pt-1">
                 {(
                   [
-                    { field: 'allowTOC',               label: uiLang === 'NO' ? 'Vis innholdsfortegnelse'           : 'Show table of contents'          },
-                    { field: 'restrictBackButton',      label: uiLang === 'NO' ? 'Skjul tilbake-knapp'              : 'Hide back button'                 },
-                    { field: 'allowSingleBackButton',   label: uiLang === 'NO' ? 'Tillat ett steg tilbake'          : 'Allow single step back'           },
-                    { field: 'unresponsiveUI',          label: uiLang === 'NO' ? 'Ikke-responsivt UI (kun desktop)' : 'Non-responsive UI (desktop only)' },
-                    { field: 'authorizedDevicesOnly',   label: uiLang === 'NO' ? 'Kun autoriserte enheter'          : 'Authorized devices only'          },
-                    { field: 'exportAllowed',           label: uiLang === 'NO' ? 'Tillat eksport av data'           : 'Allow data export'                },
+                    { field: 'allowTOC',               label: t('showToc', uiLang)          },
+                    { field: 'restrictBackButton',      label: t('hideBack', uiLang)                 },
+                    { field: 'allowSingleBackButton',   label: t('allowOneStepBack', uiLang)           },
+                    { field: 'unresponsiveUI',          label: t('nonResponsive', uiLang) },
+                    { field: 'authorizedDevicesOnly',   label: t('authorizedDevices', uiLang)          },
+                    { field: 'exportAllowed',           label: t('allowDataExport', uiLang)                },
                   ] as Array<{ field: keyof Questionnaire; label: string }>
                 ).map(({ field, label }) => (
                   <label key={field} className="flex items-center gap-2 cursor-pointer">
@@ -280,7 +280,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
             <details className="group">
               <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 select-none">
                 <span className="group-open:rotate-90 transition-transform inline-block">&#9654;</span>
-                {uiLang === 'NO' ? 'Remote Scoring' : 'Remote Scoring'}
+                {t('remoteScoringLabel', uiLang)}
               </summary>
               <RemoteScoringEditor questionnaire={questionnaire} onChange={(q) => onChange?.(q, packageMetadata)} />
             </details>

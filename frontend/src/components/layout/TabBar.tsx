@@ -1,7 +1,9 @@
 import { X } from 'lucide-react';
 import { useWorkspaceStore } from '../../stores/workspace-store';
+import { t, useUILang } from '../../i18n';
 
 export function TabBar() {
+  const uiLang = useUILang();
   const { tabs, activeTabId, setActiveTab, closeTab } = useWorkspaceStore();
 
   if (tabs.length === 0) return null;
@@ -28,6 +30,8 @@ export function TabBar() {
               closeTab(tab.id);
             }}
             className="text-gray-400 hover:text-gray-700 rounded p-1 xl:p-0.5 hover:bg-gray-200"
+            aria-label={t('closeTab', uiLang)}
+            title={t('closeTab', uiLang)}
           >
             <X className="w-3 h-3" />
           </button>

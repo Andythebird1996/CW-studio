@@ -230,7 +230,7 @@ function PackageNode({
         <button
           onClick={() => setExpanded((e) => !e)}
           className="text-gray-400 hover:text-gray-600 shrink-0"
-          title={expanded ? (uiLang === 'NO' ? 'Skjul' : 'Collapse') : (uiLang === 'NO' ? 'Vis' : 'Expand')}
+          title={expanded ? (t('collapse', uiLang)) : (t('expand', uiLang))}
         >
           {expanded
             ? <ChevronDown className="w-3.5 h-3.5" />
@@ -277,7 +277,8 @@ function PackageNode({
         <button
           onClick={() => onCloseTab(tab.id)}
           className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-red-500 rounded shrink-0"
-          title="Lukk"
+          title={t('close', uiLang)}
+          aria-label={t('close', uiLang)}
         >
           <X className="w-3 h-3" />
         </button>
@@ -296,7 +297,7 @@ function PackageNode({
           {/* Response Templates */}
           <ResourceRow
             icon={<List className="w-3.5 h-3.5" />}
-            label={uiLang === 'NO' ? 'Svarmaler' : 'Response Templates'}
+            label={t('responseTpls', uiLang)}
             count={responseTemplates.length > 0 ? responseTemplates.length : undefined}
             active={isActive && activeSubTab === 'response-templates'}
             onClick={() => { nav('response-templates'); if (responseTemplates.length > 0) setTemplatesExpanded(true); }}

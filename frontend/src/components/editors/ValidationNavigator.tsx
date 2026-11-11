@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, AlertCircle, AlertTriangle } from 'lucide-react';
 import type { ValidationIssue } from '../../services/validate-questionnaire';
+import { t, tf, countPhrase, useUILang } from '../../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,7 @@ type FilterMode = 'all' | 'errors' | 'warnings';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ValidationNavigator({ issues, onNavigate }: ValidationNavigatorProps) {
+  const uiLang = useUILang();
   const [collapsed, setCollapsed] = useState(false);
   const [filter, setFilter] = useState<FilterMode>('all');
 
@@ -34,12 +36,12 @@ export function ValidationNavigator({ issues, onNavigate }: ValidationNavigatorP
 
   const badge =
     errorCount > 0 && warningCount > 0
-      ? `${errorCount} feil, ${warningCount} advarsler`
+      ? tf('issuesBoth', uiLang, { errors: errorCount, warnings: warningCount })
       : errorCount > 0
-      ? `${errorCount} feil`
+      ? countPhrase(errorCount, uiLang, 'nErrorOne', 'nErrorMany')
       : warningCount > 0
-      ? `${warningCount} advarsler`
-      : 'Ingen problemer';
+      ? countPhrase(warningCount, uiLang, 'nWarningOne', 'nWarningMany')
+      : t('noProblems', uiLang);
 
   const badgeColor =
     errorCount > 0
@@ -59,7 +61,7 @@ export function ValidationNavigator({ issues, onNavigate }: ValidationNavigatorP
           ? <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
         }
-        <span className="text-xs font-semibold text-gray-600">Valideringsresultater</span>
+        <span className="text-xs font-semibold text-gray-600">{t('validationResults', uiLang)}</span>
         <span className={`text-[10px] font-medium border rounded px-2 py-0.5 ${badgeColor}`}>
           {badge}
         </span>
@@ -80,7 +82,7 @@ export function ValidationNavigator({ issues, onNavigate }: ValidationNavigatorP
                     : 'bg-white text-gray-500 hover:bg-gray-50'
                 }`}
               >
-                {f === 'all' ? 'Alle' : f === 'errors' ? 'Feil' : 'Advarsler'}
+                {f === 'all' ? t('filterAll', uiLang) : f === 'errors' ? t('filterErrors', uiLang) : t('filterWarnings', uiLang)}
               </button>
             ))}
           </div>
@@ -93,19 +95,19 @@ export function ValidationNavigator({ issues, onNavigate }: ValidationNavigatorP
           {visibleIssues.length === 0 ? (
             <p className="px-4 py-3 text-xs text-gray-400 italic">
               {filter === 'all'
-                ? 'Ingen valideringsproblemer funnet.'
+                ? t('noValidationIssues', uiLang)
                 : filter === 'errors'
-                ? 'Ingen feil.'
-                : 'Ingen advarsler.'}
+                ? t('noErrors', uiLang)
+                : t('noWarnings', uiLang)}
             </p>
           ) : (
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-cw-border">
                   <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-6"></th>
-                  <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Element</th>
-                  <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Problem</th>
-                  <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Sti</th>
+                  <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{t('colElement', uiLang)}</th>
+                  <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{t('colProblem', uiLang)}</th>
+                  <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">{t('colPath', uiLang)}</th>
                   <th className="px-3 py-1.5 w-14"></th>
                 </tr>
               </thead>
@@ -146,7 +148,7 @@ export function ValidationNavigator({ issues, onNavigate }: ValidationNavigatorP
                         onClick={() => onNavigate(issue)}
                         className="px-2 py-1 text-[10px] border border-cw-border rounded hover:bg-cw-blue hover:text-white hover:border-cw-blue transition-colors text-gray-500 whitespace-nowrap"
                       >
-                        Gå til
+                        {t('goTo', uiLang)}
                       </button>
                     </td>
                   </tr>

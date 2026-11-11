@@ -6,6 +6,7 @@
  */
 
 import type { Questionnaire, Section, Question } from '../types/questionnaire';
+import { t, tf, type UILang } from '../i18n';
 
 export interface ValidationIssue {
   /** Dot-notation path, e.g. "sections[0].questions[2]" */
@@ -48,7 +49,7 @@ function collectAllCalculationCodes(questionnaire: Questionnaire): Set<string> {
 
 // ── main export ───────────────────────────────────────────────────────────────
 
-export function validateQuestionnaire(questionnaire: Questionnaire): ValidationIssue[] {
+export function validateQuestionnaire(questionnaire: Questionnaire, lang: UILang = 'EN'): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
   // Collect all codes globally for duplicate detection
@@ -58,7 +59,7 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
   const templates = questionnaire.responseTemplates?.templates ?? [];
   templates.forEach((tpl, ti) => {
     const path = `responseTemplates.templates[${ti}]`;
-    const label = tpl.name || tpl.code || `Template ${ti + 1}`;
+    const label = tpl.name || tpl.code || tf('labelTemplate', lang, { n: ti + 1 });
 
     if (!tpl.code || tpl.code.trim() === '') {
       issues.push({
@@ -66,7 +67,7 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         elementCode: '',
         elementLabel: label,
         severity: 'error',
-        message: 'Response template is missing a code',
+        message: t('valTemplateMissingCode', lang),
       });
     } else {
       allCodes.push(tpl.code);
@@ -75,15 +76,15 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
     tpl.options.forEach((opt, oi) => {
       const optPath = `${path}.options[${oi}]`;
       const optLabel = opt.texts
-        ? (Object.values(opt.texts).find((v) => v) ?? (opt.code || `Option ${oi + 1}`))
-        : (opt.code || `Option ${oi + 1}`);
+        ? (Object.values(opt.texts).find((v) => v) ?? (opt.code || tf('labelOption', lang, { n: oi + 1 })))
+        : (opt.code || tf('labelOption', lang, { n: oi + 1 }));
       if (!opt.code || opt.code.trim() === '') {
         issues.push({
           path: optPath,
           elementCode: '',
           elementLabel: String(optLabel),
           severity: 'error',
-          message: `Option in template "${label}" is missing a code`,
+          message: tf('valOptionMissingCode', lang, { label }),
         });
       } else {
         allCodes.push(opt.code);
@@ -93,7 +94,7 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
 
   // ── Sections (recursive) ──────────────────────────────────────────────────
   function validateSection(section: Section, path: string, sIdx: number): void {
-    const sLabel = (Object.values(section.titles).find((v) => v) ?? section.code ?? `Section ${sIdx + 1}`);
+    const sLabel = (Object.values(section.titles).find((v) => v) ?? section.code ?? tf('labelSection', lang, { n: sIdx + 1 }));
 
     if (!section.code || section.code.trim() === '') {
       issues.push({
@@ -101,7 +102,7 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         elementCode: '',
         elementLabel: String(sLabel),
         severity: 'error',
-        message: 'Section is missing a code',
+        message: t('valSectionMissingCode', lang),
       });
     } else {
       allCodes.push(section.code);
@@ -113,7 +114,7 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         elementCode: section.code ?? '',
         elementLabel: String(sLabel),
         severity: 'warning',
-        message: 'Section has no title in any language',
+        message: t('valSectionNoTitle', lang),
       });
     }
 
@@ -137,8 +138,8 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         elementLabel: String(label),
         severity: 'error',
         message: q.type === 'text'
-          ? 'Text element is missing a code'
-          : 'Question is missing a code',
+          ? t('valTextMissingCode', lang)
+          : t('valQuestionMissingCode', lang),
       });
     } else {
       allCodes.push(q.code);
@@ -151,8 +152,8 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         elementLabel: q.code || path,
         severity: 'warning',
         message: q.type === 'text'
-          ? 'Text element has no content in any language'
-          : 'Question has no text in any language',
+          ? t('valTextNoContent', lang)
+          : t('valQuestionNoText', lang),
       });
     }
   }
@@ -177,7 +178,7 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
       elementCode: dup,
       elementLabel: dup,
       severity: 'error',
-      message: `Duplicate code: "${dup}" appears more than once in the questionnaire`,
+      message: tf('valDuplicateCode', lang, { code: dup }),
     });
   }
 
@@ -191,9 +192,9 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         issues.push({
           path: `calculations.calculations[${ci}].innerCalculations[${ici}]`,
           elementCode: calc.code,
-          elementLabel: calc.name || calc.code || `Calculation ${ci + 1}`,
+          elementLabel: calc.name || calc.code || tf('labelCalculation', lang, { n: ci + 1 }),
           severity: 'warning',
-          message: `Calculation "${calc.code}" references question code "${ic.questionCode}" which does not exist`,
+          message: tf('valCalcMissingQuestion', lang, { calc: calc.code, question: ic.questionCode }),
         });
       }
     });
@@ -206,9 +207,9 @@ export function validateQuestionnaire(questionnaire: Questionnaire): ValidationI
         issues.push({
           path: `flags[${fi}].conditions[${ci}]`,
           elementCode: flag.code,
-          elementLabel: flag.name || flag.code || `Flag ${fi + 1}`,
+          elementLabel: flag.name || flag.code || tf('labelFlag', lang, { n: fi + 1 }),
           severity: 'warning',
-          message: `Flag "${flag.code}" references calculation code "${cond.calculationCode}" which does not exist`,
+          message: tf('valFlagMissingCalc', lang, { flag: flag.code, calc: cond.calculationCode }),
         });
       }
     });

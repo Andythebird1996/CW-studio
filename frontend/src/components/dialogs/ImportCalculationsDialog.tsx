@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import type { Calculation, Questionnaire } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 
 interface Props {
   questionnaire: Questionnaire;
@@ -92,9 +92,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
     }
   }
 
-  const hint = uiLang === 'NO'
-    ? 'Format: kode | navn | type | spørsmålskoder'
-    : 'Format: code | name | type | questionCodes';
+  const hint = t('importCalcsFormat', uiLang);
   const example = 'TOTAL | Total score | SUM | Q1,Q2,Q3';
 
   return (
@@ -106,12 +104,10 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
           <div className="flex items-center justify-between px-5 py-4 border-b border-cw-border shrink-0">
             <div>
               <Dialog.Title className="text-sm font-semibold text-cw-blue">
-                {uiLang === 'NO' ? 'Importer beregninger' : 'Import calculations'}
+                {t('importCalcsTitle', uiLang)}
               </Dialog.Title>
               <Dialog.Description className="text-xs text-gray-500 mt-0.5">
-                {uiLang === 'NO'
-                  ? 'Lim inn CSV/TSV-data med én beregning per linje.'
-                  : 'Paste CSV/TSV data with one calculation per line.'}
+                {t('importCalcsHelp', uiLang)}
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
@@ -125,13 +121,11 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
             {/* Format hint */}
             <div className="bg-gray-50 border border-cw-border rounded p-3 text-xs space-y-1">
               <p className="font-medium text-gray-600">{hint}</p>
-              <p className="text-gray-500">{uiLang === 'NO' ? 'Typer: SUM, MEAN, COUNT' : 'Types: SUM, MEAN, COUNT'}</p>
-              <p className="text-gray-500">{uiLang === 'NO' ? 'spørsmålskoder: kommaseparert liste' : 'questionCodes: comma-separated list'}</p>
+              <p className="text-gray-500">{t('importCalcsTypes', uiLang)}</p>
+              <p className="text-gray-500">{t('importCalcsCodes', uiLang)}</p>
               <p className="font-mono text-gray-700 bg-white border border-cw-border rounded px-2 py-1 mt-1 select-all">{example}</p>
               <p className="text-gray-400 text-[11px]">
-                {uiLang === 'NO'
-                  ? 'Separator auto-detekteres (tab eller pipe |). Tab-separert (Excel-lim) fungerer direkte.'
-                  : 'Separator auto-detected (tab or pipe |). Tab-separated (Excel paste) works directly.'}
+                {t('importCalcsSep', uiLang)}
               </p>
             </div>
 
@@ -144,7 +138,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                   onChange={(e) => setHasHeader(e.target.checked)}
                   className="w-3.5 h-3.5 accent-cw-blue"
                 />
-                {uiLang === 'NO' ? 'Hopp over første linje (header)' : 'Skip first row (header)'}
+                {t('skipHeader', uiLang)}
               </label>
               <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
                 <input
@@ -153,14 +147,14 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                   onChange={(e) => setReplaceExisting(e.target.checked)}
                   className="w-3.5 h-3.5 accent-cw-blue"
                 />
-                {uiLang === 'NO' ? 'Erstatt eksisterende beregninger' : 'Replace existing calculations'}
+                {t('replaceExistingCalcs', uiLang)}
               </label>
             </div>
 
             {/* Textarea */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
-                {uiLang === 'NO' ? 'Lim inn data' : 'Paste data'}
+                {t('pasteData', uiLang)}
               </label>
               <textarea
                 value={rawText}
@@ -176,11 +170,11 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
             {parsedRows.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-2">
-                  {uiLang === 'NO' ? 'Forhåndsvisning' : 'Preview'}
+                  {t('previewPanel', uiLang)}
                   {' — '}
-                  <span className="text-green-600">{validRows.length} {uiLang === 'NO' ? 'gyldige' : 'valid'}</span>
+                  <span className="text-green-600">{validRows.length} {t('validWord', uiLang)}</span>
                   {invalidRows.length > 0 && (
-                    <span className="text-red-500 ml-2">{invalidRows.length} {uiLang === 'NO' ? 'feil' : 'errors'}</span>
+                    <span className="text-red-500 ml-2">{invalidRows.length} {t('validationErrorsPlural', uiLang)}</span>
                   )}
                 </p>
                 <div className="border border-cw-border rounded overflow-hidden">
@@ -188,10 +182,10 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                     <thead className="bg-gray-50 border-b border-cw-border">
                       <tr>
                         <th className="px-2 py-1.5 text-left font-medium text-gray-500 w-8">#</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{uiLang === 'NO' ? 'Kode' : 'Code'}</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{uiLang === 'NO' ? 'Navn' : 'Name'}</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{uiLang === 'NO' ? 'Type' : 'Type'}</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{uiLang === 'NO' ? 'Spørsmål' : 'Questions'}</th>
+                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('code', uiLang)}</th>
+                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('name', uiLang)}</th>
+                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('typeLabel', uiLang)}</th>
+                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('questions', uiLang)}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -201,7 +195,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                           className={`border-t border-cw-border ${row.valid ? '' : 'bg-red-50'}`}
                         >
                           <td className="px-2 py-1 text-gray-400">{i + 1 + (hasHeader ? 1 : 0)}</td>
-                          <td className="px-2 py-1 font-mono font-semibold text-cw-blue">{row.code || <span className="text-red-400 italic">{uiLang === 'NO' ? 'tom' : 'empty'}</span>}</td>
+                          <td className="px-2 py-1 font-mono font-semibold text-cw-blue">{row.code || <span className="text-red-400 italic">{t('emptyWord', uiLang)}</span>}</td>
                           <td className="px-2 py-1 text-gray-700">{row.name}</td>
                           <td className="px-2 py-1">
                             {row.valid ? (
@@ -212,7 +206,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                           </td>
                           <td className="px-2 py-1 text-gray-600">
                             {row.valid
-                              ? row.questionCodes.join(', ') || <span className="text-gray-400 italic">{uiLang === 'NO' ? 'ingen' : 'none'}</span>
+                              ? row.questionCodes.join(', ') || <span className="text-gray-400 italic">{t('noneWord', uiLang)}</span>
                               : <span className="text-red-500 text-[11px]">{row.error}</span>
                             }
                           </td>
@@ -229,24 +223,22 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
           <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-cw-border shrink-0">
             <p className="text-xs text-gray-400">
               {replaceExisting
-                ? (uiLang === 'NO' ? 'Vil erstatte alle eksisterende beregninger.' : 'Will replace all existing calculations.')
-                : (uiLang === 'NO' ? 'Vil legge til i eksisterende beregninger.' : 'Will append to existing calculations.')}
+                ? (t('willReplaceCalcs', uiLang))
+                : (t('willAppendCalcs', uiLang))}
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
                 className="px-3 py-1.5 text-sm text-gray-600 border border-cw-border rounded hover:bg-gray-50 transition-colors"
               >
-                {uiLang === 'NO' ? 'Avbryt' : 'Cancel'}
+                {t('cancelBtn', uiLang)}
               </button>
               <button
                 onClick={handleImport}
                 disabled={validRows.length === 0}
                 className="px-4 py-1.5 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {uiLang === 'NO'
-                  ? `Importer ${validRows.length > 0 ? `(${validRows.length})` : ''}`
-                  : `Import ${validRows.length > 0 ? `(${validRows.length})` : ''}`}
+                {validRows.length > 0 ? `${t('import', uiLang)} (${validRows.length})` : t('import', uiLang)}
               </button>
             </div>
           </div>

@@ -31,7 +31,7 @@ function flagColor(type: FlagType) {
 function getFlagTypeLabel(type: FlagType, lang: ReturnType<typeof useUILang>): string {
   if (type === 'WARNING') return t('flagWarning', lang);
   if (type === 'CRITICAL') return t('flagCritical', lang);
-  return 'Info';
+  return t('flagInfo', lang);
 }
 
 function newFlag(): Flag {
@@ -146,7 +146,7 @@ function FlagForm({
           value={flag.name}
           onChange={(e) => onChange({ ...flag, name: e.target.value })}
           className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-          placeholder={uiLang === 'NO' ? 'Høy risiko for ...' : 'High risk for ...'}
+          placeholder={t('flagNamePh', uiLang)}
         />
       </div>
 
@@ -157,7 +157,7 @@ function FlagForm({
           onChange={(e) => onChange({ ...flag, description: e.target.value || undefined })}
           rows={2}
           className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
-          placeholder={uiLang === 'NO' ? 'Valgfri beskrivelse av flagget...' : 'Optional description of this flag...'}
+          placeholder={t('flagDescPh', uiLang)}
         />
       </div>
 
@@ -331,9 +331,9 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[
-            { label: uiLang === 'NO' ? 'Dupliser' : 'Duplicate', icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupFlag(ctxMenu.idx) },
+            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupFlag(ctxMenu.idx) },
             { separator: true },
-            { label: uiLang === 'NO' ? 'Slett' : 'Delete', icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteFlag(ctxMenu.idx), danger: true },
+            { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteFlag(ctxMenu.idx), danger: true },
           ]}
         />
       )}

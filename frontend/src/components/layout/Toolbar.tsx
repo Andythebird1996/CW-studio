@@ -111,7 +111,7 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
 
         {/* Logo — shrinks to just "CW" at narrow widths */}
         <span className="text-white font-bold text-sm select-none px-2 shrink-0">
-          <span className="hidden lg:inline">Checkware Studio</span>
+          <span className="hidden lg:inline">{t('appTitle', lang)}</span>
           <span className="lg:hidden">CW</span>
         </span>
 
@@ -122,7 +122,7 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
         <Btn icon={<FolderOpen className="w-4 h-4" />} label={t('openFile', lang)} onClick={() => fileInputRef.current?.click()} />
         <Btn icon={<Download className="w-4 h-4" />} label={t('import', lang)} onClick={onImport} />
         <Btn icon={<Save className="w-4 h-4" />} label={t('save', lang)} onClick={onSave} disabled={!activeTab} />
-        <Btn icon={<Printer className="w-4 h-4" />} label={lang === 'NO' ? 'Skriv ut / PDF' : 'Print / PDF'} onClick={onPrint} disabled={!activeTab} />
+        <Btn icon={<Printer className="w-4 h-4" />} label={t('printPdf', lang)} onClick={onPrint} disabled={!activeTab} />
         <Btn icon={<Upload className="w-4 h-4" />} label={t('publish', lang)} onClick={onPublish} disabled={!activeTab} />
 
         <div className="w-px h-5 bg-white/30 mx-1 shrink-0" />
@@ -158,7 +158,7 @@ export function Toolbar({ onNewQuestionnaire, onImport, onOpenFile, onSave, onPu
           type="button"
           onClick={onToggleLang}
           className="px-2 h-10 xl:h-auto xl:py-1 text-xs font-semibold rounded border border-white/30 text-white hover:bg-white/20 transition-colors select-none shrink-0"
-          title={lang === 'NO' ? 'Switch to English' : 'Bytt til norsk'}
+          title={lang === 'NO' ? t('switchToEnglish', lang) : t('switchToNorwegian', lang)}
         >
           {lang === 'NO' ? 'EN' : 'NO'}
         </button>

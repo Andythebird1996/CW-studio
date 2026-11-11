@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Questionnaire } from '../../types/questionnaire';
+import { t, useUILang } from '../../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -129,6 +130,7 @@ const COL_STYLE = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
+  const uiLang = useUILang();
   const { nodes, edges } = useMemo(() => buildGraph(questionnaire), [questionnaire]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -169,9 +171,9 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
       {/* Header */}
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-cw-blue">Avhengighetsgraf</h2>
+          <h2 className="text-sm font-semibold text-cw-blue">{t('depGraphTitle', uiLang)}</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Klikk på en node for å fremheve hele tråden &nbsp;·&nbsp; Spørsmål → Beregninger → Flagg
+            {t('depGraphHint', uiLang)}
           </p>
         </div>
         {selectedId && (
@@ -179,7 +181,7 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
             onClick={() => setSelectedId(null)}
             className="ml-auto text-[10px] border border-cw-border rounded px-2 py-1 text-gray-500 hover:bg-gray-50"
           >
-            Fjern valg
+            {t('clearSelection', uiLang)}
           </button>
         )}
       </div>
@@ -187,8 +189,8 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
       {isEmpty ? (
         <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
           {calcs.length === 0 && flags.length === 0
-            ? 'Ingen beregninger eller flagg er definert.'
-            : 'Ingen avhengigheter å vise.'}
+            ? t('noDepsDefined', uiLang)
+            : t('noDepsToShow', uiLang)}
         </div>
       ) : (
         <div className="flex-1 overflow-auto p-4 min-w-0" onClick={() => setSelectedId(null)}>
@@ -202,11 +204,11 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
             }}
             className="text-[10px] font-semibold uppercase tracking-wide"
           >
-            <span style={{ color: COL_STYLE[0].highlight }}>Spørsmål</span>
+            <span style={{ color: COL_STYLE[0].highlight }}>{t('questions', uiLang)}</span>
             <span />
-            <span style={{ color: COL_STYLE[1].highlight }}>Beregninger</span>
+            <span style={{ color: COL_STYLE[1].highlight }}>{t('tabCalculations', uiLang)}</span>
             <span />
-            <span style={{ color: COL_STYLE[2].highlight }}>Flagg</span>
+            <span style={{ color: COL_STYLE[2].highlight }}>{t('flagsHeader', uiLang)}</span>
           </div>
 
           <svg
@@ -318,11 +320,11 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
             {COL_STYLE.map((cs, i) => (
               <span key={i} className="flex items-center gap-1.5">
                 <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: cs.bg, border: `1.5px solid ${cs.border}` }} />
-                {['Spørsmål', 'Beregning', 'Flagg'][i]}
+                {[t('question', uiLang), t('calculation', uiLang), t('flag', uiLang)][i]}
               </span>
             ))}
             <span className="flex items-center gap-1.5 text-gray-400 italic">
-              Klikk en node for å se avhengighetskjeden
+              {t('clickNodeChain', uiLang)}
             </span>
           </div>
         </div>

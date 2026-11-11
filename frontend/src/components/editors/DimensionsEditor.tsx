@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Copy, PlusCircle, Trash2, LayoutGrid, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Questionnaire, Dimension, Section, Question } from '../../types/questionnaire';
-import { t, useUILang } from '../../i18n';
+import { t, countPhrase, useUILang } from '../../i18n';
 import { ItemContextMenu } from './ItemContextMenu';
 
 function flattenQuestions(sections: Section[]): Question[] {
@@ -106,7 +106,7 @@ function DimensionCard({
               <input
                 value={dim.name}
                 onChange={(e) => onChange({ ...dim, name: e.target.value })}
-                placeholder={uiLang === 'NO' ? 'Dimensjonsnavn' : 'Dimension name'}
+                placeholder={t('dimensionNamePh', uiLang)}
                 className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
               />
             </div>
@@ -116,7 +116,7 @@ function DimensionCard({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-gray-500">
-                {t('tabQuiz', uiLang)} ({dim.questionCodes.length} {uiLang === 'NO' ? 'valgt' : 'selected'})
+                {t('tabQuiz', uiLang)} ({dim.questionCodes.length} {t('selectedWord', uiLang)})
               </label>
               <input
                 value={filter}
@@ -161,7 +161,7 @@ function DimensionCard({
                   className="inline-flex items-center gap-1 px-2 py-0.5 bg-cw-blue/10 text-cw-blue text-xs rounded-full font-mono"
                 >
                   {code}
-                  <button onClick={() => toggleQuestion(code)} className="hover:text-red-500" title={uiLang === 'NO' ? 'Fjern' : 'Remove'}>×</button>
+                  <button onClick={() => toggleQuestion(code)} className="hover:text-red-500" title={t('remove', uiLang)}>×</button>
                 </span>
               ))}
             </div>
@@ -222,10 +222,8 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
             <LayoutGrid className="w-4 h-4" /> {t('dimsHeader', uiLang)}
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            {dims.length} {uiLang === 'NO'
-              ? `dimensjon${dims.length !== 1 ? 'er' : ''}`
-              : `dimension${dims.length !== 1 ? 's' : ''}`}
-            {' · '}{allQuestions.length} {uiLang === 'NO' ? 'tilgjengelige spørsmål' : 'available questions'}
+            {countPhrase(dims.length, uiLang, 'nDimensionOne', 'nDimensionMany')}
+            {' · '}{allQuestions.length} {t('availableQuestions', uiLang)}
           </p>
         </div>
         <button
@@ -274,9 +272,9 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[
-            { label: uiLang === 'NO' ? 'Dupliser' : 'Duplicate', icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupDim(ctxMenu.idx) },
+            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupDim(ctxMenu.idx) },
             { separator: true },
-            { label: uiLang === 'NO' ? 'Slett' : 'Delete', icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteDim(ctxMenu.idx), danger: true },
+            { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteDim(ctxMenu.idx), danger: true },
           ]}
         />
       )}

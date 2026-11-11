@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Play, Wand2, CodeSquare } from 'lucide-react';
 import { ReportSimulator } from './ReportSimulator';
 import type { Questionnaire } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import { t, type UILang, useUILang } from '../../i18n';
 
 // ── RAP syntax highlighter ────────────────────────────────────────────────────
 
@@ -81,6 +81,7 @@ function rapHeaders(questionnaire: Questionnaire): string {
 
 function generateStarterTemplate(questionnaire: Questionnaire): string {
   const lang = questionnaire.defaultLanguage;
+  const ui: UILang = lang === 'EN' ? 'EN' : 'NO';
 
   function flattenSects(secs: typeof questionnaire.sections): typeof questionnaire.sections {
     return secs.flatMap((s) => [s, ...flattenSects(s.subSections ?? [])]);
@@ -100,10 +101,10 @@ function generateStarterTemplate(questionnaire: Questionnaire): string {
     if (sectionTitle) {
       sections += `<h2>${sectionTitle}</h2>\n`;
     }
-    sections += `<table class="reportlist">\n<thead><tr><th>Spørsmål</th><th>Svar</th><th class="score">Verdi</th></tr></thead>\n<tbody>\n`;
+    sections += `<table class="reportlist">\n<thead><tr><th>${t('question', ui)}</th><th>${t('answer', ui)}</th><th class="score">${t('value', ui)}</th></tr></thead>\n<tbody>\n`;
     for (const q of questions) {
       sections += `[if(EXIST(${q.code})){"<tr><td class=\\"label\\">Q(${q.code})</td><td>L(${q.code})</td><td class=\\"score\\">A(${q.code})</td></tr>"}]\n`;
-      sections += `[if(!EXIST(${q.code})){"<tr><td class=\\"label\\">Q(${q.code})</td><td class=\\"missing\\"><i>Ubesvart</i></td><td class=\\"score missing\\">-</td></tr>"}]\n`;
+      sections += `[if(!EXIST(${q.code})){"<tr><td class=\\"label\\">Q(${q.code})</td><td class=\\"missing\\"><i>${t('rapUnanswered', ui)}</i></td><td class=\\"score missing\\">-</td></tr>"}]\n`;
     }
     sections += `</tbody>\n</table>\n</div>\n`;
   }
@@ -114,7 +115,7 @@ function generateStarterTemplate(questionnaire: Questionnaire): string {
 [DIE]
 
 [function main()]
-[group("Rapport", true)]
+[group("${t('reportGroup', ui)}", true)]
 
 <table class="canvas">
 <tr>
@@ -131,17 +132,17 @@ ${sections}
 <td class="spacecolumn"></td>
 <td class="sidebar">
 
-<h2>Pasientinformasjon</h2>
+<h2>${t('rapPatientInfo', ui)}</h2>
 <table class="reportsimple">
-<tr><td class="label">Navn</td><td><strong>$PATIENT_NAME</strong></td></tr>
-<tr><td class="label">Kjønn</td><td>$KJONN_SUBST</td></tr>
-<tr><td class="label">Født</td><td>$FODT</td></tr>
+<tr><td class="label">${t('name', ui)}</td><td><strong>$PATIENT_NAME</strong></td></tr>
+<tr><td class="label">${t('genderLabel', ui)}</td><td>$KJONN_SUBST</td></tr>
+<tr><td class="label">${t('dob', ui)}</td><td>$FODT</td></tr>
 </table>
 
-<h2>Kartleggingsinformasjon</h2>
+<h2>${t('rapAssessmentInfo', ui)}</h2>
 <table class="reportsimple">
-<tr><td class="label">Leveringsdato</td><td>$CURRENT_DATE</td></tr>
-<tr><td class="label">Rapport generert</td><td>$CURRENT_DATE $CURRENT_TIME</td></tr>
+<tr><td class="label">${t('rapSubmitted', ui)}</td><td>$CURRENT_DATE</td></tr>
+<tr><td class="label">${t('rapGenerated', ui)}</td><td>$CURRENT_DATE $CURRENT_TIME</td></tr>
 </table>
 
 </td>
@@ -165,52 +166,57 @@ interface RapSnippetGroup {
   snippets: RapSnippet[];
 }
 
-const RAP_SNIPPETS: RapSnippetGroup[] = [
-  {
-    group: 'Betingelser',
-    snippets: [
-      { label: 'if spørsmål besvart', code: '[if(EXIST(KOD)){"tekst"}]' },
-      { label: 'if score = verdi', code: '[if(A(KOD)=1){"tekst"}]' },
-      { label: 'if flag utløst', code: '[if(FLAG(KOD)){"tekst"}]' },
-      {
-        label: 'if/else blokk',
-        code: '[if(EXIST(KOD)){\n"tekst hvis besvart"\n}][else][\n"tekst hvis ubesvart"\n][endif]',
-      },
-    ],
-  },
-  {
-    group: 'Visning',
-    snippets: [
-      { label: 'vis svar', code: 'L(KOD)' },
-      { label: 'vis score', code: 'A(KOD)' },
-      { label: 'vis beregning', code: 'CALC(KOD)' },
-      { label: 'vis pasientnavn', code: '$PATIENT_NAME' },
-    ],
-  },
-  {
-    group: 'Funksjoner',
-    snippets: [
-      {
-        label: 'funksjonsdefinisjon',
-        code: '[function navn()]\n/* innhold */\n[function_end]',
-      },
-      { label: 'funksjonsanrop', code: '[CALL navn()]' },
-    ],
-  },
-  {
-    group: 'Session',
-    snippets: [
-      { label: 'forrige sesjon verdi', code: '[SESSION_VALUE(1, KOD)]' },
-      { label: 'differanse', code: '[SESSION_DIFF(1, 2, KOD)]' },
-    ],
-  },
-];
+function rapSnippets(lang: UILang): RapSnippetGroup[] {
+  const word = t('rapFnName', lang);
+  const sample = t('snippetSample', lang);
+  return [
+    {
+      group: t('snippetConditions', lang),
+      snippets: [
+        { label: t('snippetIfAnswered', lang), code: `[if(EXIST(KOD)){"${sample}"}]` },
+        { label: t('snippetIfScore', lang), code: `[if(A(KOD)=1){"${sample}"}]` },
+        { label: t('snippetIfFlag', lang), code: `[if(FLAG(KOD)){"${sample}"}]` },
+        {
+          label: t('snippetIfElse', lang),
+          code: t('snippetIfElseCode', lang),
+        },
+      ],
+    },
+    {
+      group: t('snippetDisplay', lang),
+      snippets: [
+        { label: t('snippetShowAnswer', lang), code: 'L(KOD)' },
+        { label: t('snippetShowScore', lang), code: 'A(KOD)' },
+        { label: t('snippetShowCalc', lang), code: 'CALC(KOD)' },
+        { label: t('snippetShowName', lang), code: '$PATIENT_NAME' },
+      ],
+    },
+    {
+      group: t('snippetFunctions', lang),
+      snippets: [
+        {
+          label: t('snippetFnDef', lang),
+          code: `[function ${word}()]\n/* ${t('snippetContent', lang)} */\n[function_end]`,
+        },
+        { label: t('snippetFnCall', lang), code: `[CALL ${word}()]` },
+      ],
+    },
+    {
+      group: t('snippetSession', lang),
+      snippets: [
+        { label: t('snippetPrevSession', lang), code: '[SESSION_VALUE(1, KOD)]' },
+        { label: t('snippetDiff', lang), code: '[SESSION_DIFF(1, 2, KOD)]' },
+      ],
+    },
+  ];
+}
 
 interface SnippetDropdownProps {
   onInsert: (snippet: string) => void;
 }
 
 function SnippetDropdown({ onInsert }: SnippetDropdownProps) {
+  const uiLang = useUILang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -230,13 +236,13 @@ function SnippetDropdown({ onInsert }: SnippetDropdownProps) {
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded hover:bg-gray-50 text-gray-600"
-        title="Sett inn RAP-snutt"
+        title={t('insertSnippet', uiLang)}
       >
-        <CodeSquare className="w-3.5 h-3.5" /> Snutt
+        <CodeSquare className="w-3.5 h-3.5" /> {t('snippet', uiLang)}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-white border border-cw-border rounded-lg shadow-lg overflow-hidden">
-          {RAP_SNIPPETS.map((grp) => (
+          {rapSnippets(uiLang).map((grp) => (
             <div key={grp.group}>
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border-b border-cw-border">
                 {grp.group}
@@ -274,19 +280,20 @@ interface Props {
 }
 
 function makePlaceholder(questionnaire: Questionnaire): string {
+  const ui: UILang = questionnaire.defaultLanguage === 'EN' ? 'EN' : 'NO';
   return `${rapHeaders(questionnaire)}
 
 [CALL main()]
 [DIE]
 
 [function main()]
-[group("Rapport", true)]
+[group("${t('reportGroup', ui)}", true)]
 
 <h1>$SURVEY_NAME</h1>
 
-/* Legg til rapportinnhold her */
-/* Bruk $VAR for variable, [if(...){...}] for betingelser */
-/* og [CALL funksjonsnavn()] for å kalle underfunksjoner */
+/* ${t('rapPlaceholderNote', ui)} */
+/* ${t('rapPlaceholderIf', ui)} */
+/* ${t('rapPlaceholderCall', ui)} */
 
 [group_end]
 [function_end]
@@ -345,8 +352,8 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
       {/* Header */}
       <div className="bg-white border-b border-cw-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-cw-blue">{uiLang === 'NO' ? 'Rapportmal' : 'Report template'}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">RAP-template — Checkware {uiLang === 'NO' ? 'rapportspråk' : 'report language'}</p>
+          <h2 className="text-sm font-semibold text-cw-blue">{t('reportTemplate', uiLang)}</h2>
+          <p className="text-xs text-gray-500 mt-0.5">{t('rapTemplatePrefix', uiLang)} {t('reportLanguage', uiLang)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Mode toggle */}
@@ -359,7 +366,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
                   : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}
             >
-              Editor
+              {t('editorMode', uiLang)}
             </button>
             <button
               onClick={() => setMode('simulator')}
@@ -370,7 +377,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
               }`}
             >
               <Play className="w-3 h-3" />
-              Simulator
+              {t('simulatorMode', uiLang)}
             </button>
           </div>
 
@@ -387,9 +394,9 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
               }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded hover:bg-gray-50 text-gray-600"
-            title={uiLang === 'NO' ? 'Generer standardmal fra kartleggingens spørsmål' : 'Generate default template from assessment questions'}
+            title={t('generateTemplateTitle', uiLang)}
           >
-            <Wand2 className="w-3.5 h-3.5" /> {uiLang === 'NO' ? 'Generer mal' : 'Generate template'}
+            <Wand2 className="w-3.5 h-3.5" /> {t('generateTemplate', uiLang)}
           </button>
 
           <SnippetDropdown onInsert={insertSnippet} />
@@ -416,7 +423,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
                 <button
                   onClick={() => onDeleteFile(fn)}
                   className="px-1.5 py-1 text-xs rounded-r border border-l-0 border-cw-border text-gray-400 hover:text-red-500 hover:bg-white transition-colors"
-                  title={uiLang === 'NO' ? 'Slett fil' : 'Delete file'}
+                  title={t('deleteFile', uiLang)}
                 >✕</button>
               )}
             </div>
@@ -424,7 +431,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
           <button
             onClick={onAddFile}
             className="px-2 py-1 text-xs border border-dashed border-cw-border rounded text-gray-400 hover:text-cw-blue hover:border-cw-blue transition-colors"
-            title={uiLang === 'NO' ? 'Ny rapportfil' : 'New report file'}
+            title={t('newReportFile', uiLang)}
           >+</button>
         </div>
       )}
@@ -488,14 +495,14 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
           </div>
           <div className="bg-white border-t border-cw-border px-4 py-2 shrink-0 overflow-x-auto">
             <p className="text-xs text-gray-400">
-              {uiLang === 'NO' ? 'Nøkkelord' : 'Keywords'}:{' '}
+              {t('keywords', uiLang)}:{' '}
               <code className="bg-gray-100 px-1 rounded">$VAR</code>{' '}
               <code className="bg-gray-100 px-1 rounded">[if(A(Q1)=1){'{...}'}]</code>{' '}
               <code className="bg-gray-100 px-1 rounded">[CALL fn()]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">[function {uiLang === 'NO' ? 'navn' : 'name'}()]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">[group("Navn", true)]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">Q(kode)</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">L(kode)</code>
+              <code className="bg-gray-100 px-1 rounded">[function {t('rapFnName', uiLang)}()]</code>{' '}
+              <code className="bg-gray-100 px-1 rounded">[group(&quot;{t('name', uiLang)}&quot;, true)]</code>{' '}
+              <code className="bg-gray-100 px-1 rounded">Q({t('code', uiLang).toLowerCase()})</code>{' '}
+              <code className="bg-gray-100 px-1 rounded">L({t('code', uiLang).toLowerCase()})</code>
             </p>
           </div>
         </>
