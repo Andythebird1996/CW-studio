@@ -1,6 +1,6 @@
 import { PlusCircle, Trash2 } from 'lucide-react';
 import type { Questionnaire, RemoteScoring } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 
 interface Props {
   questionnaire: Questionnaire;
@@ -40,15 +40,13 @@ export function RemoteScoringEditor({ questionnaire, onChange }: Props) {
   return (
     <div className="bg-white border border-cw-border rounded-lg p-4 space-y-4">
       <p className="text-xs text-gray-500">
-        {uiLang === 'NO'
-          ? 'Remote scoring sender beregningsresultater til ekstern tjeneste etter utfylling.'
-          : 'Remote scoring sends calculation results to an external service after completion.'}
+        {t('remoteScoringHelp', uiLang)}
       </p>
 
       {/* URL field */}
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-1">
-          {uiLang === 'NO' ? 'Remote scoring URL' : 'Remote scoring URL'}
+          {t('remoteScoringUrl', uiLang)}
         </label>
         <input
           type="url"
@@ -62,7 +60,7 @@ export function RemoteScoringEditor({ questionnaire, onChange }: Props) {
       {/* Parameters table */}
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-2">
-          {uiLang === 'NO' ? 'Parametere' : 'Parameters'}
+          {t('parameters', uiLang)}
         </label>
 
         {params.length > 0 && (
@@ -71,10 +69,10 @@ export function RemoteScoringEditor({ questionnaire, onChange }: Props) {
               <thead className="bg-gray-50 border-b border-cw-border">
                 <tr>
                   <th className="px-2 py-1.5 text-left font-medium text-gray-500">
-                    {uiLang === 'NO' ? 'Navn' : 'Name'}
+                    {t('name', uiLang)}
                   </th>
                   <th className="px-2 py-1.5 text-left font-medium text-gray-500">
-                    {uiLang === 'NO' ? 'Verdi' : 'Value'}
+                    {t('value', uiLang)}
                   </th>
                   <th className="w-8" />
                 </tr>
@@ -104,7 +102,7 @@ export function RemoteScoringEditor({ questionnaire, onChange }: Props) {
                       <button
                         onClick={() => removeParam(i)}
                         className="text-gray-300 hover:text-red-500 p-0.5"
-                        title={uiLang === 'NO' ? 'Fjern rad' : 'Remove row'}
+                        title={t('removeRow', uiLang)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -121,7 +119,7 @@ export function RemoteScoringEditor({ questionnaire, onChange }: Props) {
           className="flex items-center gap-1 text-xs text-cw-blue-light hover:underline"
         >
           <PlusCircle className="w-3.5 h-3.5" />
-          {uiLang === 'NO' ? 'Legg til parameter' : 'Add parameter'}
+          {t('addParameter', uiLang)}
         </button>
       </div>
 
@@ -132,7 +130,7 @@ export function RemoteScoringEditor({ questionnaire, onChange }: Props) {
             onClick={clearAll}
             className="text-xs text-red-400 hover:text-red-600 hover:underline"
           >
-            {uiLang === 'NO' ? 'Fjern remote scoring-konfigurasjon' : 'Remove remote scoring configuration'}
+            {t('removeRemoteScoring', uiLang)}
           </button>
         </div>
       )}

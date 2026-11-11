@@ -117,7 +117,7 @@ function NormForm({
           value={norm.name}
           onChange={(e) => onChange({ ...norm, name: e.target.value })}
           className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-          placeholder={uiLang === 'NO' ? 'Normpopulasjon voksne' : 'Adult norm population'}
+          placeholder={t('normPopulationPh', uiLang)}
         />
       </div>
 
@@ -138,7 +138,7 @@ function NormForm({
           value={norm.origin ?? ''}
           onChange={(e) => onChange({ ...norm, origin: e.target.value })}
           className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-          placeholder={uiLang === 'NO' ? 'f.eks. \'Normert på norsk befolkning 2020\'' : 'e.g. \'Normed on Norwegian population 2020\''}
+          placeholder={t('normSourcePh', uiLang)}
         />
       </div>
 
@@ -204,7 +204,7 @@ function NormForm({
             <button
               onClick={() => setShowPaste((v) => !v)}
               className="flex items-center gap-1 text-xs text-cw-blue-light hover:underline"
-              title={uiLang === 'NO' ? 'Lim inn tabulatorseparert data' : 'Paste tab-separated data'}
+              title={t('pasteTsvTitle', uiLang)}
             >
               <ClipboardPaste className="w-3.5 h-3.5" /> {t('pasteData', uiLang)}
             </button>
@@ -214,12 +214,12 @@ function NormForm({
         {showPaste && (
           <div className="mb-3 p-3 bg-gray-50 border border-cw-border rounded">
             <p className="text-xs text-gray-500 mb-2">
-              {uiLang === 'NO' ? 'Lim inn tabulatorseparerte kolonner:' : 'Paste tab-separated columns:'}{' '}
+              {t('pasteColumns', uiLang)}{' '}
               <code className="bg-gray-100 px-1 rounded">{t('rawScore', uiLang)}</code>{' '}
               <code className="bg-gray-100 px-1 rounded">{normValueLabel}</code>
               {showAge && <> <code className="bg-gray-100 px-1 rounded">{t('ageCol', uiLang)}</code></>}
               {showGender && <> <code className="bg-gray-100 px-1 rounded">{t('genderCol', uiLang)}</code></>}
-              {uiLang === 'NO' ? ' (én rad per linje)' : ' (one row per line)'}
+              {t('oneRowPerLine', uiLang)}
             </p>
             <textarea
               ref={pasteRef}
@@ -433,12 +433,12 @@ export function NormEditor({ questionnaire, onChange }: Props) {
             className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:bg-white hover:text-cw-blue-light rounded border border-dashed border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
             title={
               selectedIdx === null
-                ? uiLang === 'NO' ? 'Velg en norm først' : 'Select a norm first'
-                : uiLang === 'NO' ? 'Importer tabelldata fra regneark' : 'Import table data from spreadsheet'
+                ? t('selectNormFirst', uiLang)
+                : t('importSpreadsheet', uiLang)
             }
           >
             <Upload className="w-3.5 h-3.5" />
-            {uiLang === 'NO' ? 'Importer data' : 'Import data'}
+            {t('importData', uiLang)}
           </button>
         </div>
       </div>
@@ -485,9 +485,9 @@ export function NormEditor({ questionnaire, onChange }: Props) {
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[
-            { label: uiLang === 'NO' ? 'Dupliser' : 'Duplicate', icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupNorm(ctxMenu.idx) },
+            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupNorm(ctxMenu.idx) },
             { separator: true },
-            { label: uiLang === 'NO' ? 'Slett' : 'Delete', icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteNorm(ctxMenu.idx), danger: true },
+            { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteNorm(ctxMenu.idx), danger: true },
           ]}
         />
       )}

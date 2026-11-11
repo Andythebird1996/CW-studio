@@ -9,7 +9,7 @@ import type {
   Flag,
   FlagCondition,
 } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -187,7 +187,7 @@ function QuestionRow({
             onChange={(e) => onChange(question.code, e.target.value)}
             className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light bg-white"
           >
-            <option value="">— {lang === 'NO' ? 'Velg' : 'Select'} —</option>
+            <option value="">— {t('choose', lang)} —</option>
             {opts.map((opt) => (
               <option key={opt.code} value={opt.code}>
                 {opt.texts[questionnaire.defaultLanguage] || opt.code}
@@ -211,7 +211,7 @@ function QuestionRow({
             value={value}
             onChange={(e) => onChange(question.code, e.target.value)}
             className="w-40 border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-            placeholder={lang === 'NO' ? 'Tekst...' : 'Text...'}
+            placeholder={t('textDots', lang)}
           />
         ) : question.type === 'dateInput' ? (
           <input
@@ -222,7 +222,7 @@ function QuestionRow({
           />
         ) : (
           <span className="text-xs text-gray-400 italic">
-            {lang === 'NO' ? '(Ikke støttet)' : '(Not supported)'}
+            {t('notSupported', lang)}
           </span>
         )}
       </td>
@@ -244,7 +244,7 @@ function SectionGroup({
   lang: ReturnType<typeof useUILang>;
 }) {
   const [open, setOpen] = useState(true);
-  const title = section.titles[questionnaire.defaultLanguage] || section.code || (lang === 'NO' ? 'Seksjon' : 'Section');
+  const title = section.titles[questionnaire.defaultLanguage] || section.code || (t('section', lang));
   const questions = section.questions.filter((q) => q.type !== 'text' && q.code);
 
   const subGroups = section.subSections ?? [];
@@ -261,7 +261,7 @@ function SectionGroup({
           <span className="text-[10px] font-mono text-gray-400">[{section.code}]</span>
         )}
         <span className="text-[10px] text-gray-400 ml-auto">
-          {questions.length} {lang === 'NO' ? 'spørsmål' : 'questions'}
+          {questions.length} {t('questionsWord', lang)}
         </span>
       </summary>
 
@@ -337,11 +337,11 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
       {/* Calculations table */}
       <section>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          {lang === 'NO' ? 'Beregninger' : 'Calculations'}
+          {t('tabCalculations', lang)}
         </h3>
         {calcs.length === 0 ? (
           <p className="text-xs text-gray-400 italic">
-            {lang === 'NO' ? 'Ingen beregninger definert.' : 'No calculations defined.'}
+            {t('noCalcsDefined', lang)}
           </p>
         ) : (
           <div className="border border-cw-border rounded-lg overflow-hidden">
@@ -349,16 +349,16 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
               <thead>
                 <tr className="bg-cw-gray border-b border-cw-border">
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Kode' : 'Code'}
+                    {t('code', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Navn' : 'Name'}
+                    {t('name', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Type' : 'Type'}
+                    {t('typeLabel', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500 text-right">
-                    {lang === 'NO' ? 'Resultat' : 'Result'}
+                    {t('result', lang)}
                   </th>
                 </tr>
               </thead>
@@ -380,7 +380,7 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                       <td className="px-3 py-2 text-right">
                         {isCustom ? (
                           <span className="text-gray-400 italic text-[10px]">
-                            {lang === 'NO' ? 'Ikke evaluerbar' : 'Not evaluable'}
+                            {t('notEvaluable', lang)}
                           </span>
                         ) : result !== null && result !== undefined ? (
                           <span className="font-mono font-bold text-gray-800">
@@ -402,11 +402,11 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
       {/* Flags table */}
       <section>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          {lang === 'NO' ? 'Flagg' : 'Flags'}
+          {t('tabFlags', lang)}
         </h3>
         {flags.length === 0 ? (
           <p className="text-xs text-gray-400 italic">
-            {lang === 'NO' ? 'Ingen flagg definert.' : 'No flags defined.'}
+            {t('noFlagsDefined', lang)}
           </p>
         ) : (
           <div className="border border-cw-border rounded-lg overflow-hidden">
@@ -414,19 +414,19 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
               <thead>
                 <tr className="bg-cw-gray border-b border-cw-border">
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Kode' : 'Code'}
+                    {t('code', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Navn' : 'Name'}
+                    {t('name', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Type' : 'Type'}
+                    {t('typeLabel', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Betingelse(r)' : 'Condition(s)'}
+                    {t('conditionCol', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500 text-center">
-                    {lang === 'NO' ? 'Resultat' : 'Result'}
+                    {t('result', lang)}
                   </th>
                 </tr>
               </thead>
@@ -474,7 +474,7 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                               : 'bg-red-400/80 text-white'
                           }`}
                         >
-                          {active ? (lang === 'NO' ? 'SANN' : 'TRUE') : (lang === 'NO' ? 'USANN' : 'FALSE')}
+                          {active ? (t('trueLabel', lang)) : (t('falseLabel', lang))}
                         </span>
                       </td>
                     </tr>
@@ -490,23 +490,23 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
       {questionnaire.calculations?.norms && questionnaire.calculations.norms.length > 0 && (
         <section>
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            {lang === 'NO' ? 'Normoppslag' : 'Norm lookups'}
+            {t('normLookups', lang)}
           </h3>
           <div className="border border-cw-border rounded-lg overflow-hidden">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-cw-gray border-b border-cw-border">
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Kode' : 'Code'}
+                    {t('code', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Navn' : 'Name'}
+                    {t('name', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500">
-                    {lang === 'NO' ? 'Referert av' : 'Referenced by'}
+                    {t('referencedBy', lang)}
                   </th>
                   <th className="px-3 py-2 font-semibold text-gray-500 text-right">
-                    {lang === 'NO' ? 'Inngangsverdi' : 'Input value'}
+                    {t('inputValue', lang)}
                   </th>
                 </tr>
               </thead>
@@ -605,11 +605,11 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold text-cw-blue">
-            {lang === 'NO' ? 'Skårings-debugger' : 'Scoring debugger'}
+            {t('scoringDebugger', lang)}
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">
             {answeredCount} / {totalCount}{' '}
-            {lang === 'NO' ? 'spørsmål besvart' : 'questions answered'}
+            {t('questionsAnswered', lang)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -617,14 +617,14 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
             onClick={handleReset}
             className="px-3 py-1.5 text-xs border border-cw-border rounded text-gray-500 hover:bg-cw-gray transition-colors"
           >
-            {lang === 'NO' ? 'Nullstill' : 'Reset'}
+            {t('reset', lang)}
           </button>
           <button
             onClick={() => setHasRun(true)}
             className="flex items-center gap-1.5 px-4 py-1.5 text-xs bg-cw-blue text-white rounded hover:bg-cw-blue-light transition-colors font-semibold"
           >
             <Play className="w-3.5 h-3.5" />
-            {lang === 'NO' ? 'Beregn' : 'Evaluate'}
+            {t('evaluate', lang)}
           </button>
         </div>
       </div>
@@ -636,9 +636,7 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
         <div className="w-[480px] shrink-0 border-r border-cw-border overflow-auto bg-white">
           {allQuestions.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
-              {lang === 'NO'
-                ? 'Ingen spørsmål med kode funnet.'
-                : 'No questions with a code found.'}
+              {t('noQuestionsWithCode', lang)}
             </div>
           ) : (
             questionnaire.sections.map((section) => (
@@ -660,15 +658,11 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
             <div className="flex flex-col items-center justify-center h-full text-gray-400 select-none gap-3">
               <Play className="w-10 h-10 opacity-30" />
               <p className="text-sm">
-                {lang === 'NO'
-                  ? 'Sett inn testverdier og klikk «Beregn»'
-                  : 'Enter test values and click «Evaluate»'}
+                {t('enterTestValues', lang)}
               </p>
               {calcs.length === 0 && flags.length === 0 && (
                 <p className="text-xs text-gray-300">
-                  {lang === 'NO'
-                    ? '(Ingen beregninger eller flagg definert ennå)'
-                    : '(No calculations or flags defined yet)'}
+                  {t('noCalcsOrFlagsYet', lang)}
                 </p>
               )}
             </div>

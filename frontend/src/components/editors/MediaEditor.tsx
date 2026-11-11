@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { PlusCircle, Trash2, X } from 'lucide-react';
 import type { MediaFile } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 
 interface Props {
   mediaFiles: MediaFile[];
@@ -63,11 +63,9 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-cw-blue">Media</h2>
+          <h2 className="text-sm font-semibold text-cw-blue">{t('tabMedia', uiLang)}</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            {mediaFiles.length} {uiLang === 'NO'
-              ? `fil${mediaFiles.length !== 1 ? 'er' : ''}`
-              : `file${mediaFiles.length !== 1 ? 's' : ''}`}
+            {mediaFiles.length} {t(mediaFiles.length === 1 ? 'nFileOne' : 'nFileMany', uiLang)}
           </p>
         </div>
         {onChange && (
@@ -76,7 +74,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-cw-blue text-white rounded hover:bg-cw-blue-light"
             >
-              <PlusCircle className="w-3.5 h-3.5" /> {uiLang === 'NO' ? 'Legg til filer' : 'Add files'}
+              <PlusCircle className="w-3.5 h-3.5" /> {t('addFiles', uiLang)}
             </button>
             <input
               ref={fileInputRef}
@@ -93,13 +91,13 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
       {mediaFiles.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 text-gray-400 gap-3">
           <div className="text-4xl">🖼</div>
-          <p className="text-sm">{uiLang === 'NO' ? 'Ingen mediafiler' : 'No media files'}</p>
+          <p className="text-sm">{t('noMedia', uiLang)}</p>
           {onChange && (
             <button
               onClick={() => fileInputRef.current?.click()}
               className="text-xs px-3 py-1.5 border border-cw-border rounded hover:bg-gray-50"
             >
-              {uiLang === 'NO' ? 'Last opp filer' : 'Upload files'}
+              {t('uploadFiles', uiLang)}
             </button>
           )}
         </div>
@@ -149,7 +147,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
                     download={f.fileName}
                     className="block text-center text-[10px] text-cw-link hover:underline py-1 border-t border-cw-border bg-gray-50"
                   >
-                    {uiLang === 'NO' ? 'Last ned' : 'Download'}
+                    {t('download', uiLang)}
                   </a>
                 )}
               </div>

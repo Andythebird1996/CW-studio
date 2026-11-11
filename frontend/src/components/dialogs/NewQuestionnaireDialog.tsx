@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 import type { LanguageType } from '../../types/questionnaire';
 
 export interface NewQuestionnaireConfig {
@@ -82,18 +82,18 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
         >
           <div className="p-6 flex flex-col gap-4 overflow-y-auto">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
-              {lang === 'NO' ? 'Ny kartlegging' : 'New questionnaire'}
+              {t('newQuestionnaire', lang)}
             </Dialog.Title>
 
             {/* Navn */}
             <div>
               <label className={labelCls}>
-                {lang === 'NO' ? 'Navn' : 'Name'}
+                {t('name', lang)}
               </label>
               <input
                 type="text"
                 className={inputCls}
-                placeholder={lang === 'NO' ? 'Kartleggingens navn' : 'Questionnaire name'}
+                placeholder={t('assessmentNamePh', lang)}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
@@ -103,7 +103,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
             {/* Kode */}
             <div>
               <label className={labelCls}>
-                {lang === 'NO' ? 'Kode' : 'Code'}
+                {t('code', lang)}
                 <span className="text-red-500 ml-0.5">*</span>
               </label>
               <input
@@ -119,7 +119,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
               />
               {codeError && (
                 <p className="text-xs text-red-600 mt-1">
-                  {lang === 'NO' ? 'Kode er påkrevd.' : 'Code is required.'}
+                  {t('codeRequired', lang)}
                 </p>
               )}
             </div>
@@ -127,7 +127,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
             {/* Versjon */}
             <div>
               <label className={labelCls}>
-                {lang === 'NO' ? 'Versjon' : 'Version'}
+                {t('version', lang)}
               </label>
               <input
                 type="text"
@@ -141,7 +141,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
             {/* Standardspråk */}
             <div>
               <label className={labelCls}>
-                {lang === 'NO' ? 'Standardspråk' : 'Default language'}
+                {t('defaultLanguage', lang)}
               </label>
               <select
                 className={inputCls}
@@ -165,7 +165,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
                   checked={clinicianOnly}
                   onChange={(e) => setClinicianOnly(e.target.checked)}
                 />
-                {lang === 'NO' ? 'Kliniker-only' : 'Clinician only'}
+                {t('clinicianOnly', lang)}
               </label>
               <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
                 <input
@@ -174,7 +174,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
                   checked={exportAllowed}
                   onChange={(e) => setExportAllowed(e.target.checked)}
                 />
-                {lang === 'NO' ? 'Tillat eksport' : 'Allow export'}
+                {t('allowExportShort', lang)}
               </label>
             </div>
           </div>
@@ -185,14 +185,14 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
               onClick={handleClose}
               className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50"
             >
-              {lang === 'NO' ? 'Avbryt' : 'Cancel'}
+              {t('cancelBtn', lang)}
             </button>
             <button
               onClick={handleSubmit}
               disabled={!isValid}
               className="px-4 py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {lang === 'NO' ? 'Opprett' : 'Create'}
+              {t('create', lang)}
             </button>
           </div>
         </Dialog.Content>

@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { interpretRap, type SimAnswer, type SimContext, type SimPatient } from '../../services/rap-interpreter';
 import type { Questionnaire, LanguageType } from '../../types/questionnaire';
 import { AssessmentPreview, type AnswerMap } from '../preview/AssessmentPreview';
-import { useUILang } from '../../i18n';
+import {t,  useUILang } from '../../i18n';
 
 const LANG_LABELS: Record<string, string> = {
   NO: 'Norsk', EN: 'English', SV: 'Svenska', DA: 'Dansk',
@@ -169,13 +169,13 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
       >
         {/* Patient info header */}
         <div className="bg-cw-gray border-b border-cw-border px-3 py-2 shrink-0 flex items-center justify-between">
-          <p className="text-xs font-semibold text-cw-blue">{uiLang === 'NO' ? 'Simuler svar' : 'Simulate answers'}</p>
+          <p className="text-xs font-semibold text-cw-blue">{t('simulateAnswers', uiLang)}</p>
           {availableLangs.length > 1 && (
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value as LanguageType)}
               className="text-xs border border-cw-border rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-              title={uiLang === 'NO' ? 'Velg språk for kartleggingen' : 'Select assessment language'}
+              title={t('selectAssessmentLang', uiLang)}
             >
               {availableLangs.map((l) => (
                 <option key={l} value={l}>{LANG_LABELS[l] ?? l}</option>
@@ -188,7 +188,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
         <div className="px-3 py-2 border-b border-cw-border shrink-0 space-y-2">
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-[10px] text-gray-500 block mb-0.5">{uiLang === 'NO' ? 'Navn' : 'Name'}</label>
+              <label className="text-[10px] text-gray-500 block mb-0.5">{t('name', uiLang)}</label>
               <input
                 type="text"
                 value={patient.name}
@@ -197,7 +197,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
               />
             </div>
             <div className="w-28">
-              <label className="text-[10px] text-gray-500 block mb-0.5">{uiLang === 'NO' ? 'Født' : 'DOB'}</label>
+              <label className="text-[10px] text-gray-500 block mb-0.5">{t('dob', uiLang)}</label>
               <input
                 type="text"
                 value={patient.dob}
@@ -208,7 +208,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-gray-500">{uiLang === 'NO' ? 'Kjønn:' : 'Gender:'}</span>
+            <span className="text-[10px] text-gray-500">{t('genderColon', uiLang)}</span>
             {([0, 1, 2] as const).map((g) => (
               <label key={g} className="flex items-center gap-1 text-xs cursor-pointer">
                 <input
@@ -218,7 +218,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
                   onChange={() => setPatient((p) => ({ ...p, gender: g }))}
                   className="accent-cw-blue"
                 />
-                {g === 0 ? (uiLang === 'NO' ? 'Kvinne' : 'Female') : g === 1 ? (uiLang === 'NO' ? 'Mann' : 'Male') : (uiLang === 'NO' ? 'Ukjent' : 'Unknown')}
+                {g === 0 ? (t('female', uiLang)) : g === 1 ? (t('male', uiLang)) : (t('unknownGender', uiLang))}
               </label>
             ))}
           </div>
@@ -238,15 +238,15 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
       <div
         className="w-1.5 shrink-0 cursor-col-resize bg-cw-border hover:bg-cw-blue transition-colors"
         onMouseDown={onMouseDown}
-        title={uiLang === 'NO' ? 'Dra for å endre størrelse' : 'Drag to resize'}
+        title={t('dragResize', uiLang)}
       />
 
       {/* ── Right panel: rendered report ── */}
       <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 min-w-0">
         <div className="bg-white border-b border-cw-border px-4 py-2 shrink-0 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-cw-blue">{uiLang === 'NO' ? 'Live forhåndsvisning' : 'Live preview'}</span>
-            <span className="text-[10px] text-gray-400">{uiLang === 'NO' ? '— oppdateres ved hvert svar' : '— updates on every answer'}</span>
+            <span className="text-xs font-semibold text-cw-blue">{t('livePreview', uiLang)}</span>
+            <span className="text-[10px] text-gray-400">{t('livePreviewHint', uiLang)}</span>
           </div>
           <button
             onClick={() => {
@@ -259,7 +259,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
             }}
             className="flex items-center gap-1.5 px-3 py-1 text-xs border border-cw-border rounded hover:bg-gray-50 text-gray-600"
           >
-            <Download className="w-3 h-3" /> {uiLang === 'NO' ? 'Last ned PDF' : 'Download PDF'}
+            <Download className="w-3 h-3" /> {t('downloadPdf', uiLang)}
           </button>
         </div>
         <div className="flex-1 overflow-hidden p-4">
@@ -267,7 +267,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
             ref={iframeRef}
             sandbox="allow-scripts allow-same-origin"
             className="w-full h-full bg-white rounded shadow-sm border border-cw-border"
-            title={uiLang === 'NO' ? 'Rapport forhåndsvisning' : 'Report preview'}
+            title={t('reportPreview', uiLang)}
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState, useRef } from 'react';
-import { t, useUILang } from '../../i18n';
+import { t, tf, useUILang, type UILang } from '../../i18n';
 import type { Questionnaire, Section, Question, LanguageType, TextOption } from '../../types/questionnaire';
 
 interface Props {
@@ -38,25 +38,31 @@ function getQuestionOptions(q: Question, questionnaire: Questionnaire): TextOpti
   return [];
 }
 
+function annotationLang(lang: LanguageType): UILang {
+  if (lang === 'NO') return 'NO';
+  return 'EN';
+}
+
 function renderQuestionType(q: Question, lang: LanguageType): string {
+  const ui = annotationLang(lang);
   switch (q.type) {
     case 'numericInput': {
       const parts: string[] = [];
       if (q.min !== undefined) parts.push(`min: ${q.min}`);
       if (q.max !== undefined) parts.push(`max: ${q.max}`);
       if (q.unit) parts.push(q.unit);
-      return parts.length > 0 ? `[${parts.join(', ')}]` : '[numerisk]';
+      return parts.length > 0 ? `[${parts.join(', ')}]` : t('printNumeric', ui);
     }
     case 'stringInput':
-      return q.multiline ? '[tekstområde]' : '[tekstfelt]';
+      return q.multiline ? t('printTextArea', ui) : t('printTextField', ui);
     case 'dateInput':
-      return '[dato]';
+      return t('printDate', ui);
     case 'slider':
-      return `[skyver ${q.min}–${q.max}]`;
+      return tf('printSlider', ui, { min: q.min, max: q.max });
     case 'image':
-      return '[bilde]';
+      return t('printImage', ui);
     case 'country':
-      return '[land]';
+      return t('printCountry', ui);
     default:
       return '';
   }

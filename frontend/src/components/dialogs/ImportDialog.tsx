@@ -4,6 +4,7 @@ import { AlertTriangle, ChevronDown, ChevronUp, ChevronsUpDown, Search } from 'l
 import { useSettingsStore } from '../../stores/settings-store';
 import { useWorkspaceStore } from '../../stores/workspace-store';
 import { storeApi, type PackageSummary } from '../../services/store-api';
+import { t, tf, useUILang } from '../../i18n';
 
 interface Props {
   open: boolean;
@@ -29,6 +30,7 @@ interface ConflictInfo {
 }
 
 export function ImportDialog({ open, onClose, onImport }: Props) {
+  const uiLang = useUILang();
   const { settings } = useSettingsStore();
   const { tabs } = useWorkspaceStore();
   const [packages, setPackages] = useState<PackageSummary[]>([]);
@@ -109,13 +111,13 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
         <Dialog.Content aria-describedby={undefined} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[640px] h-[500px] flex flex-col z-50">
           <div className="p-4 border-b border-cw-border">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
-              Importer fra server
+              {t('importFromStore', uiLang)}
             </Dialog.Title>
             <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Søk etter pakke..."
+                placeholder={t('searchPackages', uiLang)}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-sm border border-cw-border rounded focus:outline-none focus:ring-2 focus:ring-cw-blue-light"
@@ -126,12 +128,12 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
           <div className="flex-1 overflow-auto">
             {loading && (
               <div className="flex items-center justify-center h-full text-sm text-gray-500">
-                Laster pakker...
+                {t('loadingPackages', uiLang)}
               </div>
             )}
             {error && (
               <div className="p-4 text-sm text-red-600">
-                Feil: {error}
+                {tf('errorWithMessage', uiLang, { message: error })}
               </div>
             )}
             {!loading && !error && (
@@ -145,7 +147,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                         className="text-left px-4 py-2 font-medium text-gray-600 cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
                       >
                         <span className="flex items-center gap-1">
-                          {field === 'name' ? 'Navn' : field === 'code' ? 'Kode' : field === 'version' ? 'Versjon' : 'Release'}
+                          {field === 'name' ? t('name', uiLang) : field === 'code' ? t('code', uiLang) : field === 'version' ? t('version', uiLang) : t('release', uiLang)}
                           <SortIcon field={field} sortField={sortField} sortDir={sortDir} />
                         </span>
                       </th>
@@ -170,7 +172,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                   {filtered.length === 0 && !loading && (
                     <tr>
                       <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-                        Ingen pakker funnet
+                        {t('noPackagesFound', uiLang)}
                       </td>
                     </tr>
                   )}
@@ -184,7 +186,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
               <div className="flex items-start gap-2 text-sm text-amber-800">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
-                  En pakke med kode <span className="font-mono font-semibold">&quot;{conflict.packageCode}&quot;</span> er allerede åpen som &quot;{conflict.tabTitle}&quot;.
+                  {tf('packageAlreadyOpen', uiLang, { code: conflict.packageCode, title: conflict.tabTitle })}
                 </span>
               </div>
               <div className="flex gap-2 justify-end">
@@ -192,7 +194,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                   onClick={() => setConflict(null)}
                   className="px-3 py-1 text-xs border border-amber-400 text-amber-800 rounded hover:bg-amber-100"
                 >
-                  Avbryt
+                  {t('cancelBtn', uiLang)}
                 </button>
                 <button
                   onClick={() => {
@@ -202,7 +204,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                   }}
                   className="px-3 py-1 text-xs border border-amber-400 text-amber-800 rounded hover:bg-amber-100"
                 >
-                  Åpne som ny kopi
+                  {t('openAsCopy', uiLang)}
                 </button>
                 <button
                   onClick={() => {
@@ -212,7 +214,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                   }}
                   className="px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
                 >
-                  Erstatt åpen tab
+                  {t('replaceOpenTab', uiLang)}
                 </button>
               </div>
             </div>
@@ -220,21 +222,21 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
 
           <div className="p-4 border-t border-cw-border flex justify-between items-center">
             <span className="text-sm text-gray-500">
-              {filtered.length} av {packages.length} pakker
+              {tf('packageCount', uiLang, { shown: filtered.length, total: packages.length })}
             </span>
             <div className="flex gap-2">
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50"
               >
-                Avbryt
+                {t('cancelBtn', uiLang)}
               </button>
               <button
                 onClick={handleImportClick}
                 disabled={selected === null}
                 className="px-4 py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light disabled:opacity-50"
               >
-                Åpne
+                {t('open', uiLang)}
               </button>
             </div>
           </div>

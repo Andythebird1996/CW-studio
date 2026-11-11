@@ -8,7 +8,7 @@ import type {
   LanguageType,
   TextOption,
 } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import { t, countPhrase, useUILang } from '../../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -341,23 +341,21 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
     setReplaced(null);
   }
 
-  const NO = uiLang === 'NO';
-
-  const scopeOptions: Array<{ key: keyof Scopes; labelNO: string; labelEN: string }> = [
-    { key: 'questionTexts', labelNO: 'Spørsmålstekster',  labelEN: 'Question texts'    },
-    { key: 'sectionTitles', labelNO: 'Seksjonstekster',   labelEN: 'Section titles'    },
-    { key: 'codes',         labelNO: 'Koder',             labelEN: 'Codes'             },
-    { key: 'answerOptions', labelNO: 'Svaralternativer',  labelEN: 'Answer options'    },
+  const scopeOptions: Array<{ key: keyof Scopes; labelKey: 'scopeQuestionTexts' | 'scopeSectionTitles' | 'scopeCodes' | 'optionsLabel' }> = [
+    { key: 'questionTexts', labelKey: 'scopeQuestionTexts' },
+    { key: 'sectionTitles', labelKey: 'scopeSectionTitles' },
+    { key: 'codes',         labelKey: 'scopeCodes' },
+    { key: 'answerOptions', labelKey: 'optionsLabel' },
   ];
 
   const matchCountLabel =
     find.trim() === ''
       ? ''
       : matches.length === 0
-        ? NO ? 'Ingen treff' : 'No matches'
+        ? t('noMatches', uiLang)
         : matches.length >= 200
-          ? NO ? '200+ treff funnet' : '200+ matches found'
-          : NO ? `${matches.length} treff funnet` : `${matches.length} match${matches.length === 1 ? '' : 'es'} found`;
+          ? t('matchesPlus', uiLang)
+          : countPhrase(matches.length, uiLang, 'nMatchOne', 'nMatchMany');
 
   return (
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
@@ -371,12 +369,12 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-cw-border">
             <Dialog.Title className="text-base font-semibold text-cw-blue">
-              {NO ? 'Finn og erstatt' : 'Find and replace'}
+              {t('findReplace', uiLang)}
             </Dialog.Title>
             <button
               onClick={onClose}
               className="p-1 rounded hover:bg-cw-gray text-cw-gray-text hover:text-gray-700 transition-colors"
-              aria-label={NO ? 'Lukk' : 'Close'}
+              aria-label={t('close', uiLang)}
             >
               <X className="w-4 h-4" />
             </button>
@@ -389,26 +387,26 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {NO ? 'Finn' : 'Find'}
+                  {t('find', uiLang)}
                 </label>
                 <input
                   type="text"
                   value={find}
                   onChange={(e) => handleFindChange(e.target.value)}
-                  placeholder={NO ? 'Søketekst...' : 'Search text...'}
+                  placeholder={t('searchTextPh', uiLang)}
                   className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue-light"
                   autoFocus
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {NO ? 'Erstatt med' : 'Replace with'}
+                  {t('replaceWith', uiLang)}
                 </label>
                 <input
                   type="text"
                   value={replace}
                   onChange={(e) => handleReplaceChange(e.target.value)}
-                  placeholder={NO ? 'Erstatning...' : 'Replacement...'}
+                  placeholder={t('replacementPh', uiLang)}
                   className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue-light"
                 />
               </div>
@@ -424,17 +422,17 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
                   onChange={() => { setCaseSensitive((v) => !v); setReplaced(null); }}
                   className="rounded border-cw-border text-cw-blue"
                 />
-                {NO ? 'Skille mellom store/små bokstaver' : 'Case sensitive'}
+                {t('caseSensitive', uiLang)}
               </label>
             </div>
 
             {/* Scope checkboxes */}
             <div>
               <p className="text-xs font-medium text-cw-gray-text uppercase tracking-wide mb-2">
-                {NO ? 'Søk i' : 'Search in'}
+                {t('searchIn', uiLang)}
               </p>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
-                {scopeOptions.map(({ key, labelNO, labelEN }) => (
+                {scopeOptions.map(({ key, labelKey }) => (
                   <label
                     key={key}
                     className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700"
@@ -445,7 +443,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
                       onChange={() => toggleScope(key)}
                       className="rounded border-cw-border text-cw-blue"
                     />
-                    {NO ? labelNO : labelEN}
+                    {t(labelKey, uiLang)}
                   </label>
                 ))}
               </div>
@@ -461,16 +459,14 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
                 disabled={!find.trim() || matches.length === 0}
                 className="px-4 py-2 bg-cw-blue text-white text-sm rounded hover:bg-cw-blue/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {NO ? 'Erstatt alle' : 'Replace all'}
+                {t('replaceAll', uiLang)}
               </button>
             </div>
 
             {/* Replaced confirmation */}
             {replaced !== null && (
               <div className="px-3 py-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-                {NO
-                  ? `${replaced} erstatning${replaced === 1 ? '' : 'er'} utført.`
-                  : `${replaced} replacement${replaced === 1 ? '' : 's'} made.`}
+                {countPhrase(replaced, uiLang, 'nReplaceOne', 'nReplaceMany')}
               </div>
             )}
 
@@ -478,7 +474,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
             {find.trim() !== '' && matches.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-cw-gray-text uppercase tracking-wide mb-2">
-                  {NO ? 'Forhåndsvisning' : 'Preview'}
+                  {t('previewPanel', uiLang)}
                 </p>
                 <ul className="border border-cw-border rounded divide-y divide-cw-border max-h-64 overflow-y-auto">
                   {matches.map((match, idx) => (
@@ -497,7 +493,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
                   ))}
                   {matches.length >= 200 && (
                     <li className="px-3 py-2 text-xs text-cw-gray-text text-center">
-                      {NO ? '(viser maks 200 treff)' : '(showing max 200 matches)'}
+                      {t('showingMax', uiLang)}
                     </li>
                   )}
                 </ul>
@@ -511,7 +507,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
               onClick={onClose}
               className="px-4 py-2 text-sm text-gray-700 border border-cw-border rounded hover:bg-cw-gray transition-colors"
             >
-              {NO ? 'Lukk' : 'Close'}
+              {t('close', uiLang)}
             </button>
           </div>
         </Dialog.Content>

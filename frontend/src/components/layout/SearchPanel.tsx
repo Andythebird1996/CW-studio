@@ -6,7 +6,7 @@ import type {
   Question,
   LanguageType,
 } from '../../types/questionnaire';
-import { useUILang } from '../../i18n';
+import { t, countPhrase, useUILang, type UILang } from '../../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -164,22 +164,13 @@ function KindIcon({ kind }: { kind: ResultKind }) {
   }
 }
 
-function kindLabel(kind: ResultKind, lang: 'NO' | 'EN'): string {
-  if (lang === 'NO') {
-    switch (kind) {
-      case 'section':          return 'Seksjon';
-      case 'question':         return 'Spørsmål';
-      case 'responseTemplate': return 'Svarmal';
-      case 'calculation':      return 'Beregning';
-      case 'flag':             return 'Flagg';
-    }
-  }
+function kindLabel(kind: ResultKind, lang: UILang): string {
   switch (kind) {
-    case 'section':          return 'Section';
-    case 'question':         return 'Question';
-    case 'responseTemplate': return 'Response template';
-    case 'calculation':      return 'Calculation';
-    case 'flag':             return 'Flag';
+    case 'section':          return t('section', lang);
+    case 'question':         return t('question', lang);
+    case 'responseTemplate': return t('templateLabel', lang);
+    case 'calculation':      return t('calculation', lang);
+    case 'flag':             return t('flag', lang);
   }
 }
 
@@ -250,22 +241,14 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
     item?.scrollIntoView({ block: 'nearest' });
   }, [activeIdx]);
 
-  const placeholderNO = 'Søk i seksjoner, spørsmål, beregninger...';
-  const placeholderEN = 'Search sections, questions, calculations...';
-  const placeholder = uiLang === 'NO' ? placeholderNO : placeholderEN;
+  const placeholder = t('searchPlaceholder', uiLang);
 
   const countLabel =
     results.length === 0
-      ? uiLang === 'NO'
-        ? 'Ingen treff'
-        : 'No results'
+      ? t('noResults', uiLang)
       : results.length >= 50
-        ? uiLang === 'NO'
-          ? '50+ treff'
-          : '50+ results'
-        : uiLang === 'NO'
-          ? `${results.length} treff`
-          : `${results.length} result${results.length === 1 ? '' : 's'}`;
+        ? t('resultsPlus', uiLang)
+        : countPhrase(results.length, uiLang, 'nResultOne', 'nResultMany');
 
   return (
     // Backdrop — click closes
@@ -281,7 +264,7 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
         style={{ maxHeight: 'calc(100vh - 80px)' }}
         onKeyDown={handleKeyDown}
         role="dialog"
-        aria-label={uiLang === 'NO' ? 'Søkepanel' : 'Search panel'}
+        aria-label={t('searchPanel', uiLang)}
       >
         {/* Input row */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-cw-border">
@@ -308,7 +291,7 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-cw-gray text-cw-gray-text hover:text-gray-700 transition-colors"
-            aria-label={uiLang === 'NO' ? 'Lukk søk' : 'Close search'}
+            aria-label={t('closeSearch', uiLang)}
           >
             <X className="w-4 h-4" />
           </button>
@@ -323,7 +306,7 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
           >
             {results.length === 0 ? (
               <li className="px-4 py-3 text-sm text-cw-gray-text text-center">
-                {uiLang === 'NO' ? 'Ingen treff funnet.' : 'No results found.'}
+                {t('noResultsFound', uiLang)}
               </li>
             ) : (
               results.map((result, idx) => (
@@ -370,9 +353,9 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
         {/* Keyboard hint footer */}
         {results.length > 0 && (
           <div className="px-4 py-2 border-t border-cw-border bg-cw-gray flex gap-4 text-xs text-cw-gray-text">
-            <span><kbd className="font-mono">↑↓</kbd> {uiLang === 'NO' ? 'naviger' : 'navigate'}</span>
-            <span><kbd className="font-mono">Enter</kbd> {uiLang === 'NO' ? 'velg' : 'select'}</span>
-            <span><kbd className="font-mono">Esc</kbd> {uiLang === 'NO' ? 'lukk' : 'close'}</span>
+            <span><kbd className="font-mono">↑↓</kbd> {t('navigateHint', uiLang)}</span>
+            <span><kbd className="font-mono">Enter</kbd> {t('selectHint', uiLang)}</span>
+            <span><kbd className="font-mono">Esc</kbd> {t('closeHint', uiLang)}</span>
           </div>
         )}
       </div>

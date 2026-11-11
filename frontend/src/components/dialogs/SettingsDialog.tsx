@@ -44,9 +44,9 @@ export function SettingsDialog({ open, onClose }: Props) {
     try {
       await storeApi.clearCache({ ...settings, ...form });
       const pkgs = await storeApi.listPackages({ ...settings, ...form });
-      setTestResult(`✓ OK — ${pkgs.length} ${lang === 'NO' ? 'pakker funnet' : 'packages found'}`);
+      setTestResult(`✓ OK — ${pkgs.length} ${t('packagesFound', lang)}`);
     } catch (err: unknown) {
-      setTestResult(`✗ ${lang === 'NO' ? 'Feil' : 'Error'}: ${err instanceof Error ? err.message : String(err)}`);
+      setTestResult(`✗ ${t('errorWord', lang)}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setTesting(false);
     }
@@ -80,16 +80,14 @@ export function SettingsDialog({ open, onClose }: Props) {
           <div className="w-52 bg-cw-gray border-r border-cw-border flex flex-col shrink-0">
             <div className="px-3 py-3 border-b border-cw-border">
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                {lang === 'NO' ? 'Lagrede profiler' : 'Saved profiles'}
+                {t('savedProfiles', lang)}
               </p>
             </div>
 
             <div className="flex-1 overflow-auto py-1">
               {profiles.length === 0 && (
                 <p className="text-xs text-gray-400 text-center mt-4 px-3 leading-relaxed">
-                  {lang === 'NO'
-                    ? 'Ingen profiler ennå. Fyll ut skjemaet og trykk «Lagre profil».'
-                    : 'No profiles yet. Fill in the form and click «Save profile».'}
+                  {t('noProfilesYet', lang)}
                 </p>
               )}
               {profiles.map((p) => {
@@ -111,7 +109,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                     <button
                       className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity"
                       onClick={(e) => { e.stopPropagation(); deleteProfile(p.id); }}
-                      title={lang === 'NO' ? 'Slett profil' : 'Delete profile'}
+                      title={t('deleteProfile', lang)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -127,7 +125,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                   <input
                     autoFocus
                     type="text"
-                    placeholder={lang === 'NO' ? 'Profilnavn…' : 'Profile name…'}
+                    placeholder={t('profileNamePh', lang)}
                     value={profileName}
                     onChange={(e) => setProfileName(e.target.value)}
                     onKeyDown={(e) => {
@@ -150,7 +148,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                   className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-cw-blue-light hover:bg-white rounded border border-dashed border-cw-blue-light/50"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
-                  {lang === 'NO' ? 'Lagre profil' : 'Save profile'}
+                  {t('saveProfile', lang)}
                 </button>
               )}
             </div>

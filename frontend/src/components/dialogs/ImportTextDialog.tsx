@@ -12,10 +12,10 @@ interface Props {
 
 type SeparatorType = 'newline' | 'double-newline' | 'custom';
 
-const SEPARATOR_OPTIONS: Array<{ value: SeparatorType; labelNO: string; labelEN: string }> = [
-  { value: 'newline',        labelNO: 'Linjeskift',          labelEN: 'Newline'              },
-  { value: 'double-newline', labelNO: 'Dobbelt linjeskift',  labelEN: 'Double newline'       },
-  { value: 'custom',         labelNO: 'Egendefinert',         labelEN: 'Custom'              },
+const SEPARATOR_OPTIONS: Array<{ value: SeparatorType; labelKey: 'sepNewline' | 'sepDoubleNewline' | 'sepCustom' }> = [
+  { value: 'newline',        labelKey: 'sepNewline' },
+  { value: 'double-newline', labelKey: 'sepDoubleNewline' },
+  { value: 'custom',         labelKey: 'sepCustom' },
 ];
 
 function resolveSeparator(type: SeparatorType, custom: string): string {
@@ -102,7 +102,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
         >
           <div className="p-4 border-b border-cw-border">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
-              {uiLang === 'NO' ? 'Importer spørsmålstekster' : 'Import question texts'}
+              {t('importQuestionTexts', uiLang)}
             </Dialog.Title>
           </div>
 
@@ -110,16 +110,14 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
             {/* Textarea */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
-                {uiLang === 'NO' ? 'Lim inn spørsmålstekster' : 'Paste question texts'}
+                {t('pasteQuestionTexts', uiLang)}
               </label>
               <textarea
                 rows={8}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={
-                  uiLang === 'NO'
-                    ? 'Én spørsmålstekst per linje...'
-                    : 'One question text per line...'
+                  t('oneQuestionPerLine', uiLang)
                 }
                 className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue-light resize-none"
               />
@@ -129,7 +127,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  {uiLang === 'NO' ? 'Separator' : 'Separator'}
+                  {t('separator', uiLang)}
                 </label>
                 <select
                   value={separatorType}
@@ -138,7 +136,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
                 >
                   {SEPARATOR_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
-                      {uiLang === 'NO' ? opt.labelNO : opt.labelEN}
+                      {t(opt.labelKey, uiLang)}
                     </option>
                   ))}
                 </select>
@@ -147,13 +145,13 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
               {separatorType === 'custom' && (
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? 'Egendefinert separator' : 'Custom separator'}
+                    {t('customSeparator', uiLang)}
                   </label>
                   <input
                     type="text"
                     value={customSeparator}
                     onChange={(e) => setCustomSeparator(e.target.value)}
-                    placeholder={uiLang === 'NO' ? 'f.eks. ; eller |' : 'e.g. ; or |'}
+                    placeholder={t('separatorExample', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -170,7 +168,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
                 onChange={(e) => setTemplateCode(e.target.value)}
                 className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
               >
-                <option value="">{uiLang === 'NO' ? '(Ingen)' : '(None)'}</option>
+                <option value="">{t('noneParen', uiLang)}</option>
                 {templates.map((tpl) => (
                   <option key={tpl.code} value={tpl.code}>
                     {tpl.code} — {tpl.name}

@@ -27,7 +27,7 @@ import { validateQuestionnaire } from './services/validate-questionnaire';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWorkspaceStore } from './stores/workspace-store';
 import { useSettingsStore } from './stores/settings-store';
-import { t, type UILang, UILangContext } from './i18n';
+import { t, tf, countPhrase, type UILang, UILangContext } from './i18n';
 import { storeApi } from './services/store-api';
 import { parseQuestionnaire, parseCalculationFile, parseFlagFile, parseNormFile, applyTranslationFile, parseManifestFile } from './services/xml-parser';
 import { serializeQuestionnaire } from './services/xml-serializer';
@@ -37,7 +37,7 @@ import type { Questionnaire, LanguageType, MediaFile, PackageMetadata } from './
 import type { EditorTab } from './stores/workspace-store';
 
 function newQuestionnaire(uiLang: UILang): Questionnaire {
-  const defaultName = uiLang === 'EN' ? 'New package' : 'Ny pakke';
+  const defaultName = t('newQuestionnaire', uiLang);
   return {
     code: '',
     version: '1.0',
@@ -179,8 +179,8 @@ export default function App() {
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   const validationIssues = useMemo(
-    () => (activeTab?.data ? validateQuestionnaire(activeTab.data) : []),
-    [activeTab?.data],
+    () => (activeTab?.data ? validateQuestionnaire(activeTab.data, lang) : []),
+    [activeTab?.data, lang],
   );
 
   // Parse a dot-path like "sections[11].subSections[7].questions[2]" to find the element id
@@ -279,7 +279,7 @@ export default function App() {
     if (config.clinicianOnly) q.clinicianOnly = true;
     if (config.exportAllowed !== undefined) q.exportAllowed = config.exportAllowed;
 
-    const title = config.name || config.code || (lang === 'EN' ? 'New package' : 'Ny pakke');
+    const title = config.name || config.code || t('newQuestionnaire', lang);
     const id = crypto.randomUUID();
     openTab({ id, title, type: 'questionnaire', isDirty: true, data: q });
     setSubTab('questionnaire');
@@ -308,7 +308,7 @@ export default function App() {
           data: questionnaire,
         });
         setSubTab('questionnaire');
-        showToast(`Åpnet «${file.name}»`);
+        showToast(tf('openedFile', lang, { name: file.name }));
       } else if (ext === 'rap') {
         if (activeTabId) {
           const tab = tabs.find((t) => t.id === activeTabId);
@@ -319,15 +319,15 @@ export default function App() {
           });
           markDirty(activeTabId);
           setSubTab('report');
-          showToast(`Lastet inn rapport fra «${file.name}»`);
+          showToast(tf('loadedReport', lang, { name: file.name }));
         } else {
-          showToast('Åpne en kartlegging først for å laste inn en rapportmal');
+          showToast(t('openAssessmentFirst', lang));
         }
       } else {
-        showToast(`Ukjent filtype: .${ext}`);
+        showToast(tf('unknownFileType', lang, { ext: ext ?? '' }));
       }
     } catch (err: any) {
-      showToast(`Feil ved åpning: ${err.message}`);
+      showToast(tf('openError', lang, { message: err instanceof Error ? err.message : String(err) }));
     }
   }
 
@@ -358,7 +358,7 @@ export default function App() {
     }
 
     const qFile = entries.find((e) => e.extension === 'questionnaire');
-    if (!qFile) { showToast('Ingen .questionnaire-fil funnet i ZIP'); return; }
+    if (!qFile) { showToast(t('noQuestionnaireInZip', lang)); return; }
 
     let questionnaire = parseQuestionnaire(qFile.content);
 
@@ -426,13 +426,13 @@ export default function App() {
     setSubTab('questionnaire');
 
     const parts = [
-      calcFiles.length > 0 ? `${calcFiles.length} beregninger` : '',
-      normFiles.length > 0 ? `${normFiles.length} normer` : '',
-      flagFiles.length > 0 ? `${flagFiles.length} flagg` : '',
-      rapEntries.length > 0 ? `${rapEntries.length} rapport${rapEntries.length !== 1 ? 'er' : ''}` : '',
-      mediaFiles.length > 0 ? `${mediaFiles.length} mediafiler` : '',
+      calcFiles.length > 0 ? countPhrase(calcFiles.length, lang, 'nCalculationOne', 'nCalculationMany') : '',
+      normFiles.length > 0 ? countPhrase(normFiles.length, lang, 'nNormOne', 'nNormMany') : '',
+      flagFiles.length > 0 ? countPhrase(flagFiles.length, lang, 'nFlagOne', 'nFlagMany') : '',
+      rapEntries.length > 0 ? countPhrase(rapEntries.length, lang, 'nReportOne', 'nReportMany') : '',
+      mediaFiles.length > 0 ? countPhrase(mediaFiles.length, lang, 'nMediaOne', 'nMediaMany') : '',
     ].filter(Boolean).join(', ');
-    showToast(`Åpnet «${file.name}»${parts ? ` + ${parts}` : ''}`);
+    showToast(parts ? tf('openedWithParts', lang, { name: file.name, parts }) : tf('openedFile', lang, { name: file.name }));
   }
 
   async function handleImport(uid: number, replaceTabId?: string) {
@@ -440,7 +440,7 @@ export default function App() {
     try {
       const pkg = await storeApi.getPackage(settings, uid);
       const qFile = pkg.files.find((f) => f.extension === 'questionnaire');
-      if (!qFile) throw new Error('Ingen .questionnaire-fil i pakken');
+      if (!qFile) throw new Error(t('noQuestionnaireInPackage', lang));
 
       let questionnaire = parseQuestionnaire(qFile.content);
 
@@ -568,17 +568,17 @@ export default function App() {
       const normCount = questionnaire.calculations?.norms.length ?? 0;
       const langCount = questionnaire.supportedLanguages.length;
       const parts = [
-        rapEntries2.length > 0 ? `${rapEntries2.length} rapport${rapEntries2.length !== 1 ? 'er' : ''}` : '',
-        calcCount > 0 ? `${calcCount} beregning${calcCount !== 1 ? 'er' : ''}` : '',
-        dimCount > 0 ? `${dimCount} dimensjon${dimCount !== 1 ? 'er' : ''}` : '',
-        flagCount > 0 ? `${flagCount} flagg` : '',
-        normCount > 0 ? `${normCount} norm${normCount !== 1 ? 'er' : ''}` : '',
-        mediaFiles.length > 0 ? `${mediaFiles.length} mediafil${mediaFiles.length !== 1 ? 'er' : ''}` : '',
-        langCount > 1 ? `${langCount} språk` : '',
+        rapEntries2.length > 0 ? countPhrase(rapEntries2.length, lang, 'nReportOne', 'nReportMany') : '',
+        calcCount > 0 ? countPhrase(calcCount, lang, 'nCalculationOne', 'nCalculationMany') : '',
+        dimCount > 0 ? countPhrase(dimCount, lang, 'nDimensionOne', 'nDimensionMany') : '',
+        flagCount > 0 ? countPhrase(flagCount, lang, 'nFlagOne', 'nFlagMany') : '',
+        normCount > 0 ? countPhrase(normCount, lang, 'nNormOne', 'nNormMany') : '',
+        mediaFiles.length > 0 ? countPhrase(mediaFiles.length, lang, 'nMediaOne', 'nMediaMany') : '',
+        langCount > 1 ? countPhrase(langCount, lang, 'nLanguageOne', 'nLanguageMany') : '',
       ].filter(Boolean).join(', ');
-      showToast(`Importerte «${pkg.name}»${parts ? ` + ${parts}` : ''}`);
-    } catch (err: any) {
-      showToast(`Feil ved import: ${err.message}`);
+      showToast(parts ? tf('importedWithParts', lang, { name: pkg.name, parts }) : tf('importedPackage', lang, { name: pkg.name }));
+    } catch (err: unknown) {
+      showToast(tf('importError', lang, { message: err instanceof Error ? err.message : String(err) }));
     }
   }
 
@@ -586,7 +586,7 @@ export default function App() {
     if (!activeTabId) return;
     updateTab(activeTabId, {
       data: q,
-      title: q.name[q.defaultLanguage] || q.code || 'Uten navn',
+      title: q.name[q.defaultLanguage] || q.code || t('unnamed', lang),
     });
     markDirty(activeTabId);
   }
@@ -605,7 +605,7 @@ export default function App() {
 
   function handleRapAddFile() {
     if (!activeTabId || !activeTab?.data) return;
-    const base = activeTab.data.code || 'rapport';
+    const base = activeTab.data.code || t('reportFileStem', lang);
     const existing = activeTab.rapFiles ?? {};
     let newName = `${base}.rap`;
     let n = 2;
@@ -635,7 +635,7 @@ export default function App() {
   function handleNewCalculation(tabId: string) {
     const tab = tabs.find((t) => t.id === tabId);
     if (!tab?.data) return;
-    const blank: import('./types/questionnaire').Calculation = { code: '', name: 'Ny beregning', type: 'SUM', innerCalculations: [] };
+    const blank: import('./types/questionnaire').Calculation = { code: '', name: t('newCalculationName', lang), type: 'SUM', innerCalculations: [] };
     const calcs = tab.data.calculations?.calculations ?? [];
     const norms = tab.data.calculations?.norms ?? [];
     updateTab(tabId, { data: { ...tab.data, calculations: { calculations: [...calcs, blank], norms } } });
@@ -646,7 +646,7 @@ export default function App() {
   function handleNewFlag(tabId: string) {
     const tab = tabs.find((t) => t.id === tabId);
     if (!tab?.data) return;
-    const blank: import('./types/questionnaire').Flag = { code: '', name: 'Nytt flagg', type: 'INFO', conditions: [], logic: 'AND' };
+    const blank: import('./types/questionnaire').Flag = { code: '', name: t('newFlagName', lang), type: 'INFO', conditions: [], logic: 'AND' };
     updateTab(tabId, { data: { ...tab.data, flags: [...(tab.data.flags ?? []), blank] } });
     markDirty(tabId);
     setSubTab('flags');
@@ -655,7 +655,7 @@ export default function App() {
   function handleNewNorm(tabId: string) {
     const tab = tabs.find((t) => t.id === tabId);
     if (!tab?.data) return;
-    const blank: import('./types/questionnaire').Norm = { code: '', name: 'Ny norm', type: 'NORM', data: [] };
+    const blank: import('./types/questionnaire').Norm = { code: '', name: t('newNormName', lang), type: 'NORM', data: [] };
     const calcs = tab.data.calculations?.calculations ?? [];
     const norms = tab.data.calculations?.norms ?? [];
     updateTab(tabId, { data: { ...tab.data, calculations: { calculations: calcs, norms: [...norms, blank] } } });
@@ -667,7 +667,7 @@ export default function App() {
     const tab = tabs.find((t) => t.id === tabId);
     if (!tab) return;
     if (!tab.rapFiles || Object.keys(tab.rapFiles).length === 0) {
-      const fileName = `${tab.data?.code || 'rapport'}.rap`;
+      const fileName = `${tab.data?.code || t('reportFileStem', lang)}.rap`;
       updateTab(tabId, { rapFiles: { [fileName]: '' }, activeRapFileName: fileName });
       markDirty(tabId);
     }
@@ -706,7 +706,7 @@ export default function App() {
         a.download = pkg.fileName;
         a.click();
         URL.revokeObjectURL(url);
-        showToast(`Lastet ned «${pkg.fileName}»`);
+        showToast(tf('downloadedFile', lang, { name: pkg.fileName }));
       } else {
         // Simple .questionnaire file
         const xml = serializeQuestionnaire(activeTab.data);
@@ -717,10 +717,10 @@ export default function App() {
         a.download = `${activeTab.data.code || 'questionnaire'}.questionnaire`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast('Lastet ned som .questionnaire');
+        showToast(t('downloadedQuestionnaire', lang));
       }
-    } catch (err: any) {
-      showToast(`Feil: ${err.message}`);
+    } catch (err: unknown) {
+      showToast(tf('genericError', lang, { message: err instanceof Error ? err.message : String(err) }));
     }
   }
 
@@ -751,7 +751,9 @@ export default function App() {
       {sessionRestorePrompt && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-3 text-sm text-amber-800 shrink-0 z-40">
           <span className="flex-1">
-            {t('sessionRestoreMsg', lang).replace('{n}', String(sessionRestorePrompt.length))}
+            {sessionRestorePrompt.length === 1
+              ? t('sessionRestoreOne', lang)
+              : tf('sessionRestoreMany', lang, { n: sessionRestorePrompt.length })}
           </span>
           <button
             onClick={handleSessionRestore}
@@ -812,7 +814,8 @@ export default function App() {
               />
               <button
                 onClick={() => setSearchOpen(true)}
-                title={lang === 'NO' ? 'Søk (Ctrl+F)' : 'Search (Ctrl+F)'}
+                title={t('searchShortcut', lang)}
+                aria-label={t('searchShortcut', lang)}
                 className="ml-auto mr-2 p-1 text-gray-400 hover:text-gray-700 rounded"
               >
                 <Search size={15} />
@@ -969,10 +972,10 @@ export default function App() {
                         ? 'bg-cw-blue text-white border-cw-blue'
                         : 'border-cw-border text-gray-500 hover:text-gray-700'
                     }`}
-                    title={lang === 'NO' ? 'Valideringsresultater' : 'Validation results'}
+                    title={t('validationResults', lang)}
                   >
                     <ShieldAlert size={12} />
-                    {lang === 'NO' ? 'Validering' : 'Validation'}
+                    {t('validationPanel', lang)}
                     {validationIssues.length > 0 && (
                       <span className={`ml-1 px-1 rounded text-xs font-medium ${validationOpen ? 'bg-white text-cw-blue' : 'bg-red-100 text-red-700'}`}>
                         {validationIssues.length}

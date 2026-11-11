@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Copy, FileInput, Pencil, PlusCircle, Trash2, X } from 'lucide-react';
 import type { Questionnaire, Calculation, Calculations, InnerCalculation, Norm } from '../../types/questionnaire';
-import { t, useUILang } from '../../i18n';
+import { t, tf, countPhrase, useUILang } from '../../i18n';
 import { ImportCalculationsDialog } from '../dialogs/ImportCalculationsDialog';
 import { ItemContextMenu } from './ItemContextMenu';
 
@@ -21,7 +21,7 @@ function getCalcTypeLabel(type: Calculation['type'], lang: ReturnType<typeof use
   if (type === 'MEAN')   return t('calcTypeMean', lang);
   if (type === 'COUNT')  return t('calcTypeCount', lang);
   if (type === 'CUSTOM') return t('calcTypeCustom', lang);
-  return 'Sum';
+  return t('calcTypeSum', lang);
 }
 
 function newCalculation(): Calculation {
@@ -230,7 +230,7 @@ function EditableCalcCard({
                 value={calc.name}
                 onChange={(e) => onChange({ ...calc, name: e.target.value })}
                 className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-                placeholder={uiLang === 'NO' ? 'Totalskår' : 'Total score'}
+                placeholder={t('totalScorePh', uiLang)}
               />
             </div>
             <div>
@@ -310,17 +310,17 @@ function EditableCalcCard({
                               }`}
                               title={
                                 m === 'question'
-                                  ? (uiLang === 'NO' ? 'Spørsmål' : 'Question')
+                                  ? (t('question', uiLang))
                                   : m === 'calculation'
-                                  ? (uiLang === 'NO' ? 'Beregning' : 'Calculation')
-                                  : (uiLang === 'NO' ? 'Konstant' : 'Constant')
+                                  ? (t('calculation', uiLang))
+                                  : (t('constant', uiLang))
                               }
                             >
                               {m === 'question'
-                                ? (uiLang === 'NO' ? 'Spørsmål' : 'Q')
+                                ? (t('questionShort', uiLang))
                                 : m === 'calculation'
-                                ? (uiLang === 'NO' ? 'Beregning' : 'Calc')
-                                : (uiLang === 'NO' ? 'Konstant' : 'Const')}
+                                ? (t('calcShort', uiLang))
+                                : (t('constantShort', uiLang))}
                             </button>
                           ))}
                         </div>
@@ -345,7 +345,7 @@ function EditableCalcCard({
                             onChange={(e) => updateInner(i, { ...ic, calculationCode: e.target.value })}
                             className={`flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light ${cError ? 'border-red-400' : 'border-cw-border'}`}
                           >
-                            <option value="">{uiLang === 'NO' ? '— Velg beregning —' : '— Select calculation —'}</option>
+                            <option value="">{t('selectCalculation', uiLang)}</option>
                             {calcCodes.filter((c) => c !== calc.code).map((c) => (
                               <option key={c} value={c}>{c}</option>
                             ))}
@@ -369,7 +369,7 @@ function EditableCalcCard({
                           value={ic.multiplier ?? 1}
                           onChange={(e) => updateInner(i, { ...ic, multiplier: parseFloat(e.target.value) || 1 })}
                           step="0.1"
-                          title={uiLang === 'NO' ? 'Multiplikator' : 'Multiplier'}
+                          title={t('multiplier', uiLang)}
                           className="w-20 border border-cw-border rounded px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                         />
                         <button onClick={() => deleteInner(i)} className="text-gray-300 hover:text-red-500 shrink-0">
@@ -378,12 +378,12 @@ function EditableCalcCard({
                       </div>
                       {qError && (
                         <p className="text-xs text-red-500 pl-1">
-                          ⚠ {uiLang === 'NO' ? `Spørsmål '${qError}' finnes ikke` : `Question '${qError}' does not exist`}
+                          ⚠ {tf('questionMissing', uiLang, { code: qError })}
                         </p>
                       )}
                       {cError && (
                         <p className="text-xs text-red-500 pl-1">
-                          ⚠ {uiLang === 'NO' ? `Beregning '${cError}' finnes ikke` : `Calculation '${cError}' does not exist`}
+                          ⚠ {tf('calcMissing', uiLang, { code: cError })}
                         </p>
                       )}
                     </div>
@@ -417,14 +417,14 @@ function EditableCalcCard({
                   onChange={(e) => onChange({ ...calc, formula: e.target.value })}
                   rows={4}
                   className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-y"
-                  placeholder={uiLang === 'NO' ? 'f.eks. Q1 + Q2 * 2' : 'e.g. Q1 + Q2 * 2'}
+                  placeholder={t('formulaExample', uiLang)}
                   spellCheck={false}
                 />
               </div>
               {calc._rawExpression && (
                 <div className="bg-gray-50 border border-cw-border rounded px-3 py-2">
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
-                    {uiLang === 'NO' ? 'Rå uttrykk (CUSTOM)' : 'Raw expression (CUSTOM)'}
+                    {t('rawExpression', uiLang)}
                   </p>
                   <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap leading-relaxed">
                     {calc._rawExpression}
@@ -580,18 +580,16 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
           <div>
             <h2 className="text-sm font-semibold text-cw-blue">{t('calcsHeader', uiLang)}</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              {calcs.length} {uiLang === 'NO'
-                ? `beregning${calcs.length !== 1 ? 'er' : ''} totalt`
-                : `calculation${calcs.length !== 1 ? 's' : ''} total`}
+              {countPhrase(calcs.length, uiLang, 'calcTotalOne', 'calcTotalMany')}
             </p>
           </div>
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 border border-cw-border rounded hover:bg-gray-50 hover:text-cw-blue transition-colors"
-            title={uiLang === 'NO' ? 'Importer beregninger fra CSV/TSV' : 'Import calculations from CSV/TSV'}
+            title={t('importCalcsTitle', uiLang)}
           >
             <FileInput className="w-3.5 h-3.5" />
-            {uiLang === 'NO' ? 'Importer...' : 'Import...'}
+            {t('importEllipsis', uiLang)}
           </button>
         </div>
       </div>
@@ -634,9 +632,9 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
             y={ctxMenu.y}
             onClose={() => setCtxMenu(null)}
             items={[
-              { label: uiLang === 'NO' ? 'Dupliser' : 'Duplicate', icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupCalc(ctxMenu.idx) },
+              { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupCalc(ctxMenu.idx) },
               { separator: true },
-              { label: uiLang === 'NO' ? 'Slett' : 'Delete', icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteCalc(ctxMenu.idx), danger: true },
+              { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteCalc(ctxMenu.idx), danger: true },
             ]}
           />
         )}

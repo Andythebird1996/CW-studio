@@ -51,7 +51,7 @@ import type {
 import { ExpressionEditor } from './ExpressionEditor';
 import { AssessmentPreview } from '../preview/AssessmentPreview';
 import { SpreadsheetOptionsEditor } from './SpreadsheetOptionsEditor';
-import { t, useUILang, type UILang } from '../../i18n';
+import { t, tf, countPhrase, useUILang, type UILang } from '../../i18n';
 import { useClipboardStore } from '../../stores/clipboard-store';
 
 // ── Question type catalogue ───────────────────────────────────────────────────
@@ -178,14 +178,14 @@ function OptionsEditor({
               placeholder="score"
               className="w-16 border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
             />
-            <label className="flex items-center gap-1 cursor-pointer shrink-0" title={uiLang === 'NO' ? 'Reverser skår' : 'Reverse score'}>
+            <label className="flex items-center gap-1 cursor-pointer shrink-0" title={t('reverseScoreTitle', uiLang)}>
               <input
                 type="checkbox"
                 checked={(opt as any).reverseValue ?? false}
                 onChange={(e) => updateOption(i, { reverseValue: e.target.checked || undefined } as any)}
                 className="accent-cw-blue"
               />
-              <span className="text-xs text-gray-500">{uiLang === 'NO' ? 'Rev.' : 'Rev.'}</span>
+              <span className="text-xs text-gray-500">{t('revShort', uiLang)}</span>
             </label>
             <button onClick={() => removeOption(i)} className="text-gray-300 hover:text-red-500">
               <Trash2 className="w-3.5 h-3.5" />
@@ -355,7 +355,7 @@ function QuestionRow({
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
           className="text-gray-300 hover:text-cw-blue-light p-1"
-          title="Dupliser spørsmål"
+          title={t('duplicateQuestion', uiLang)}
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
@@ -408,7 +408,7 @@ function QuestionRow({
                 value={question.code}
                 onChange={(e) => onChange({ ...question, code: e.target.value })}
                 className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-                placeholder={uiLang === 'NO' ? 'spørsmål_kode' : 'question_code'}
+                placeholder={t('questionCodePh', uiLang)}
               />
             </div>
             <div>
@@ -436,7 +436,7 @@ function QuestionRow({
               }
               rows={2}
               className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
-              placeholder={uiLang === 'NO' ? 'Skriv inn spørsmålstekst...' : 'Enter question text...'}
+              placeholder={t('enterQuestionText', uiLang)}
             />
           </div>
 
@@ -489,7 +489,7 @@ function QuestionRow({
                   })
                 }
                 className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-                placeholder={uiLang === 'NO' ? 'Tilleggsinformasjon til respondent...' : 'Additional info for respondent...'}
+                placeholder={t('helpForRespondent', uiLang)}
               />
             </div>
           )}
@@ -539,7 +539,7 @@ function QuestionRow({
                   >
                     {responseTemplates.map((tpl) => (
                       <option key={tpl.code} value={tpl.code}>
-                        {tpl.name || tpl.code} ({tpl.options.length} {uiLang === 'NO' ? 'alternativer' : 'options'})
+                        {tpl.name || tpl.code} ({tpl.options.length} {t('optionsWord', uiLang)})
                       </option>
                     ))}
                   </select>
@@ -558,13 +558,7 @@ function QuestionRow({
                           <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-xs text-amber-800">
                             <span className="shrink-0 mt-0.5">⚠</span>
                             <span>
-                              {uiLang === 'NO' ? (
-                                <>Svarmalen <span className="font-mono font-semibold">{tplCode}</span> brukes av{' '}
-                                <span className="font-semibold">{usageCount} spørsmål</span>. Endringer her påvirker alle disse.</>
-                              ) : (
-                                <>Template <span className="font-mono font-semibold">{tplCode}</span> is used by{' '}
-                                <span className="font-semibold">{usageCount} questions</span>. Changes here affect all of them.</>
-                              )}
+                              {tf('templateUsedBy', uiLang, { code: tplCode, n: usageCount })}
                             </span>
                           </div>
                         )}
@@ -675,7 +669,7 @@ function QuestionRow({
                     onChange={(e) =>
                       onChange({ ...question, unit: e.target.value || undefined })
                     }
-                    placeholder={uiLang === 'NO' ? 'f.eks. kg' : 'e.g. kg'}
+                    placeholder={t('exampleKg', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -773,7 +767,7 @@ function QuestionRow({
                         minLabel: { ...(question.minLabel ?? {}), [lang]: e.target.value } as Record<LanguageType, string>,
                       })
                     }
-                    placeholder={uiLang === 'NO' ? 'Lavt' : 'Low'}
+                    placeholder={t('low', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -788,7 +782,7 @@ function QuestionRow({
                         maxLabel: { ...(question.maxLabel ?? {}), [lang]: e.target.value } as Record<LanguageType, string>,
                       })
                     }
-                    placeholder={uiLang === 'NO' ? 'Høyt' : 'High'}
+                    placeholder={t('high', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -796,18 +790,18 @@ function QuestionRow({
               {/* Slider display settings */}
               <details className="border border-cw-border rounded">
                 <summary className="px-3 py-1.5 text-xs font-medium text-gray-500 cursor-pointer select-none hover:bg-cw-gray">
-                  {uiLang === 'NO' ? 'Visningsinnstillinger' : 'Display settings'}
+                  {t('displaySettings', uiLang)}
                 </summary>
                 <div className="px-3 pb-3 pt-2 space-y-2">
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {(
                       [
-                        ['showTicks',          uiLang === 'NO' ? 'Vis skalastrek'              : 'Show ticks'],
-                        ['showEndLabels',      uiLang === 'NO' ? 'Vis endepunkt-etiketter'      : 'Show end labels'],
-                        ['showDigitalPoints',  uiLang === 'NO' ? 'Vis digital verdi'            : 'Show digital value'],
-                        ['displayValue',       uiLang === 'NO' ? 'Vis verdi under sliding'      : 'Display value while sliding'],
-                        ['showClear',          uiLang === 'NO' ? 'Vis nullstill-knapp'           : 'Show clear button'],
-                        ['hairline',           uiLang === 'NO' ? 'Tynn linje-stil'              : 'Hairline style'],
+                        ['showTicks',          t('showTicks', uiLang)],
+                        ['showEndLabels',      t('showEndLabels', uiLang)],
+                        ['showDigitalPoints',  t('showDigital', uiLang)],
+                        ['displayValue',       t('showValueSliding', uiLang)],
+                        ['showClear',          t('showClear', uiLang)],
+                        ['hairline',           t('hairline', uiLang)],
                       ] as [string, string][]
                     ).map(([field, label]) => (
                       <label key={field} className="flex items-center gap-1.5 cursor-pointer">
@@ -824,20 +818,20 @@ function QuestionRow({
                   <div className="grid grid-cols-2 gap-3 mt-1">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">
-                        {uiLang === 'NO' ? 'Retning' : 'Direction'}
+                        {t('direction', uiLang)}
                       </label>
                       <select
                         value={(question as any).direction ?? 'horizontal'}
                         onChange={(e) => onChange({ ...question, direction: e.target.value || undefined } as any)}
                         className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                       >
-                        <option value="horizontal">{uiLang === 'NO' ? 'Horisontal' : 'Horizontal'}</option>
-                        <option value="vertical">{uiLang === 'NO' ? 'Vertikal' : 'Vertical'}</option>
+                        <option value="horizontal">{t('horizontal', uiLang)}</option>
+                        <option value="vertical">{t('vertical', uiLang)}</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">
-                        {uiLang === 'NO' ? 'Lengde (CSS)' : 'Length (CSS)'}
+                        {t('lengthCss', uiLang)}
                       </label>
                       <input
                         type="text"
@@ -857,12 +851,12 @@ function QuestionRow({
           {question.type === 'checkbox' && (
             <details className="border border-cw-border rounded">
               <summary className="px-3 py-1.5 text-xs font-medium text-gray-500 cursor-pointer select-none hover:bg-cw-gray">
-                {uiLang === 'NO' ? 'Visningsinnstillinger' : 'Display settings'}
+                {t('displaySettings', uiLang)}
               </summary>
               <div className="px-3 pb-3 pt-2 grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? 'Antall kolonner' : 'Number of columns'} (1–6)
+                    {t('columnCount', uiLang)} (1–6)
                   </label>
                   <input
                     type="number"
@@ -876,7 +870,7 @@ function QuestionRow({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? 'Maks antall valg (0 = ubegrenset)' : 'Max choices (0 = unlimited)'}
+                    {t('maxChoices', uiLang)}
                   </label>
                   <input
                     type="number"
@@ -889,7 +883,7 @@ function QuestionRow({
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? "Ignorer svaralternativ-kode (f.eks. 'NONE')" : "Ignore answer option code (e.g. 'NONE')"}
+                    {t('ignoreOptionCodeEx', uiLang)}
                   </label>
                   <input
                     type="text"
@@ -907,12 +901,12 @@ function QuestionRow({
           {question.type === 'radiobutton' && (
             <details className="border border-cw-border rounded">
               <summary className="px-3 py-1.5 text-xs font-medium text-gray-500 cursor-pointer select-none hover:bg-cw-gray">
-                {uiLang === 'NO' ? 'Visningsinnstillinger' : 'Display settings'}
+                {t('displaySettings', uiLang)}
               </summary>
               <div className="px-3 pb-3 pt-2 grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? 'Antall kolonner' : 'Number of columns'} (1–6)
+                    {t('columnCount', uiLang)} (1–6)
                   </label>
                   <input
                     type="number"
@@ -926,7 +920,7 @@ function QuestionRow({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? 'Ignorer svaralternativ-kode' : 'Ignore answer option code'}
+                    {t('ignoreOptionCode', uiLang)}
                   </label>
                   <input
                     type="text"
@@ -946,15 +940,13 @@ function QuestionRow({
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded px-3 py-2 text-xs text-blue-800">
                 <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
-                  {uiLang === 'NO'
-                    ? 'Bildevisning — refererer til mediafil i pakken'
-                    : 'Image display — refers to a media file in the package'}
+                  {t('imageDisplayHint', uiLang)}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? 'Filnavn / bildekode' : 'File name / image code'}
+                    {t('fileNameOrCode', uiLang)}
                   </label>
                   {mediaCodes.length > 0 ? (
                     <select
@@ -962,7 +954,7 @@ function QuestionRow({
                       onChange={(e) => onChange({ ...question, imageSrc: e.target.value || undefined })}
                       className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                     >
-                      <option value="">{uiLang === 'NO' ? '— Velg mediafil —' : '— Select media file —'}</option>
+                      <option value="">{t('selectMediaFile', uiLang)}</option>
                       {mediaCodes.map((code) => (
                         <option key={code} value={code}>{code}</option>
                       ))}
@@ -979,7 +971,7 @@ function QuestionRow({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {uiLang === 'NO' ? `Alt-tekst (${lang})` : `Alt text (${lang})`}
+                    {tf('altText', uiLang, { lang })}
                   </label>
                   <input
                     type="text"
@@ -990,7 +982,7 @@ function QuestionRow({
                         altText: { ...(question.altText ?? {}), [lang]: e.target.value },
                       })
                     }
-                    placeholder={uiLang === 'NO' ? 'Beskrivelse for skjermleser...' : 'Screen reader description...'}
+                    placeholder={t('altTextPh', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -1004,9 +996,7 @@ function QuestionRow({
               <div className="flex items-start gap-2 bg-gray-50 border border-cw-border rounded px-3 py-2 text-xs text-gray-600">
                 <ArrowRight className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
-                  {uiLang === 'NO'
-                    ? 'Viser standardliste over land fra Checkware-plattformen'
-                    : 'Shows standard country list from Checkware platform'}
+                  {t('countryListHint', uiLang)}
                 </span>
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1017,7 +1007,7 @@ function QuestionRow({
                   className="w-4 h-4 accent-cw-blue"
                 />
                 <span className="text-sm text-gray-600">
-                  {uiLang === 'NO' ? 'Tillat valg av flere land' : 'Allow multiple country selection'}
+                  {t('allowMultiCountry', uiLang)}
                 </span>
               </label>
             </div>
@@ -1287,7 +1277,7 @@ function SectionEditor({
         <label
           className="flex items-center gap-1 cursor-pointer shrink-0"
           onClick={(e) => e.stopPropagation()}
-          title={uiLang === 'NO' ? 'Tving sideskift før denne seksjonen' : 'Force page break before this section'}
+          title={t('forcePageBreak', uiLang)}
         >
           <input
             type="checkbox"
@@ -1295,7 +1285,7 @@ function SectionEditor({
             onChange={(e) => onChange({ ...section, requiresNewPage: e.target.checked || undefined })}
             className="accent-cw-blue"
           />
-          <span className="text-xs text-gray-500">{uiLang === 'NO' ? 'Ny side' : 'New page'}</span>
+          <span className="text-xs text-gray-500">{t('newPage', uiLang)}</span>
         </label>
 
         <span className="text-xs text-gray-400 tabular-nums">
@@ -1320,7 +1310,7 @@ function SectionEditor({
           <button
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
             className="text-gray-300 hover:text-cw-blue-light"
-            title="Dupliser seksjon"
+            title={t('duplicateSection', uiLang)}
           >
             <Copy className="w-4 h-4" />
           </button>
@@ -1380,7 +1370,7 @@ function SectionEditor({
               className="flex items-center gap-1.5 text-xs text-cw-blue-light hover:underline mb-2 mt-1"
             >
               <Clipboard className="w-3.5 h-3.5" />
-              Lim inn spørsmål
+              {t('pasteQuestions', uiLang)}
             </button>
           )}
 
@@ -1621,7 +1611,7 @@ function ResponseTemplatesEditor({
                   <input
                     value={active.code}
                     onChange={(e) => updateTemplate(activeIdx, { ...active, code: e.target.value })}
-                    placeholder={uiLang === 'NO' ? 'svarmal_kode' : 'template_code'}
+                    placeholder={t('templateCodePh', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -1630,7 +1620,7 @@ function ResponseTemplatesEditor({
                   <input
                     value={active.name}
                     onChange={(e) => updateTemplate(activeIdx, { ...active, name: e.target.value })}
-                    placeholder={uiLang === 'NO' ? 'Svarmalnavn' : 'Template name'}
+                    placeholder={t('templateNamePh', uiLang)}
                     className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                   />
                 </div>
@@ -1776,6 +1766,7 @@ function ContextMenu({
   clipboardKind: 'question' | 'section' | null;
   lang: LanguageType;
 }) {
+  const uiLang = useUILang();
   const [moveOpen, setMoveOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const allFlatSections = flattenSectionsClient(questionnaire.sections);
@@ -1810,24 +1801,24 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onCopyQuestion(menu.questionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> Kopier
+            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('copy', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onCutQuestion(menu.questionId!, menu.sectionId!))}
           >
-            <Scissors className="w-3.5 h-3.5 text-gray-400" /> Klipp ut
+            <Scissors className="w-3.5 h-3.5 text-gray-400" /> {t('cut', uiLang)}
           </button>
           {clipboardKind === 'question' ? (
             <button
               className={itemCls}
               onClick={wrap(() => onPasteOverQuestion(menu.questionId!, menu.sectionId!))}
             >
-              <Clipboard className="w-3.5 h-3.5 text-gray-400" /> Lim inn over
+              <Clipboard className="w-3.5 h-3.5 text-gray-400" /> {t('pasteOver', uiLang)}
             </button>
           ) : (
             <span className={disabledCls}>
-              <Clipboard className="w-3.5 h-3.5" /> Lim inn over
+              <Clipboard className="w-3.5 h-3.5" /> {t('pasteOver', uiLang)}
             </span>
           )}
           <div className={sepCls} />
@@ -1835,7 +1826,7 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onDuplicateQuestion(menu.questionId!, menu.sectionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> Dupliser
+            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('duplicate', uiLang)}
           </button>
           {/* Move to section */}
           <div className="relative">
@@ -1844,7 +1835,7 @@ function ContextMenu({
               onClick={() => setMoveOpen((v) => !v)}
             >
               <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-              Flytt til seksjon...
+              {t('moveToSection', uiLang)}
               <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
             </button>
             {moveOpen && (
@@ -1857,11 +1848,11 @@ function ContextMenu({
                       className={itemCls}
                       onClick={wrap(() => onMoveQuestionToSection(menu.questionId!, menu.sectionId!, s.id))}
                     >
-                      <span className="truncate">{s.titles[lang] || s.code || '(ingen tittel)'}</span>
+                      <span className="truncate">{s.titles[lang] || s.code || t('noTitle', uiLang)}</span>
                     </button>
                   ))}
                 {allFlatSections.filter((s) => s.id !== menu.sectionId).length === 0 && (
-                  <span className="px-3 py-1.5 text-xs text-gray-400 block">Ingen andre seksjoner</span>
+                  <span className="px-3 py-1.5 text-xs text-gray-400 block">{t('noOtherSections', uiLang)}</span>
                 )}
               </div>
             )}
@@ -1871,7 +1862,7 @@ function ContextMenu({
             className={redItemCls}
             onClick={wrap(() => onDeleteQuestion(menu.questionId!, menu.sectionId!))}
           >
-            <Trash2 className="w-3.5 h-3.5" /> Slett
+            <Trash2 className="w-3.5 h-3.5" /> {t('deleteBtn', uiLang)}
           </button>
         </>
       )}
@@ -1882,24 +1873,24 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onCopySection(menu.topSectionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> Kopier seksjon
+            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('copySection', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onCutSection(menu.topSectionId!))}
           >
-            <Scissors className="w-3.5 h-3.5 text-gray-400" /> Klipp ut seksjon
+            <Scissors className="w-3.5 h-3.5 text-gray-400" /> {t('cutSection', uiLang)}
           </button>
           {clipboardKind === 'section' ? (
             <button
               className={itemCls}
               onClick={wrap(() => onPasteSection())}
             >
-              <Clipboard className="w-3.5 h-3.5 text-gray-400" /> Lim inn seksjon
+              <Clipboard className="w-3.5 h-3.5 text-gray-400" /> {t('pasteSection', uiLang)}
             </button>
           ) : (
             <span className={disabledCls}>
-              <Clipboard className="w-3.5 h-3.5" /> Lim inn seksjon
+              <Clipboard className="w-3.5 h-3.5" /> {t('pasteSection', uiLang)}
             </span>
           )}
           <div className={sepCls} />
@@ -1907,33 +1898,33 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onDuplicateSection(menu.topSectionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> Dupliser seksjon
+            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('duplicateSection', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onGenerateCodesForSection(menu.topSectionId!))}
           >
-            <Hash className="w-3.5 h-3.5 text-gray-400" /> Generer koder
+            <Hash className="w-3.5 h-3.5 text-gray-400" /> {t('generateCodes', uiLang)}
           </button>
           <div className={sepCls} />
           <button
             className={itemCls}
             onClick={wrap(() => onAddQuestionToSection(menu.topSectionId!, 'radiobutton'))}
           >
-            <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> Legg til spørsmål
+            <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> {t('addQuestion', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onAddSubSection(menu.topSectionId!))}
           >
-            <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> Legg til underseksjon
+            <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> {t('addSubsection', uiLang)}
           </button>
           <div className={sepCls} />
           <button
             className={redItemCls}
             onClick={wrap(() => onDeleteSection(menu.topSectionId!))}
           >
-            <Trash2 className="w-3.5 h-3.5" /> Slett seksjon
+            <Trash2 className="w-3.5 h-3.5" /> {t('deleteSection', uiLang)}
           </button>
         </>
       )}
@@ -1987,8 +1978,8 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
   // ── Validation (runs on every questionnaire change) ───────────────────────
   const validationIssues: ValidationIssue[] = useMemo(
-    () => validateQuestionnaire(questionnaire),
-    [questionnaire],
+    () => validateQuestionnaire(questionnaire, uiLang),
+    [questionnaire, uiLang],
   );
   const errorCount = validationIssues.filter((i) => i.severity === 'error').length;
   const warningCount = validationIssues.filter((i) => i.severity === 'warning').length;
@@ -2043,8 +2034,8 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
     onChange({ ...questionnaire, sections: splice(questionnaire.sections, newQ.sections) });
 
     const msg = count > 0
-      ? `${count} ${uiLang === 'NO' ? 'koder generert for seksjonen' : 'codes generated for section'}`
-      : (uiLang === 'NO' ? 'Ingen tomme koder i seksjonen' : 'No empty codes in section');
+      ? `${count} ${t('codesForSectionFrag', uiLang)}`
+      : (t('noEmptyCodes', uiLang));
     setGenerateToast(msg);
     setTimeout(() => setGenerateToast(null), 3000);
   }
@@ -2055,10 +2046,10 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
     const written = result.count;
     const skipped = result.skipped;
     const msg = overwrite
-      ? `${written} ${uiLang === 'NO' ? 'koder overskrevet' : 'codes overwritten'}`
+      ? `${written} ${t('codesOverwrittenFrag', uiLang)}`
       : skipped > 0
-        ? `${written} ${uiLang === 'NO' ? 'koder lagt til' : 'codes added'}, ${skipped} ${uiLang === 'NO' ? 'beholdt' : 'kept'}`
-        : `${written} ${uiLang === 'NO' ? 'koder generert' : 'codes generated'}`;
+        ? `${written} ${t('codesAddedFrag', uiLang)}, ${skipped} ${t('keptWord', uiLang)}`
+        : `${written} ${t('codesGenerated', uiLang)}`;
     setGenerateToast(msg);
     setGenerateMenuOpen(false);
     setTimeout(() => setGenerateToast(null), 3000);
@@ -2264,7 +2255,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
   }
 
   function handleDeleteQuestion(questionId: string, _sectionId: string) {
-    if (!window.confirm(uiLang === 'NO' ? 'Slett dette spørsmålet?' : 'Delete this question?')) return;
+    if (!window.confirm(t('deleteQuestionConfirm', uiLang))) return;
     onChange({ ...questionnaire, sections: removeQuestionById(questionnaire.sections, questionId) });
     if (selectedElementId === questionId) setSelectedElementId(null);
   }
@@ -2328,7 +2319,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
   }
 
   function handleDeleteSection(sectionId: string) {
-    if (!window.confirm(uiLang === 'NO' ? 'Slett denne seksjonen?' : 'Delete this section?')) return;
+    if (!window.confirm(t('deleteSectionConfirm', uiLang))) return;
     const idx = questionnaire.sections.findIndex((s) => s.id === sectionId);
     if (idx !== -1) deleteSection(idx);
   }
@@ -2357,7 +2348,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
         e.preventDefault();
         const sectionId = selectedSectionIdRef.current;
         if (!sectionId) return;
-        if (!window.confirm(uiLang === 'NO' ? 'Slett dette spørsmålet?' : 'Delete this question?')) return;
+        if (!window.confirm(t('deleteQuestionConfirm', uiLang))) return;
         onChange({ ...questionnaire, sections: removeQuestionById(questionnaire.sections, selectedElementId) });
         setSelectedElementId(null);
         return;
@@ -2433,15 +2424,15 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
             <button
               onClick={() => handleGenerateCodes(false)}
               className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-l border border-cw-border bg-white hover:bg-gray-50 hover:border-cw-blue-light text-gray-600 hover:text-cw-blue transition-colors"
-              title={uiLang === 'NO' ? 'Fyll inn tomme koder (behold eksisterende)' : 'Fill empty codes (keep existing)'}
+              title={t('fillEmptyCodesTitle', uiLang)}
             >
               <Hash className="w-3.5 h-3.5" />
-              {uiLang === 'NO' ? 'Generer koder' : 'Generate codes'}
+              {t('generateCodes', uiLang)}
             </button>
             <button
               onClick={() => setGenerateMenuOpen((v) => !v)}
               className="flex items-center px-1.5 py-1 text-xs rounded-r border border-l-0 border-cw-border bg-white hover:bg-gray-50 text-gray-400 hover:text-cw-blue transition-colors"
-              title={uiLang === 'NO' ? 'Flere alternativer' : 'More options'}
+              title={t('moreOptions', uiLang)}
             >
               <ChevronDown className="w-3 h-3" />
             </button>
@@ -2451,16 +2442,16 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
                   onClick={() => handleGenerateCodes(false)}
                   className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700"
                 >
-                  <span className="font-medium block">{uiLang === 'NO' ? 'Fyll tomme koder' : 'Fill empty codes'}</span>
-                  <span className="text-gray-400">{uiLang === 'NO' ? 'Behold eksisterende' : 'Keep existing'}</span>
+                  <span className="font-medium block">{t('fillEmptyCodes', uiLang)}</span>
+                  <span className="text-gray-400">{t('keepExisting', uiLang)}</span>
                 </button>
                 <div className="border-t border-cw-border" />
                 <button
                   onClick={() => handleGenerateCodes(true)}
                   className="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-600"
                 >
-                  <span className="font-medium block">{uiLang === 'NO' ? 'Overskiv alle koder' : 'Overwrite all codes'}</span>
-                  <span className="text-red-400">{uiLang === 'NO' ? 'Erstatter eksisterende' : 'Replaces existing'}</span>
+                  <span className="font-medium block">{t('overwriteAllCodes', uiLang)}</span>
+                  <span className="text-red-400">{t('replacesExisting', uiLang)}</span>
                 </button>
               </div>
             )}
@@ -2473,25 +2464,25 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
               onClick={() => onToggleValidation?.()}
               className="flex items-center gap-2 px-2.5 py-1 text-xs rounded border bg-white hover:bg-gray-50 transition-colors shrink-0"
               style={{ borderColor: errorCount > 0 ? '#ef4444' : '#f59e0b' }}
-              title={uiLang === 'NO' ? 'Vis valideringsproblemer' : 'Show validation issues'}
+              title={t('showValidationIssues', uiLang)}
             >
               {errorCount > 0 && (
                 <span className="flex items-center gap-1 text-red-500 font-medium">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  {errorCount} {uiLang === 'NO' ? 'feil' : errorCount === 1 ? 'error' : 'errors'}
+                  {countPhrase(errorCount, uiLang, 'nErrorOne', 'nErrorMany')}
                 </span>
               )}
               {errorCount > 0 && warningCount > 0 && <span className="text-gray-300">|</span>}
               {warningCount > 0 && (
                 <span className="flex items-center gap-1 text-amber-500 font-medium">
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  {warningCount} {uiLang === 'NO' ? (warningCount === 1 ? 'advarsel' : 'advarsler') : warningCount === 1 ? 'warning' : 'warnings'}
+                  {countPhrase(warningCount, uiLang, 'nWarningOne', 'nWarningMany')}
                 </span>
               )}
             </button>
           ) : (
             <span className="text-xs text-green-600 font-medium px-1">
-              {uiLang === 'NO' ? 'Ingen problemer' : 'No issues'}
+              {t('noProblems', uiLang)}
             </span>
           )}
         </div>
@@ -2504,7 +2495,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
               value={questionnaire.code}
               onChange={(e) => onChange({ ...questionnaire, code: e.target.value })}
               className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-              placeholder={uiLang === 'NO' ? 'kartlegging_kode' : 'assessment_code'}
+              placeholder={t('assessmentCodePh', uiLang)}
             />
           </div>
           <div>
@@ -2516,7 +2507,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
                 onChange({ ...questionnaire, name: { ...questionnaire.name, [lang]: e.target.value } })
               }
               className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-              placeholder={uiLang === 'NO' ? 'Kartleggingsnavn' : 'Assessment name'}
+              placeholder={t('assessmentNameFieldPh', uiLang)}
             />
           </div>
           <div>
@@ -2598,20 +2589,20 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
             <button
               onClick={() => setImportTextOpen(true)}
               className="flex items-center justify-center gap-2 border-2 border-dashed border-cw-border rounded-lg py-3 px-4 text-sm text-gray-400 hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
-              title={uiLang === 'NO' ? 'Importer spørsmålstekster fra tekst' : 'Import question texts from text'}
+              title={t('importTextsTitle', uiLang)}
             >
               <FileText className="w-4 h-4" />
-              <span>{uiLang === 'NO' ? 'Importer tekster' : 'Import texts'}</span>
+              <span>{t('importTexts', uiLang)}</span>
             </button>
             {/* Paste section button */}
             {clipboardKind === 'section' && (
               <button
                 onClick={handlePasteSection}
                 className="flex items-center justify-center gap-2 border-2 border-dashed border-cw-blue-light rounded-lg py-3 px-4 text-sm text-cw-blue-light hover:bg-blue-50 transition-colors"
-                title="Lim inn seksjon fra utklippstavle"
+                title={t('pasteSectionTitle', uiLang)}
               >
                 <Clipboard className="w-4 h-4" />
-                <span>Lim inn seksjon</span>
+                <span>{t('pasteSection', uiLang)}</span>
               </button>
             )}
           </div>
@@ -2643,7 +2634,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
         <div
           onMouseDown={handlePreviewDragStart}
           className="w-1.5 shrink-0 cursor-col-resize bg-cw-border hover:bg-cw-blue transition-colors"
-          title="Dra for å endre størrelse"
+          title={t('dragResize', uiLang)}
         />
 
         {/* Right: Checkware preview */}
@@ -2651,13 +2642,14 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
           <div className="px-3 py-2 border-b border-cw-border bg-white shrink-0 flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex-1">
               {t('previewPanel', uiLang)}
+              <span className="ml-2 normal-case tracking-normal font-normal">{t('previewHint', uiLang)}</span>
             </span>
             {availableLangs.length > 1 && (
               <select
                 value={previewLang}
                 onChange={(e) => setPreviewLang(e.target.value as LanguageType)}
                 className="text-xs border border-cw-border rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
-                title={uiLang === 'NO' ? 'Velg språk for forhåndsvisning' : 'Select preview language'}
+                title={t('selectPreviewLang', uiLang)}
               >
                 {availableLangs.map((l) => (
                   <option key={l} value={l}>{LANG_LABELS[l] ?? l}</option>

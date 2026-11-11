@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState, useMemo } from 'react';
 import type { NormType } from '../../types/questionnaire';
-import { t, useUILang } from '../../i18n';
+import { t, countPhrase, useUILang } from '../../i18n';
 
 /** Matches the inline element type of Norm.data */
 export type NormDataRow = { score: number; normValue: number; age?: number; gender?: string };
@@ -120,16 +120,8 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
   }
 
   const isLookup = normType !== 'ZSCORE';
-  const formatHintNO = isLookup
-    ? 'Format: min\u0009maks\u0009verdi[\u0009etikett] (3–4 kolonner per rad)'
-    : 'Format: score\u0009normverdi (2 kolonner per rad)';
-  const formatHintEN = isLookup
-    ? 'Format: min\u0009max\u0009value[\u0009label] (3–4 columns per row)'
-    : 'Format: score\u0009normValue (2 columns per row)';
-  const formatHint = uiLang === 'NO' ? formatHintNO : formatHintEN;
-
-  const placeholderNO = isLookup ? '0\t5\t50\n6\t10\t60\n11\t15\t70' : '0\t50\n1\t52\n2\t54';
-  const placeholderEN = isLookup ? '0\t5\t50\n6\t10\t60\n11\t15\t70' : '0\t50\n1\t52\n2\t54';
+  const formatHint = isLookup ? t('normFormatLookup', uiLang) : t('normFormatZ', uiLang);
+  const placeholder = isLookup ? '0\t5\t50\n6\t10\t60\n11\t15\t70' : '0\t50\n1\t52\n2\t54';
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -141,7 +133,7 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
         >
           <div className="p-4 border-b border-cw-border">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
-              {uiLang === 'NO' ? 'Importer normtabell' : 'Import norm table'}
+              {t('importNormTitle', uiLang)}
             </Dialog.Title>
           </div>
 
@@ -149,15 +141,13 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
             {/* Textarea */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
-                {uiLang === 'NO'
-                  ? 'Lim inn normtabell fra Excel/regneark'
-                  : 'Paste norm table from Excel/spreadsheet'}
+                {t('importNormHelp', uiLang)}
               </label>
               <textarea
                 rows={8}
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
-                placeholder={uiLang === 'NO' ? placeholderNO : placeholderEN}
+                placeholder={placeholder}
                 className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue-light resize-none"
                 spellCheck={false}
               />
@@ -178,9 +168,7 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
               {/* Row count feedback when valid */}
               {rawText.trim().length > 0 && errors.length === 0 && rows.length > 0 && (
                 <p className="mt-1 text-xs text-green-600">
-                  {uiLang === 'NO'
-                    ? `${rows.length} rad${rows.length !== 1 ? 'er' : ''} klare til import`
-                    : `${rows.length} row${rows.length !== 1 ? 's' : ''} ready to import`}
+                  {countPhrase(rows.length, uiLang, 'nRowReadyOne', 'nRowReadyMany')}
                 </p>
               )}
             </div>
@@ -189,15 +177,15 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
             <div className="flex items-center gap-6">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">
-                  {uiLang === 'NO' ? 'Skilletegn' : 'Separator'}
+                  {t('separator', uiLang)}
                 </label>
                 <select
                   value={sep}
                   onChange={(e) => setSep(e.target.value as SepType)}
                   className="border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
                 >
-                  <option value="tab">{uiLang === 'NO' ? 'Tab' : 'Tab'}</option>
-                  <option value="semicolon">{uiLang === 'NO' ? 'Semikolon (;)' : 'Semicolon (;)'}</option>
+                  <option value="tab">{t('separatorTab', uiLang)}</option>
+                  <option value="semicolon">{t('separatorSemicolon', uiLang)}</option>
                 </select>
               </div>
 
@@ -208,7 +196,7 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
                   onChange={(e) => setSkipHeader(e.target.checked)}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                {uiLang === 'NO' ? 'Har overskriftsrad (hopp over første rad)' : 'Has header row (skip first row)'}
+                {t('hasHeaderRow', uiLang)}
               </label>
             </div>
           </div>

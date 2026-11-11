@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useSettingsStore } from '../stores/settings-store';
 import { storeApi } from '../services/store-api';
+import { t } from '../i18n';
 
 export function ConnectPage() {
   const { settings, setSettings } = useSettingsStore();
+  const lang = settings.uiLanguage;
   const [form, setForm] = useState({
     storeUrl: settings.storeUrl,
     user: settings.user,
@@ -25,17 +27,13 @@ export function ConnectPage() {
   async function connect(e: React.FormEvent) {
     e.preventDefault();
     if (!form.storeUrl || !form.user || !form.password) {
-      setError('Fyll inn alle felt');
+      setError(t('fillAllFields', lang));
       return;
     }
     const url = form.storeUrl.toLowerCase();
     const isRest = /\/rest\/|\/clinician\/|\/respondent\/|backend-commons/.test(url);
     if (!url.includes('wsdl') || isRest) {
-      setError(
-        'Server-URL skal peke på store-WSDL-en (ende på "store-api.wsdl"), ' +
-          'ikke på klinikker-REST-API-et. F.eks. ' +
-          'https://cia.checkwareonline.com/v2/store/api/store-api.wsdl',
-      );
+      setError(t('wsdlHint', lang));
       return;
     }
     setLoading(true);
@@ -46,7 +44,7 @@ export function ConnectPage() {
       await storeApi.listPackages(full);
       setSettings(form);
     } catch (err: any) {
-      setError(err.message ?? 'Tilkobling feilet');
+      setError(err.message ?? t('connectFailed', lang));
     } finally {
       setLoading(false);
     }
@@ -63,19 +61,19 @@ export function ConnectPage() {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-cw-blue">Checkware Studio</h1>
-          <p className="text-sm text-cw-gray-text mt-1">Koble til din Checkware-server</p>
+          <h1 className="text-2xl font-bold text-cw-blue">{t('appTitle', lang)}</h1>
+          <p className="text-sm text-cw-gray-text mt-1">{t('connectSubtitle', lang)}</p>
         </div>
 
         <form onSubmit={connect} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Server WSDL URL
+              {t('serverWsdl', lang)}
             </label>
             <input
               type="url"
               className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue-light"
-              placeholder="https://din-server/api/store-api.wsdl"
+              placeholder="https://example/api/store-api.wsdl"
               autoComplete="url"
               required
               {...field('storeUrl')}
@@ -84,12 +82,12 @@ export function ConnectPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brukernavn
+              {t('username', lang)}
             </label>
             <input
               type="text"
               className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue-light"
-              placeholder="brukernavn"
+              placeholder={t('usernamePh', lang)}
               autoComplete="username"
               required
               {...field('user')}
@@ -98,7 +96,7 @@ export function ConnectPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Passord
+              {t('password', lang)}
             </label>
             <input
               type="password"
@@ -121,7 +119,7 @@ export function ConnectPage() {
             disabled={loading}
             className="w-full bg-cw-blue text-white py-2.5 rounded font-medium text-sm hover:bg-cw-blue-light transition-colors disabled:opacity-60 mt-2"
           >
-            {loading ? 'Kobler til...' : 'Koble til'}
+            {loading ? t('connecting', lang) : t('connect', lang)}
           </button>
         </form>
       </div>

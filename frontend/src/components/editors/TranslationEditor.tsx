@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Trash2, Wand2 } from 'lucide-react';
 import type { Questionnaire, LanguageType, Section } from '../../types/questionnaire';
 import { autoTranslate } from '../../services/translate-api';
-import { t, useUILang } from '../../i18n';
+import { t, tf, useUILang } from '../../i18n';
 
 function flattenSections(sections: Section[]): Section[] {
   const result: Section[] = [];
@@ -233,14 +233,15 @@ function Cell({
   isStale?: boolean;
   onEdit?: () => void;
 }) {
+  const uiLang = useUILang();
   return (
     <td className={`px-2 py-1.5 border-b border-r border-cw-border ${isMissing ? 'bg-amber-50' : ''}`}>
       <div className="flex items-start gap-1">
         {isStale && (
           <span
-            title="Source text has changed"
+            title={t('sourceChanged', uiLang)}
             className="mt-0.5 shrink-0 text-amber-500 cursor-default select-none"
-            aria-label="Source text has changed"
+            aria-label={t('sourceChanged', uiLang)}
           >
             ⚠
           </span>
@@ -321,7 +322,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
   // Questionnaire name
   rows.push({
     key: 'q.name',
-    context: 'Kartlegging: navn',
+    context: t('ctxAssessmentName', uiLang),
     texts: questionnaire.name,
     update: (lang, val) =>
       pushChange({ ...questionnaire, name: { ...questionnaire.name, [lang]: val } }, lang),
@@ -331,7 +332,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
   if (questionnaire.description && Object.keys(questionnaire.description).length > 0) {
     rows.push({
       key: 'q.description',
-      context: 'Kartlegging: beskrivelse',
+      context: t('ctxAssessmentDesc', uiLang),
       texts: questionnaire.description,
       update: (lang, val) =>
         pushChange({ ...questionnaire, description: { ...questionnaire.description, [lang]: val } as Record<import('../../types/questionnaire').LanguageType, string> }, lang),
@@ -343,7 +344,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
     if (section.titles[defaultLang] !== undefined) {
       rows.push({
         key: `s.${section.id}.title`,
-        context: `Seksjon ${section.code || section.id}: tittel`,
+        context: tf('ctxSectionTitle', uiLang, { code: section.code || section.id }),
         texts: section.titles,
         update: (lang, val) =>
           pushChange({
@@ -357,7 +358,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
     section.questions.forEach((q, qi) => {
       rows.push({
         key: `s.${section.id}.q${qi}.text`,
-        context: `${q.code || `Q${qi + 1}`}: spørsmål`,
+        context: tf('ctxQuestion', uiLang, { code: q.code || `Q${qi + 1}` }),
         texts: q.texts,
         update: (lang, val) =>
           pushChange({
@@ -370,7 +371,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
       if (q.helpTexts && Object.keys(q.helpTexts).length > 0) {
         rows.push({
           key: `s.${section.id}.q${qi}.helpText`,
-          context: `${q.code || `Q${qi + 1}`}: hjelpetekst`,
+          context: tf('ctxHelp', uiLang, { code: q.code || `Q${qi + 1}` }),
           texts: q.helpTexts as Record<LanguageType, string>,
           update: (lang, val) =>
             pushChange({
@@ -385,7 +386,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
         if (q.minLabel && Object.keys(q.minLabel).length > 0) {
           rows.push({
             key: `s.${section.id}.q${qi}.minLabel`,
-            context: `${q.code || `Q${qi + 1}`}: min-etikett`,
+            context: tf('ctxMinLabel', uiLang, { code: q.code || `Q${qi + 1}` }),
             texts: q.minLabel as Record<LanguageType, string>,
             update: (lang, val) =>
               pushChange({
@@ -397,7 +398,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
         if (q.maxLabel && Object.keys(q.maxLabel).length > 0) {
           rows.push({
             key: `s.${section.id}.q${qi}.maxLabel`,
-            context: `${q.code || `Q${qi + 1}`}: maks-etikett`,
+            context: tf('ctxMaxLabel', uiLang, { code: q.code || `Q${qi + 1}` }),
             texts: q.maxLabel as Record<LanguageType, string>,
             update: (lang, val) =>
               pushChange({
@@ -584,7 +585,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
       }
 
       onChange(currentQ);
-      setStaleTranslateStatus(`Ferdig — ${translatedTotal} tekster oversatt`);
+      setStaleTranslateStatus(tf('translateStaleDone', uiLang, { n: translatedTotal }));
     } catch (err: any) {
       setTranslateError(err.message);
       setStaleTranslateStatus(null);
@@ -641,7 +642,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
             onClick={handleTranslateStale}
             disabled={staleCount === 0 || translatingStale || translating !== null}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title={staleCount === 0 ? 'Ingen utdaterte oversettelser' : `Oversett ${staleCount} utdaterte tekster på nytt`}
+            title={staleCount === 0 ? t('noStale', uiLang) : tf('translateStaleTitle', uiLang, { n: staleCount })}
           >
             {translatingStale ? (
               <span className="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full" />
@@ -649,8 +650,8 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
               <Wand2 className="w-3 h-3" />
             )}
             {translatingStale
-              ? 'Oversetter...'
-              : `Oversett utdaterte${staleCount > 0 ? ` (${staleCount})` : ''}`}
+              ? t('translatingDots', uiLang)
+              : `${t('translateStale', uiLang)}${staleCount > 0 ? ` (${staleCount})` : ''}`}
           </button>
           {availableToAdd.length > 0 && (
             <select
@@ -698,7 +699,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
                           onClick={() => handleAutoTranslate(lang)}
                           disabled={translating !== null || translatingStale}
                           className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium bg-cw-blue text-white rounded hover:bg-cw-blue-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title={`${uiLang === 'NO' ? 'Auto-oversett' : 'Auto-translate'} ${missingForLang} ${uiLang === 'NO' ? 'manglende strenger' : 'missing strings'}`}
+                          title={`${t('autoTranslate', uiLang)} ${missingForLang} ${t('missingStrings', uiLang)}`}
                         >
                           {translating === lang ? (
                             <span className="animate-spin inline-block w-2.5 h-2.5 border border-white border-t-transparent rounded-full" />
@@ -712,7 +713,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
                         <button
                           onClick={() => removeLanguage(lang)}
                           className="ml-auto text-gray-300 hover:text-red-500 transition-colors"
-                          title={uiLang === 'NO' ? `Fjern ${langLabel}` : `Remove ${langLabel}`}
+                          title={tf('removeLanguage', uiLang, { lang: langLabel })}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
