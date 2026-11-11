@@ -235,12 +235,12 @@ function Cell({
 }) {
   const uiLang = useUILang();
   return (
-    <td className={`px-2 py-1.5 border-b border-r border-cw-border ${isMissing ? 'bg-amber-50' : ''}`}>
+    <td className={`px-3 py-2 border-b border-r border-cw-border ${isMissing ? 'bg-cw-orange-soft' : ''}`}>
       <div className="flex items-start gap-1">
         {isStale && (
           <span
             title={t('sourceChanged', uiLang)}
-            className="mt-0.5 shrink-0 text-amber-500 cursor-default select-none"
+            className="mt-0.5 shrink-0 text-cw-orange cursor-default select-none"
             aria-label={t('sourceChanged', uiLang)}
           >
             ⚠
@@ -250,7 +250,7 @@ function Cell({
           value={value}
           onChange={(e) => { onEdit?.(); onChange(e.target.value); }}
           rows={1}
-          className="w-full text-sm resize-none bg-transparent focus:outline-none focus:bg-white focus:ring-1 focus:ring-cw-blue-light rounded px-1"
+          className="w-full text-sm resize-none bg-transparent focus:outline-none focus:bg-white focus:ring-2 focus:ring-cw-blue/30 rounded px-1"
           style={{ minHeight: '1.5rem' }}
           onInput={(e) => {
             const t = e.currentTarget;
@@ -622,18 +622,18 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-cw-blue">{t('tabTranslations', uiLang)}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-cw-gray-text mt-0.5">
             {rows.length} {t('stringsLabel', uiLang)} · {missingCount > 0 ? (
-              <span className="text-amber-600">{missingCount} {t('missingLabel', uiLang)}</span>
+              <span className="text-cw-orange">{missingCount} {t('missingLabel', uiLang)}</span>
             ) : (
-              <span className="text-green-600">{t('allTranslated', uiLang)}</span>
+              <span className="text-cw-positive">{t('allTranslated', uiLang)}</span>
             )}
           </p>
           {translateError && (
-            <p className="text-xs text-red-500 mt-1">{translateError}</p>
+            <p className="text-xs text-cw-negative mt-1">{translateError}</p>
           )}
           {staleTranslateStatus && !translateError && (
-            <p className="text-xs text-green-600 mt-1">{staleTranslateStatus}</p>
+            <p className="text-xs text-cw-positive mt-1">{staleTranslateStatus}</p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -641,7 +641,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
           <button
             onClick={handleTranslateStale}
             disabled={staleCount === 0 || translatingStale || translating !== null}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-cw-orange text-white rounded hover:bg-cw-orange disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             title={staleCount === 0 ? t('noStale', uiLang) : tf('translateStaleTitle', uiLang, { n: staleCount })}
           >
             {translatingStale ? (
@@ -655,7 +655,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
           </button>
           {availableToAdd.length > 0 && (
             <select
-              className="text-xs border border-cw-border rounded px-2 py-1.5 focus:outline-none"
+              className="text-xs border border-cw-border rounded px-3 py-2 focus:outline-none"
               defaultValue=""
               onChange={(e) => { if (e.target.value) addLanguage(e.target.value as LanguageType); e.target.value = ''; }}
             >
@@ -673,7 +673,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
         <table className="w-full text-sm border-collapse" style={{ minWidth: 280 + activeLangs.length * 220 }}>
           <thead className="sticky top-0 bg-cw-gray z-10">
             <tr>
-              <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 border-b border-r border-cw-border w-40">
+              <th className="text-left px-3 py-2 text-xs font-medium text-cw-gray-text border-b border-r border-cw-border w-40">
                 {t('contextCol', uiLang)}
               </th>
               {activeLangs.map((lang) => {
@@ -685,7 +685,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
                   <th
                     key={lang}
                     id={`translation-col-${lang}`}
-                    className="text-left px-3 py-2 text-xs font-medium text-gray-500 border-b border-r border-cw-border"
+                    className="text-left px-3 py-2 text-xs font-medium text-cw-gray-text border-b border-r border-cw-border"
                   >
                     <div className="flex items-center gap-2">
                       <span>
@@ -712,7 +712,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
                       {lang !== defaultLang && (
                         <button
                           onClick={() => removeLanguage(lang)}
-                          className="ml-auto text-gray-300 hover:text-red-500 transition-colors"
+                          className="ml-auto text-cw-gray-text hover:text-cw-negative transition-colors"
                           title={tf('removeLanguage', uiLang, { lang: langLabel })}
                         >
                           <Trash2 className="w-3 h-3" />
@@ -726,8 +726,8 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.key} className="hover:bg-blue-50/30">
-                <td className="px-3 py-1.5 text-xs text-gray-500 border-b border-r border-cw-border whitespace-nowrap">
+              <tr key={row.key} className="hover:bg-cw-blue-soft/30">
+                <td className="px-3 py-1.5 text-xs text-cw-gray-text border-b border-r border-cw-border whitespace-nowrap">
                   {row.context}
                 </td>
                 {activeLangs.map((lang) => {

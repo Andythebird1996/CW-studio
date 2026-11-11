@@ -69,7 +69,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
   const inputCls =
     'w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue-light';
 
-  const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
+  const labelCls = 'block text-sm font-medium text-cw-ink mb-1';
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -104,11 +104,11 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
             <div>
               <label className={labelCls}>
                 {t('code', lang)}
-                <span className="text-red-500 ml-0.5">*</span>
+                <span className="text-cw-negative ml-0.5">*</span>
               </label>
               <input
                 type="text"
-                className={`${inputCls} font-mono${codeError ? ' border-red-400 focus:ring-red-300' : ''}`}
+                className={`${inputCls} font-mono${codeError ? ' border-cw-negative focus:ring-cw-negative' : ''}`}
                 placeholder="MY_ASSESSMENT"
                 value={code}
                 onChange={(e) => {
@@ -118,7 +118,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
                 }}
               />
               {codeError && (
-                <p className="text-xs text-red-600 mt-1">
+                <p className="text-xs text-cw-negative mt-1">
                   {t('codeRequired', lang)}
                 </p>
               )}
@@ -158,7 +158,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
 
             {/* Checkboxes */}
             <div className="flex flex-col gap-2 pt-1">
-              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-cw-ink">
                 <input
                   type="checkbox"
                   className="rounded border-cw-border accent-cw-blue"
@@ -167,7 +167,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
                 />
                 {t('clinicianOnly', lang)}
               </label>
-              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-cw-ink">
                 <input
                   type="checkbox"
                   className="rounded border-cw-border accent-cw-blue"
@@ -183,7 +183,7 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
           <div className="flex justify-end gap-2 px-6 py-4 border-t border-cw-border shrink-0">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50"
+              className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray"
             >
               {t('cancelBtn', lang)}
             </button>

@@ -72,16 +72,16 @@ function DimensionCard({
       <div className="flex items-center gap-2 px-3 py-2 hover:bg-cw-gray cursor-pointer select-none"
            onClick={() => setExpanded((e) => !e)}>
         {expanded
-          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+          ? <ChevronDown className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />}
         <span className="font-mono text-sm font-semibold text-cw-blue min-w-0 truncate">
-          {dim.code || <span className="text-gray-400 font-normal italic">{t('newDimPH', uiLang)}</span>}
+          {dim.code || <span className="text-cw-gray-text font-normal italic">{t('newDimPH', uiLang)}</span>}
         </span>
-        {dim.name && <span className="text-xs text-gray-500 truncate flex-1">{dim.name}</span>}
-        <span className="text-xs text-gray-400 shrink-0">{dim.questionCodes.length} {t('questionsQ', uiLang)}</span>
+        {dim.name && <span className="text-xs text-cw-gray-text truncate flex-1">{dim.name}</span>}
+        <span className="text-xs text-cw-gray-text shrink-0">{dim.questionCodes.length} {t('questionsQ', uiLang)}</span>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="p-1 rounded text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+          className="p-1 rounded text-cw-gray-text hover:text-cw-negative hover:bg-cw-negative-soft transition-colors shrink-0"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -93,21 +93,21 @@ function DimensionCard({
           {/* Code + name fields */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('code', uiLang)}</label>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('code', uiLang)}</label>
               <input
                 value={dim.code}
                 onChange={(e) => onChange({ ...dim, code: e.target.value })}
                 placeholder="DIM_CODE"
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('name', uiLang)}</label>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('name', uiLang)}</label>
               <input
                 value={dim.name}
                 onChange={(e) => onChange({ ...dim, name: e.target.value })}
                 placeholder={t('dimensionNamePh', uiLang)}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               />
             </div>
           </div>
@@ -115,19 +115,19 @@ function DimensionCard({
           {/* Question assignment */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-gray-500">
+              <label className="text-xs font-medium text-cw-gray-text">
                 {t('tabQuiz', uiLang)} ({dim.questionCodes.length} {t('selectedWord', uiLang)})
               </label>
               <input
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder={t('filterCodes', uiLang)}
-                className="text-xs border border-cw-border rounded px-2 py-1 w-32 focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="text-xs border border-cw-border rounded px-2 py-1 w-32 focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               />
             </div>
             <div className="border border-cw-border rounded max-h-48 overflow-y-auto">
               {filtered.length === 0 ? (
-                <p className="text-xs text-gray-400 p-2 text-center">{t('noQuestions', uiLang)}</p>
+                <p className="text-xs text-cw-gray-text p-2 text-center">{t('noQuestions', uiLang)}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-0">
                   {filtered.map((q) => {
@@ -135,7 +135,7 @@ function DimensionCard({
                     return (
                       <label
                         key={q.code}
-                        className={`flex items-center gap-1.5 px-2 py-1 text-xs cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}
+                        className={`flex items-center gap-1.5 px-2 py-1 text-xs cursor-pointer hover:bg-cw-gray ${checked ? 'bg-cw-blue-soft' : ''}`}
                       >
                         <input
                           type="checkbox"
@@ -161,7 +161,7 @@ function DimensionCard({
                   className="inline-flex items-center gap-1 px-2 py-0.5 bg-cw-blue/10 text-cw-blue text-xs rounded-full font-mono"
                 >
                   {code}
-                  <button onClick={() => toggleQuestion(code)} className="hover:text-red-500" title={t('remove', uiLang)}>×</button>
+                  <button onClick={() => toggleQuestion(code)} className="hover:text-cw-negative" title={t('remove', uiLang)}>×</button>
                 </span>
               ))}
             </div>
@@ -221,7 +221,7 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
           <h2 className="text-sm font-semibold text-cw-blue flex items-center gap-2">
             <LayoutGrid className="w-4 h-4" /> {t('dimsHeader', uiLang)}
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-cw-gray-text mt-0.5">
             {countPhrase(dims.length, uiLang, 'nDimensionOne', 'nDimensionMany')}
             {' · '}{allQuestions.length} {t('availableQuestions', uiLang)}
           </p>
@@ -234,14 +234,14 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-6">
         {dims.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 gap-3">
+          <div className="flex flex-col items-center justify-center h-full text-center text-cw-gray-text gap-3">
             <LayoutGrid className="w-10 h-10 opacity-30" />
             <p className="text-sm">{t('noDims', uiLang)}</p>
             <button
               onClick={addDim}
-              className="text-xs px-3 py-1.5 border border-cw-border rounded hover:bg-gray-50"
+              className="text-xs px-3 py-1.5 border border-cw-border rounded hover:bg-cw-gray"
             >
               {t('addDimBtn', uiLang)}
             </button>
@@ -272,7 +272,7 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[
-            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupDim(ctxMenu.idx) },
+            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-cw-gray-text" />, onClick: () => dupDim(ctxMenu.idx) },
             { separator: true },
             { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteDim(ctxMenu.idx), danger: true },
           ]}

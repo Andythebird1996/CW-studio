@@ -163,21 +163,21 @@ function OptionsEditor({
               value={opt.texts[lang] ?? ''}
               onChange={(e) => updateOption(i, { texts: { ...opt.texts, [lang]: e.target.value } })}
               placeholder={t('optionPlaceholder', uiLang)}
-              className="flex-1 border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="flex-1 border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             />
             <input
               type="text"
               value={opt.code}
               onChange={(e) => updateOption(i, { code: e.target.value })}
               placeholder={t('code', uiLang).toLowerCase()}
-              className="w-20 border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-20 border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             />
             <input
               type="number"
               value={opt.score ?? ''}
               onChange={(e) => updateOption(i, { score: e.target.value ? +e.target.value : undefined })}
               placeholder="score"
-              className="w-16 border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-16 border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             />
             <label className="flex items-center gap-1 cursor-pointer shrink-0" title={t('reverseScoreTitle', uiLang)}>
               <input
@@ -186,9 +186,9 @@ function OptionsEditor({
                 onChange={(e) => updateOption(i, { reverseValue: e.target.checked || undefined } as any)}
                 className="accent-cw-blue"
               />
-              <span className="text-xs text-gray-500">{t('revShort', uiLang)}</span>
+              <span className="text-xs text-cw-gray-text">{t('revShort', uiLang)}</span>
             </label>
-            <button onClick={() => removeOption(i)} className="text-gray-300 hover:text-red-500">
+            <button onClick={() => removeOption(i)} className="text-cw-gray-text hover:text-cw-negative">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -224,14 +224,14 @@ function OptionsEditorWithToggle({
     <div>
       {/* Toggle bar */}
       <div className="flex items-center gap-1 mb-2">
-        <label className="block text-xs font-medium text-gray-500 flex-1">{mode === 'list' ? 'Svaralternativer' : 'Svaralternativer — tabellvisning'}</label>
+        <label className="block text-xs font-medium text-cw-gray-text flex-1">{mode === 'list' ? 'Svaralternativer' : 'Svaralternativer — tabellvisning'}</label>
         <button
           type="button"
           onClick={() => setMode(mode === 'list' ? 'table' : 'list')}
           className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${
             mode === 'table'
               ? 'bg-cw-blue text-white border-cw-blue'
-              : 'bg-white text-gray-500 border-cw-border hover:border-cw-blue-light hover:text-cw-blue-light'
+              : 'bg-white text-cw-gray-text border-cw-border hover:border-cw-blue-light hover:text-cw-blue-light'
           }`}
           title={mode === 'list' ? 'Bytt til tabellvisning' : 'Bytt til listevisning'}
         >
@@ -294,7 +294,7 @@ function QuestionRow({
 
   return (
     <div
-      className={`border rounded mb-2 bg-white transition-shadow ${
+      className={`border rounded-lg mb-3 bg-white transition-shadow ${
         isSelected
           ? 'border-cw-blue ring-2 ring-cw-blue/20'
           : 'border-cw-border shadow-sm'
@@ -304,7 +304,7 @@ function QuestionRow({
     >
       {/* Header */}
       <div
-        className="flex flex-wrap xl:flex-nowrap items-center gap-2 px-3 py-2 cursor-pointer select-none hover:bg-cw-gray"
+        className="flex flex-wrap xl:flex-nowrap items-center gap-2 px-4 py-3 cursor-pointer select-none hover:bg-cw-gray"
         onClick={(e) => {
           // Only select if not clicking inside an input/button/select/textarea
           const tag = (e.target as HTMLElement).tagName.toLowerCase();
@@ -317,35 +317,35 @@ function QuestionRow({
         {/* Drag handle */}
         <span
           {...dragHandleProps}
-          className="text-gray-300 hover:text-gray-500 cursor-grab touch-none"
+          className="text-cw-gray-text hover:text-cw-gray-text cursor-grab touch-none"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="w-4 h-4" />
         </span>
 
         {expanded ? (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-cw-gray-text" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-gray-400" />
+          <ChevronRight className="w-4 h-4 text-cw-gray-text" />
         )}
 
-        <span className="text-xs bg-cw-gray border border-cw-border text-gray-500 px-1.5 py-0.5 rounded">
+        <span className="text-xs bg-cw-gray border border-cw-border text-cw-gray-text px-1.5 py-0.5 rounded">
           {typeLabel}
         </span>
-        <span className="flex-1 min-w-0 text-sm text-gray-700 truncate">
+        <span className="flex-1 min-w-0 text-sm text-cw-ink truncate">
           {question.texts[lang] || (
-            <span className="text-gray-400 italic">{t('noText', uiLang)}</span>
+            <span className="text-cw-gray-text italic">{t('noText', uiLang)}</span>
           )}
         </span>
         {question.code && (
-          <span className="text-xs text-gray-400 font-mono">{question.code}</span>
+          <span className="text-xs text-cw-gray-text font-mono">{question.code}</span>
         )}
         {question.code && dimensionMap.has(question.code) && (
           <span className="flex items-center gap-1">
             {dimensionMap.get(question.code)!.map((dimCode) => (
               <span
                 key={dimCode}
-                className="text-[10px] font-mono bg-blue-50 border border-blue-200 text-blue-600 px-1.5 py-0.5 rounded"
+                className="text-[10px] font-mono bg-cw-blue-soft border border-cw-blue/30 text-cw-blue px-1.5 py-0.5 rounded"
                 title={`${t('tabDimensions', uiLang)}: ${dimCode}`}
               >
                 {dimCode}
@@ -355,14 +355,14 @@ function QuestionRow({
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-          className="text-gray-300 hover:text-cw-blue-light p-1"
+          className="text-cw-gray-text hover:text-cw-blue-light p-1"
           title={t('duplicateQuestion', uiLang)}
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="text-gray-300 hover:text-red-500 p-1"
+          className="text-cw-gray-text hover:text-cw-negative p-1"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -370,10 +370,10 @@ function QuestionRow({
 
       {/* Body */}
       {expanded && (
-        <div className="px-4 pb-3 pt-1 border-t border-cw-border space-y-3">
+        <div className="px-5 pb-5 pt-3 border-t border-cw-border space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('typeLabel', uiLang)}</label>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('typeLabel', uiLang)}</label>
               <select
                 value={question.type}
                 onChange={(e) => {
@@ -395,7 +395,7 @@ function QuestionRow({
                     ...(question.readonly !== undefined && { readonly: question.readonly }),
                   });
                 }}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               >
                 {QUESTION_TYPE_VALUES.map((v) => (
                   <option key={v} value={v}>{getQTypeLabel(v, uiLang)}</option>
@@ -403,17 +403,17 @@ function QuestionRow({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('code', uiLang)}</label>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('code', uiLang)}</label>
               <input
                 type="text"
                 value={question.code}
                 onChange={(e) => onChange({ ...question, code: e.target.value })}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 placeholder={t('questionCodePh', uiLang)}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('required', uiLang)}</label>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('required', uiLang)}</label>
               <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -421,13 +421,13 @@ function QuestionRow({
                   onChange={(e) => onChange({ ...question, required: e.target.checked })}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                <span className="text-sm text-gray-600">{t('requiredAnswer', uiLang)}</span>
+                <span className="text-sm text-cw-gray-text">{t('requiredAnswer', uiLang)}</span>
               </label>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">
+            <label className="block text-xs font-medium text-cw-gray-text mb-1">
               {t('questionText', uiLang)} ({lang})
             </label>
             <textarea
@@ -436,7 +436,7 @@ function QuestionRow({
                 onChange({ ...question, texts: { ...question.texts, [lang]: e.target.value } })
               }
               rows={2}
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
+              className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-none"
               placeholder={t('enterQuestionText', uiLang)}
             />
           </div>
@@ -451,7 +451,7 @@ function QuestionRow({
                   onChange={(e) => onChange({ ...question, reversedScore: e.target.checked || undefined } as Question)}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                <span className="text-xs text-gray-600">{t('reversedScore', uiLang)}</span>
+                <span className="text-xs text-cw-gray-text">{t('reversedScore', uiLang)}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -460,7 +460,7 @@ function QuestionRow({
                   onChange={(e) => onChange({ ...question, voluntary: e.target.checked || undefined } as Question)}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                <span className="text-xs text-gray-600">{t('voluntaryQ', uiLang)}</span>
+                <span className="text-xs text-cw-gray-text">{t('voluntaryQ', uiLang)}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -469,7 +469,7 @@ function QuestionRow({
                   onChange={(e) => onChange({ ...question, readonly: e.target.checked || undefined } as Question)}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                <span className="text-xs text-gray-600">{t('readonlyQ', uiLang)}</span>
+                <span className="text-xs text-cw-gray-text">{t('readonlyQ', uiLang)}</span>
               </label>
             </div>
           )}
@@ -477,7 +477,7 @@ function QuestionRow({
           {/* Help text */}
           {question.type !== 'text' && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">
                 {t('helpText', uiLang)}
               </label>
               <input
@@ -489,7 +489,7 @@ function QuestionRow({
                     helpTexts: { ...(question.helpTexts ?? {}), [lang]: e.target.value } as Record<LanguageType, string>,
                   })
                 }
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 placeholder={t('helpForRespondent', uiLang)}
               />
             </div>
@@ -530,13 +530,13 @@ function QuestionRow({
 
               {question.responseTemplateCode ? (
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('templateLabel', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('templateLabel', uiLang)}</label>
                   <select
                     value={question.responseTemplateCode}
                     onChange={(e) =>
                       onChange({ ...question, responseTemplateCode: e.target.value } as Question)
                     }
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   >
                     {responseTemplates.map((tpl) => (
                       <option key={tpl.code} value={tpl.code}>
@@ -556,7 +556,7 @@ function QuestionRow({
                     return (
                       <div className="space-y-2">
                         {usageCount > 1 && (
-                          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-xs text-amber-800">
+                          <div className="flex items-start gap-2 bg-cw-orange-soft border border-cw-orange/40 rounded px-3 py-2 text-xs text-cw-orange">
                             <span className="shrink-0 mt-0.5">⚠</span>
                             <span>
                               {tf('templateUsedBy', uiLang, { code: tplCode, n: usageCount })}
@@ -630,40 +630,40 @@ function QuestionRow({
             <div className="space-y-2">
               <div className="grid grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Min</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">Min</label>
                   <input
                     type="number"
                     value={question.min ?? ''}
                     onChange={(e) =>
                       onChange({ ...question, min: e.target.value ? +e.target.value : undefined })
                     }
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('maxField', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('maxField', uiLang)}</label>
                   <input
                     type="number"
                     value={question.max ?? ''}
                     onChange={(e) =>
                       onChange({ ...question, max: e.target.value ? +e.target.value : undefined })
                     }
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('decimals', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('decimals', uiLang)}</label>
                   <input
                     type="number"
                     min={0}
                     max={6}
                     value={question.decimals ?? 0}
                     onChange={(e) => onChange({ ...question, decimals: +e.target.value })}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('unitLabel', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('unitLabel', uiLang)}</label>
                   <input
                     type="text"
                     value={question.unit ?? ''}
@@ -671,7 +671,7 @@ function QuestionRow({
                       onChange({ ...question, unit: e.target.value || undefined })
                     }
                     placeholder={t('exampleKg', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>
@@ -682,11 +682,11 @@ function QuestionRow({
           {question.type === 'stringInput' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('sizeLabel', uiLang)}</label>
+                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('sizeLabel', uiLang)}</label>
                 <select
                   value={question.size}
                   onChange={(e) => onChange({ ...question, size: e.target.value as import('../../types/questionnaire').StringInputSize })}
-                  className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none"
+                  className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none"
                 >
                   <option value="SMALL">{t('sizeSmall', uiLang)}</option>
                   <option value="MEDIUM">Medium</option>
@@ -695,7 +695,7 @@ function QuestionRow({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('multiline', uiLang)}</label>
+                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('multiline', uiLang)}</label>
                 <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -703,7 +703,7 @@ function QuestionRow({
                     onChange={(e) => onChange({ ...question, multiline: e.target.checked })}
                     className="w-4 h-4 accent-cw-blue"
                   />
-                  <span className="text-sm text-gray-600">{t('textareaLabel', uiLang)}</span>
+                  <span className="text-sm text-cw-gray-text">{t('textareaLabel', uiLang)}</span>
                 </label>
               </div>
             </div>
@@ -719,7 +719,7 @@ function QuestionRow({
                   onChange={(e) => onChange({ ...question, includeTime: e.target.checked })}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                <span className="text-sm text-gray-600">{t('includeTime', uiLang)}</span>
+                <span className="text-sm text-cw-gray-text">{t('includeTime', uiLang)}</span>
               </label>
             </div>
           )}
@@ -729,36 +729,36 @@ function QuestionRow({
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Min</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">Min</label>
                   <input
                     type="number"
                     value={question.min}
                     onChange={(e) => onChange({ ...question, min: +e.target.value })}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('maxField', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('maxField', uiLang)}</label>
                   <input
                     type="number"
                     value={question.max}
                     onChange={(e) => onChange({ ...question, max: +e.target.value })}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('stepLabel', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('stepLabel', uiLang)}</label>
                   <input
                     type="number"
                     value={question.step ?? 1}
                     onChange={(e) => onChange({ ...question, step: +e.target.value })}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('minLabelField', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('minLabelField', uiLang)}</label>
                   <input
                     type="text"
                     value={question.minLabel?.[lang] ?? ''}
@@ -769,11 +769,11 @@ function QuestionRow({
                       })
                     }
                     placeholder={t('low', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('maxLabelField', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('maxLabelField', uiLang)}</label>
                   <input
                     type="text"
                     value={question.maxLabel?.[lang] ?? ''}
@@ -784,13 +784,13 @@ function QuestionRow({
                       })
                     }
                     placeholder={t('high', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>
               {/* Slider display settings */}
               <details className="border border-cw-border rounded">
-                <summary className="px-3 py-1.5 text-xs font-medium text-gray-500 cursor-pointer select-none hover:bg-cw-gray">
+                <summary className="px-3 py-1.5 text-xs font-medium text-cw-gray-text cursor-pointer select-none hover:bg-cw-gray">
                   {t('displaySettings', uiLang)}
                 </summary>
                 <div className="px-3 pb-3 pt-2 space-y-2">
@@ -812,26 +812,26 @@ function QuestionRow({
                           onChange={(e) => onChange({ ...question, [field]: e.target.checked || undefined } as Question)}
                           className="accent-cw-blue"
                         />
-                        <span className="text-xs text-gray-600">{label}</span>
+                        <span className="text-xs text-cw-gray-text">{label}</span>
                       </label>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-1">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <label className="block text-xs font-medium text-cw-gray-text mb-1">
                         {t('direction', uiLang)}
                       </label>
                       <select
                         value={(question as any).direction ?? 'horizontal'}
                         onChange={(e) => onChange({ ...question, direction: e.target.value || undefined } as any)}
-                        className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                        className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                       >
                         <option value="horizontal">{t('horizontal', uiLang)}</option>
                         <option value="vertical">{t('vertical', uiLang)}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <label className="block text-xs font-medium text-cw-gray-text mb-1">
                         {t('lengthCss', uiLang)}
                       </label>
                       <input
@@ -839,7 +839,7 @@ function QuestionRow({
                         value={(question as any).sliderLength ?? ''}
                         onChange={(e) => onChange({ ...question, sliderLength: e.target.value || undefined } as any)}
                         placeholder="300px"
-                        className="w-full border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                        className="w-full border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                       />
                     </div>
                   </div>
@@ -851,12 +851,12 @@ function QuestionRow({
           {/* Checkbox layout */}
           {question.type === 'checkbox' && (
             <details className="border border-cw-border rounded">
-              <summary className="px-3 py-1.5 text-xs font-medium text-gray-500 cursor-pointer select-none hover:bg-cw-gray">
+              <summary className="px-3 py-1.5 text-xs font-medium text-cw-gray-text cursor-pointer select-none hover:bg-cw-gray">
                 {t('displaySettings', uiLang)}
               </summary>
               <div className="px-3 pb-3 pt-2 grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('columnCount', uiLang)} (1–6)
                   </label>
                   <input
@@ -866,11 +866,11 @@ function QuestionRow({
                     value={(question as any).numberOfColumns ?? ''}
                     onChange={(e) => onChange({ ...question, numberOfColumns: e.target.value ? +e.target.value : undefined } as any)}
                     placeholder="1"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('maxChoices', uiLang)}
                   </label>
                   <input
@@ -879,11 +879,11 @@ function QuestionRow({
                     value={(question as any).limit ?? ''}
                     onChange={(e) => onChange({ ...question, limit: e.target.value !== '' ? +e.target.value : undefined } as any)}
                     placeholder="0"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('ignoreOptionCodeEx', uiLang)}
                   </label>
                   <input
@@ -891,7 +891,7 @@ function QuestionRow({
                     value={(question as any).ignoreAnswerOptionCode ?? ''}
                     onChange={(e) => onChange({ ...question, ignoreAnswerOptionCode: e.target.value || undefined } as any)}
                     placeholder="NONE"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>
@@ -901,12 +901,12 @@ function QuestionRow({
           {/* Radiobutton layout */}
           {question.type === 'radiobutton' && (
             <details className="border border-cw-border rounded">
-              <summary className="px-3 py-1.5 text-xs font-medium text-gray-500 cursor-pointer select-none hover:bg-cw-gray">
+              <summary className="px-3 py-1.5 text-xs font-medium text-cw-gray-text cursor-pointer select-none hover:bg-cw-gray">
                 {t('displaySettings', uiLang)}
               </summary>
               <div className="px-3 pb-3 pt-2 grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('columnCount', uiLang)} (1–6)
                   </label>
                   <input
@@ -916,11 +916,11 @@ function QuestionRow({
                     value={(question as any).numberOfColumns ?? ''}
                     onChange={(e) => onChange({ ...question, numberOfColumns: e.target.value ? +e.target.value : undefined } as any)}
                     placeholder="1"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('ignoreOptionCode', uiLang)}
                   </label>
                   <input
@@ -928,7 +928,7 @@ function QuestionRow({
                     value={(question as any).ignoreAnswerOptionCode ?? ''}
                     onChange={(e) => onChange({ ...question, ignoreAnswerOptionCode: e.target.value || undefined } as any)}
                     placeholder="NONE"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>
@@ -938,7 +938,7 @@ function QuestionRow({
           {/* Image question editor */}
           {question.type === 'image' && (
             <div className="space-y-3">
-              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded px-3 py-2 text-xs text-blue-800">
+              <div className="flex items-start gap-2 bg-cw-blue-soft border border-cw-blue/30 rounded px-3 py-2 text-xs text-cw-blue">
                 <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   {t('imageDisplayHint', uiLang)}
@@ -946,14 +946,14 @@ function QuestionRow({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('fileNameOrCode', uiLang)}
                   </label>
                   {mediaCodes.length > 0 ? (
                     <select
                       value={question.imageSrc ?? ''}
                       onChange={(e) => onChange({ ...question, imageSrc: e.target.value || undefined })}
-                      className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                      className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                     >
                       <option value="">{t('selectMediaFile', uiLang)}</option>
                       {mediaCodes.map((code) => (
@@ -966,12 +966,12 @@ function QuestionRow({
                       value={question.imageSrc ?? ''}
                       onChange={(e) => onChange({ ...question, imageSrc: e.target.value || undefined })}
                       placeholder="MEDIA_FILE.png"
-                      className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                      className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                     />
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {tf('altText', uiLang, { lang })}
                   </label>
                   <input
@@ -984,7 +984,7 @@ function QuestionRow({
                       })
                     }
                     placeholder={t('altTextPh', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>
@@ -994,7 +994,7 @@ function QuestionRow({
           {/* Country question editor */}
           {question.type === 'country' && (
             <div className="space-y-3">
-              <div className="flex items-start gap-2 bg-gray-50 border border-cw-border rounded px-3 py-2 text-xs text-gray-600">
+              <div className="flex items-start gap-2 bg-cw-gray border border-cw-border rounded px-3 py-2 text-xs text-cw-gray-text">
                 <ArrowRight className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   {t('countryListHint', uiLang)}
@@ -1007,7 +1007,7 @@ function QuestionRow({
                   onChange={(e) => onChange({ ...question, multiSelect: e.target.checked } as import('../../types/questionnaire').CountryQuestion)}
                   className="w-4 h-4 accent-cw-blue"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-cw-gray-text">
                   {t('allowMultiCountry', uiLang)}
                 </span>
               </label>
@@ -1194,7 +1194,7 @@ function SectionEditor({
     <div className={borderClass} data-element-id={section.id}>
       {/* Section header */}
       <div
-        className={`flex flex-wrap xl:flex-nowrap items-center gap-2 ${headerBg} px-3 py-2 ${collapsed ? 'rounded-lg' : 'rounded-t-lg border-b border-cw-border'}`}
+        className={`flex flex-wrap xl:flex-nowrap items-center gap-2 ${headerBg} px-4 py-3 ${collapsed ? 'rounded-lg' : 'rounded-t-lg border-b border-cw-border'}`}
         onContextMenu={
           onSectionContextMenu
             ? (e) => onSectionContextMenu(e, section.id)
@@ -1205,14 +1205,14 @@ function SectionEditor({
         {!isNested && (
           <span
             {...dragHandleProps}
-            className="text-gray-300 hover:text-gray-500 cursor-grab touch-none"
+            className="text-cw-gray-text hover:text-cw-gray-text cursor-grab touch-none"
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="w-4 h-4" />
           </span>
         )}
 
-        <button onClick={() => setCollapsed((c) => !c)} className="text-gray-500">
+        <button onClick={() => setCollapsed((c) => !c)} className="text-cw-gray-text">
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />
           ) : (
@@ -1227,18 +1227,18 @@ function SectionEditor({
             onChange({ ...section, titles: { ...section.titles, [lang]: e.target.value } })
           }
           placeholder={t('sectionTitle', uiLang)}
-          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-gray-700 focus:outline-none border-b border-transparent focus:border-cw-blue"
+          className="flex-1 min-w-0 bg-transparent text-sm font-medium text-cw-ink focus:outline-none border-b border-transparent focus:border-cw-blue"
           onClick={(e) => e.stopPropagation()}
         />
 
         {/* Type badge — visible only when collapsed, for non-NORMAL types */}
         {collapsed && section.type === 'REPEATED' && (
-          <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 font-mono">
+          <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-semibold text-cw-blue bg-cw-blue-soft border border-cw-blue/30 rounded px-1.5 py-0.5 font-mono">
             ↻ REPEATED
           </span>
         )}
         {collapsed && section.type === 'CONDITIONAL' && (
-          <span className="shrink-0 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+          <span className="shrink-0 text-[10px] font-semibold text-cw-orange bg-cw-orange-soft border border-cw-orange/40 rounded px-1.5 py-0.5">
             COND
           </span>
         )}
@@ -1248,7 +1248,7 @@ function SectionEditor({
           value={section.code ?? ''}
           onChange={(e) => onChange({ ...section, code: e.target.value })}
           placeholder={t('code', uiLang).toLowerCase()}
-          className="w-24 bg-white border border-cw-border rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+          className="w-24 bg-white border border-cw-border rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
         />
 
         <select
@@ -1270,7 +1270,7 @@ function SectionEditor({
             onChange={(e) => onChange({ ...section, repeatCode: e.target.value })}
             placeholder={t('repeatCodePH', uiLang)}
             onClick={(e) => e.stopPropagation()}
-            className="w-24 bg-white border border-cw-border rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-24 bg-white border border-cw-border rounded px-2 py-0.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             title={t('repetitionCode', uiLang)}
           />
         )}
@@ -1286,22 +1286,22 @@ function SectionEditor({
             onChange={(e) => onChange({ ...section, requiresNewPage: e.target.checked || undefined })}
             className="accent-cw-blue"
           />
-          <span className="text-xs text-gray-500">{t('newPage', uiLang)}</span>
+          <span className="text-xs text-cw-gray-text">{t('newPage', uiLang)}</span>
         </label>
 
-        <span className="text-xs text-gray-400 tabular-nums">
+        <span className="text-xs text-cw-gray-text tabular-nums">
           {countAllQuestions(section)} {t('questionsQ', uiLang)}
         </span>
 
         {/* Validation badges (top-level sections only) */}
         {depth === 0 && sectionErrorCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] font-medium text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 shrink-0">
+          <span className="flex items-center gap-0.5 text-[10px] font-medium text-cw-negative bg-cw-negative-soft border border-cw-negative/30 rounded px-1.5 py-0.5 shrink-0">
             <AlertCircle className="w-3 h-3" />
             {sectionErrorCount} feil
           </span>
         )}
         {depth === 0 && sectionWarningCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 shrink-0">
+          <span className="flex items-center gap-0.5 text-[10px] font-medium text-cw-orange bg-cw-orange-soft border border-cw-orange/40 rounded px-1.5 py-0.5 shrink-0">
             <AlertTriangle className="w-3 h-3" />
             {sectionWarningCount} advarsel{sectionWarningCount !== 1 ? 'er' : ''}
           </span>
@@ -1310,14 +1310,14 @@ function SectionEditor({
         {onDuplicate && (
           <button
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            className="text-gray-300 hover:text-cw-blue-light"
+            className="text-cw-gray-text hover:text-cw-blue-light"
             title={t('duplicateSection', uiLang)}
           >
             <Copy className="w-4 h-4" />
           </button>
         )}
 
-        <button onClick={onDelete} className="text-gray-300 hover:text-red-500">
+        <button onClick={onDelete} className="text-cw-gray-text hover:text-cw-negative">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
@@ -1434,9 +1434,9 @@ function SectionEditor({
           {/* Add question / sub-section */}
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">{t('addLabel', uiLang)}</span>
+              <span className="text-xs text-cw-gray-text">{t('addLabel', uiLang)}</span>
               <select
-                className="text-xs border border-cw-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="text-xs border border-cw-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 defaultValue=""
                 onChange={(e) => {
                   if (e.target.value) addQuestion(e.target.value as Question['type']);
@@ -1459,7 +1459,7 @@ function SectionEditor({
                 };
                 onChange({ ...section, subSections: [...(section.subSections ?? []), sub] });
               }}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-cw-blue-light border border-dashed border-gray-300 hover:border-cw-blue-light rounded px-2 py-1 transition-colors"
+              className="flex items-center gap-1 text-xs text-cw-gray-text hover:text-cw-blue-light border border-dashed border-cw-border hover:border-cw-blue-light rounded px-2 py-1 transition-colors"
             >
               <PlusCircle className="w-3.5 h-3.5" /> {t('subsection', uiLang)}
             </button>
@@ -1548,14 +1548,14 @@ function ResponseTemplatesEditor({
     <div className="border-2 border-dashed border-cw-border rounded-lg mb-4">
       {/* Header toggle */}
       <button
-        className="flex items-center justify-between w-full px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-lg"
+        className="flex items-center justify-between w-full px-3 py-2 text-sm text-cw-gray-text hover:bg-cw-gray rounded-lg"
         onClick={() => setOpen((o) => !o)}
       >
         <span className="flex items-center gap-2 font-medium">
           {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           {t('responseTpls', uiLang)}
           {templates.length > 0 && (
-            <span className="text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">
+            <span className="text-xs bg-cw-gray text-cw-gray-text rounded-full px-1.5 py-0.5">
               {templates.length}
             </span>
           )}
@@ -1573,7 +1573,7 @@ function ResponseTemplatesEditor({
           {/* List */}
           <div className="w-full sm:w-40 sm:shrink-0 space-y-1">
             {templates.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">{t('noResponseTpls', uiLang)}</p>
+              <p className="text-xs text-cw-gray-text italic">{t('noResponseTpls', uiLang)}</p>
             ) : (
               templates.map((tpl, i) => (
                 <div
@@ -1581,14 +1581,14 @@ function ResponseTemplatesEditor({
                   className={`flex items-center justify-between px-2 py-1 rounded cursor-pointer text-xs ${
                     activeIdx === i
                       ? 'bg-cw-blue text-white'
-                      : 'hover:bg-gray-100 text-gray-700'
+                      : 'hover:bg-cw-gray text-cw-ink'
                   }`}
                   onClick={() => setActiveIdx(i)}
                 >
                   <span className="truncate font-mono">{tpl.code || t('noCode', uiLang)}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); deleteTemplate(i); }}
-                    className={`ml-1 ${activeIdx === i ? 'text-white/70 hover:text-white' : 'text-gray-300 hover:text-red-500'}`}
+                    className={`ml-1 ${activeIdx === i ? 'text-white/70 hover:text-white' : 'text-cw-gray-text hover:text-cw-negative'}`}
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -1608,21 +1608,21 @@ function ResponseTemplatesEditor({
             <div className="flex-1 border border-cw-border rounded p-3 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('code', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('code', uiLang)}</label>
                   <input
                     value={active.code}
                     onChange={(e) => updateTemplate(activeIdx, { ...active, code: e.target.value })}
                     placeholder={t('templateCodePh', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('name', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('name', uiLang)}</label>
                   <input
                     value={active.name}
                     onChange={(e) => updateTemplate(activeIdx, { ...active, name: e.target.value })}
                     placeholder={t('templateNamePh', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>
@@ -1784,10 +1784,10 @@ function ContextMenu({
     return () => { fn(); onClose(); };
   }
 
-  const itemCls = 'flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-gray-100 transition-colors cursor-pointer';
-  const redItemCls = `${itemCls} text-red-600 hover:bg-red-50`;
-  const disabledCls = 'flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left text-gray-300 cursor-not-allowed';
-  const sepCls = 'border-t border-gray-100 my-0.5';
+  const itemCls = 'flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-cw-gray transition-colors cursor-pointer';
+  const redItemCls = `${itemCls} text-cw-negative hover:bg-cw-negative-soft`;
+  const disabledCls = 'flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left text-cw-gray-text cursor-not-allowed';
+  const sepCls = 'border-t border-cw-border my-0.5';
 
   return (
     <div
@@ -1802,20 +1802,20 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onCopyQuestion(menu.questionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('copy', uiLang)}
+            <Copy className="w-3.5 h-3.5 text-cw-gray-text" /> {t('copy', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onCutQuestion(menu.questionId!, menu.sectionId!))}
           >
-            <Scissors className="w-3.5 h-3.5 text-gray-400" /> {t('cut', uiLang)}
+            <Scissors className="w-3.5 h-3.5 text-cw-gray-text" /> {t('cut', uiLang)}
           </button>
           {clipboardKind === 'question' ? (
             <button
               className={itemCls}
               onClick={wrap(() => onPasteOverQuestion(menu.questionId!, menu.sectionId!))}
             >
-              <Clipboard className="w-3.5 h-3.5 text-gray-400" /> {t('pasteOver', uiLang)}
+              <Clipboard className="w-3.5 h-3.5 text-cw-gray-text" /> {t('pasteOver', uiLang)}
             </button>
           ) : (
             <span className={disabledCls}>
@@ -1827,7 +1827,7 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onDuplicateQuestion(menu.questionId!, menu.sectionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('duplicate', uiLang)}
+            <Copy className="w-3.5 h-3.5 text-cw-gray-text" /> {t('duplicate', uiLang)}
           </button>
           {/* Move to section */}
           <div className="relative">
@@ -1835,9 +1835,9 @@ function ContextMenu({
               className={itemCls}
               onClick={() => setMoveOpen((v) => !v)}
             >
-              <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+              <ArrowRight className="w-3.5 h-3.5 text-cw-gray-text" />
               {t('moveToSection', uiLang)}
-              <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+              <ChevronRight className="w-3 h-3 text-cw-gray-text ml-auto" />
             </button>
             {moveOpen && (
               <div className="absolute left-full top-0 bg-white border border-cw-border rounded shadow-xl min-w-[160px] py-1 z-10">
@@ -1853,7 +1853,7 @@ function ContextMenu({
                     </button>
                   ))}
                 {allFlatSections.filter((s) => s.id !== menu.sectionId).length === 0 && (
-                  <span className="px-3 py-1.5 text-xs text-gray-400 block">{t('noOtherSections', uiLang)}</span>
+                  <span className="px-3 py-1.5 text-xs text-cw-gray-text block">{t('noOtherSections', uiLang)}</span>
                 )}
               </div>
             )}
@@ -1874,20 +1874,20 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onCopySection(menu.topSectionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('copySection', uiLang)}
+            <Copy className="w-3.5 h-3.5 text-cw-gray-text" /> {t('copySection', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onCutSection(menu.topSectionId!))}
           >
-            <Scissors className="w-3.5 h-3.5 text-gray-400" /> {t('cutSection', uiLang)}
+            <Scissors className="w-3.5 h-3.5 text-cw-gray-text" /> {t('cutSection', uiLang)}
           </button>
           {clipboardKind === 'section' ? (
             <button
               className={itemCls}
               onClick={wrap(() => onPasteSection())}
             >
-              <Clipboard className="w-3.5 h-3.5 text-gray-400" /> {t('pasteSection', uiLang)}
+              <Clipboard className="w-3.5 h-3.5 text-cw-gray-text" /> {t('pasteSection', uiLang)}
             </button>
           ) : (
             <span className={disabledCls}>
@@ -1899,26 +1899,26 @@ function ContextMenu({
             className={itemCls}
             onClick={wrap(() => onDuplicateSection(menu.topSectionId!))}
           >
-            <Copy className="w-3.5 h-3.5 text-gray-400" /> {t('duplicateSection', uiLang)}
+            <Copy className="w-3.5 h-3.5 text-cw-gray-text" /> {t('duplicateSection', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onGenerateCodesForSection(menu.topSectionId!))}
           >
-            <Hash className="w-3.5 h-3.5 text-gray-400" /> {t('generateCodes', uiLang)}
+            <Hash className="w-3.5 h-3.5 text-cw-gray-text" /> {t('generateCodes', uiLang)}
           </button>
           <div className={sepCls} />
           <button
             className={itemCls}
             onClick={wrap(() => onAddQuestionToSection(menu.topSectionId!, 'radiobutton'))}
           >
-            <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> {t('addQuestion', uiLang)}
+            <PlusCircle className="w-3.5 h-3.5 text-cw-gray-text" /> {t('addQuestion', uiLang)}
           </button>
           <button
             className={itemCls}
             onClick={wrap(() => onAddSubSection(menu.topSectionId!))}
           >
-            <PlusCircle className="w-3.5 h-3.5 text-gray-400" /> {t('addSubsection', uiLang)}
+            <PlusCircle className="w-3.5 h-3.5 text-cw-gray-text" /> {t('addSubsection', uiLang)}
           </button>
           <div className={sepCls} />
           <button
@@ -2412,20 +2412,20 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
     <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       {/* ── Generate codes toast ── */}
       {generateToast && (
-        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-white text-xs px-3 py-1.5 rounded shadow-lg pointer-events-none select-none">
+        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-cw-ink text-white text-xs px-3 py-1.5 rounded shadow-lg pointer-events-none select-none">
           {generateToast}
         </div>
       )}
 
       {/* ── Questionnaire metadata ── */}
-      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0">
+      <div className="bg-white border-b border-cw-border px-5 py-4 shrink-0">
         {/* Toolbar row: generate-codes + validation badge */}
         <div className="flex flex-wrap items-center gap-2 mb-2.5">
           {/* Split button: main = fill empty, dropdown = overwrite all */}
           <div className="relative flex shrink-0">
             <button
               onClick={() => handleGenerateCodes(false)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-l border border-cw-border bg-white hover:bg-gray-50 hover:border-cw-blue-light text-gray-600 hover:text-cw-blue transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-l border border-cw-border bg-white hover:bg-cw-gray hover:border-cw-blue-light text-cw-gray-text hover:text-cw-blue transition-colors"
               title={t('fillEmptyCodesTitle', uiLang)}
             >
               <Hash className="w-3.5 h-3.5" />
@@ -2433,7 +2433,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
             </button>
             <button
               onClick={() => setGenerateMenuOpen((v) => !v)}
-              className="flex items-center px-1.5 py-1 text-xs rounded-r border border-l-0 border-cw-border bg-white hover:bg-gray-50 text-gray-400 hover:text-cw-blue transition-colors"
+              className="flex items-center px-1.5 py-1 text-xs rounded-r border border-l-0 border-cw-border bg-white hover:bg-cw-gray text-cw-gray-text hover:text-cw-blue transition-colors"
               title={t('moreOptions', uiLang)}
             >
               <ChevronDown className="w-3 h-3" />
@@ -2442,18 +2442,18 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
               <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-cw-border rounded shadow-md min-w-[180px]">
                 <button
                   onClick={() => handleGenerateCodes(false)}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700"
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-cw-gray text-cw-ink"
                 >
                   <span className="font-medium block">{t('fillEmptyCodes', uiLang)}</span>
-                  <span className="text-gray-400">{t('keepExisting', uiLang)}</span>
+                  <span className="text-cw-gray-text">{t('keepExisting', uiLang)}</span>
                 </button>
                 <div className="border-t border-cw-border" />
                 <button
                   onClick={() => handleGenerateCodes(true)}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-red-50 text-red-600"
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-cw-negative-soft text-cw-negative"
                 >
                   <span className="font-medium block">{t('overwriteAllCodes', uiLang)}</span>
-                  <span className="text-red-400">{t('replacesExisting', uiLang)}</span>
+                  <span className="text-cw-negative">{t('replacesExisting', uiLang)}</span>
                 </button>
               </div>
             )}
@@ -2464,26 +2464,26 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
           {hasIssues ? (
             <button
               onClick={() => onToggleValidation?.()}
-              className="flex items-center gap-2 px-2.5 py-1 text-xs rounded border bg-white hover:bg-gray-50 transition-colors shrink-0"
-              style={{ borderColor: errorCount > 0 ? '#ef4444' : '#f59e0b' }}
+              className="flex items-center gap-2 px-2.5 py-1 text-xs rounded border bg-white hover:bg-cw-gray transition-colors shrink-0"
+              style={{ borderColor: errorCount > 0 ? 'var(--color-cw-negative)' : 'var(--color-cw-orange)' }}
               title={t('showValidationIssues', uiLang)}
             >
               {errorCount > 0 && (
-                <span className="flex items-center gap-1 text-red-500 font-medium">
+                <span className="flex items-center gap-1 text-cw-negative font-medium">
                   <AlertCircle className="w-3.5 h-3.5" />
                   {countPhrase(errorCount, uiLang, 'nErrorOne', 'nErrorMany')}
                 </span>
               )}
-              {errorCount > 0 && warningCount > 0 && <span className="text-gray-300">|</span>}
+              {errorCount > 0 && warningCount > 0 && <span className="text-cw-gray-text">|</span>}
               {warningCount > 0 && (
-                <span className="flex items-center gap-1 text-amber-500 font-medium">
+                <span className="flex items-center gap-1 text-cw-orange font-medium">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   {countPhrase(warningCount, uiLang, 'nWarningOne', 'nWarningMany')}
                 </span>
               )}
             </button>
           ) : (
-            <span className="text-xs text-green-600 font-medium px-1">
+            <span className="text-xs text-cw-positive font-medium px-1">
               {t('noProblems', uiLang)}
             </span>
           )}
@@ -2491,34 +2491,34 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t('code', uiLang)}</label>
+            <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('code', uiLang)}</label>
             <input
               type="text"
               value={questionnaire.code}
               onChange={(e) => onChange({ ...questionnaire, code: e.target.value })}
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               placeholder={t('assessmentCodePh', uiLang)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t('name', uiLang)} ({lang})</label>
+            <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('name', uiLang)} ({lang})</label>
             <input
               type="text"
               value={questionnaire.name[lang] ?? ''}
               onChange={(e) =>
                 onChange({ ...questionnaire, name: { ...questionnaire.name, [lang]: e.target.value } })
               }
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               placeholder={t('assessmentNameFieldPh', uiLang)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">{t('version', uiLang)}</label>
+            <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('version', uiLang)}</label>
             <input
               type="text"
               value={questionnaire.version}
               onChange={(e) => onChange({ ...questionnaire, version: e.target.value })}
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               placeholder="1.0"
             />
           </div>
@@ -2530,7 +2530,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
         {/* Left: editor */}
         <div
-          className="flex-1 overflow-auto p-4 min-w-0 min-h-0"
+          className="flex-1 overflow-auto p-6 min-w-0 min-h-0"
           onClick={() => {
             // Clicking empty space in the editor clears context menu
             if (contextMenu) setContextMenu(null);
@@ -2583,14 +2583,14 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
           <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={addSection}
-              className="flex items-center justify-center gap-2 flex-1 border-2 border-dashed border-cw-border rounded-lg py-3 text-sm text-gray-400 hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
+              className="flex items-center justify-center gap-2 flex-1 border-2 border-dashed border-cw-border rounded-lg py-3 text-sm text-cw-gray-text hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
               <span>{t('addSection', uiLang)}</span>
             </button>
             <button
               onClick={() => setImportTextOpen(true)}
-              className="flex items-center justify-center gap-2 border-2 border-dashed border-cw-border rounded-lg py-3 px-4 text-sm text-gray-400 hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
+              className="flex items-center justify-center gap-2 border-2 border-dashed border-cw-border rounded-lg py-3 px-4 text-sm text-cw-gray-text hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
               title={t('importTextsTitle', uiLang)}
             >
               <FileText className="w-4 h-4" />
@@ -2600,7 +2600,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
             {clipboardKind === 'section' && (
               <button
                 onClick={handlePasteSection}
-                className="flex items-center justify-center gap-2 border-2 border-dashed border-cw-blue-light rounded-lg py-3 px-4 text-sm text-cw-blue-light hover:bg-blue-50 transition-colors"
+                className="flex items-center justify-center gap-2 border-2 border-dashed border-cw-blue-light rounded-lg py-3 px-4 text-sm text-cw-blue-light hover:bg-cw-blue-soft transition-colors"
                 title={t('pasteSectionTitle', uiLang)}
               >
                 <Clipboard className="w-4 h-4" />
@@ -2649,7 +2649,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
             <span className="text-cw-gray-text truncate min-w-0 flex-1 hidden sm:block">{t('previewHint', uiLang)}</span>
             <button
               type="button"
-              className="xl:hidden p-1.5 text-gray-500 border border-cw-border rounded"
+              className="xl:hidden p-1.5 text-cw-gray-text border border-cw-border rounded"
               onClick={() => setPreviewCollapsed(true)}
               aria-label={t('previewPanel', uiLang)}
             >
@@ -2659,7 +2659,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
               <select
                 value={previewLang}
                 onChange={(e) => setPreviewLang(e.target.value as LanguageType)}
-                className="text-xs border border-cw-border rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="text-xs border border-cw-border rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 title={t('selectPreviewLang', uiLang)}
               >
                 {availableLangs.map((l) => (
@@ -2676,7 +2676,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
         {previewCollapsed && (
           <button
             type="button"
-            className="xl:hidden shrink-0 flex items-center justify-center gap-1 border-t border-cw-border bg-white px-3 py-2 text-xs font-semibold text-gray-500"
+            className="xl:hidden shrink-0 flex items-center justify-center gap-1 border-t border-cw-border bg-white px-3 py-2 text-xs font-semibold text-cw-gray-text"
             onClick={() => setPreviewCollapsed(false)}
           >
             <ChevronUp className="w-4 h-4" />

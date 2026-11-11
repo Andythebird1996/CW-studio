@@ -5,6 +5,36 @@ import type { Questionnaire, LanguageType } from '../../types/questionnaire';
 import { AssessmentPreview, type AnswerMap } from '../preview/AssessmentPreview';
 import {t,  useUILang } from '../../i18n';
 
+export type ReportSheetStyle = 'engine' | 'portal';
+
+export function ReportStyleSwitch({
+  value,
+  onChange,
+}: {
+  value: ReportSheetStyle;
+  onChange: (next: ReportSheetStyle) => void;
+}) {
+  const uiLang = useUILang();
+  const item = (id: ReportSheetStyle, label: string) => (
+    <button
+      type="button"
+      onClick={() => onChange(id)}
+      aria-pressed={value === id}
+      className={`px-3 py-1.5 text-xs transition-colors ${
+        value === id ? 'bg-cw-blue text-white' : 'bg-white text-cw-gray-text hover:bg-cw-gray'
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex rounded border border-cw-border overflow-hidden" role="group" aria-label={t('reportStyleLabel', uiLang)}>
+      {item('engine', t('reportStyleEngine', uiLang))}
+      {item('portal', t('reportStylePortal', uiLang))}
+    </div>
+  );
+}
+
 const LANG_LABELS: Record<string, string> = {
   NO: 'Norsk', EN: 'English', SV: 'Svenska', DA: 'Dansk',
   FI: 'Suomi', DE: 'Deutsch', FR: 'Français', PL: 'Polski',
@@ -14,6 +44,8 @@ interface Props {
   questionnaire: Questionnaire;
   rapContent: string;
   reportFileName?: string;
+  reportStyle?: ReportSheetStyle;
+  onReportStyleChange?: (next: ReportSheetStyle) => void;
 }
 
 /** Convert AssessmentPreview AnswerMap → SimAnswer map for the RAP interpreter. */
@@ -69,7 +101,7 @@ function convertAnswers(
 
 // ─── Main simulator ────────────────────────────────────────────────────────
 
-export function ReportSimulator({ questionnaire, rapContent, reportFileName }: Props) {
+export function ReportSimulator({ questionnaire, rapContent, reportFileName, reportStyle = 'engine', onReportStyleChange }: Props) {
   const uiLang = useUILang();
   const [lang, setLang] = useState<LanguageType>(questionnaire.defaultLanguage);
   const availableLangs = questionnaire.supportedLanguages.length > 0
@@ -117,9 +149,10 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
       answers: simAnswers,
       patient,
       reportName: reportName || (reportFileName ? reportFileName.replace(/\.rap$/, '') : undefined),
+      reportStyle,
     };
     return interpretRap(rapContent, ctx);
-  }, [questionnaire, rapContent, simAnswers, patient, reportName]);
+  }, [questionnaire, rapContent, simAnswers, patient, reportName, reportFileName, reportStyle]);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const savedScrollY = useRef(0);
@@ -236,6 +269,9 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
             <span className="text-sm font-medium text-cw-blue">{t('livePreview', uiLang)}</span>
             <span className="text-xs text-cw-gray-text truncate">{t('livePreviewHint', uiLang)}</span>
           </div>
+          {onReportStyleChange && (
+            <ReportStyleSwitch value={reportStyle} onChange={onReportStyleChange} />
+          )}
           <button
             onClick={() => {
               const win = window.open('', '_blank');
@@ -245,7 +281,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
               win.focus();
               setTimeout(() => { win.print(); }, 400);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded bg-white hover:bg-cw-gray text-gray-700"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded bg-white hover:bg-cw-gray text-cw-ink"
           >
             <Download className="w-3 h-3" /> {t('downloadPdf', uiLang)}
           </button>

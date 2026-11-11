@@ -177,7 +177,7 @@ function QuestionRow({
       <td className="py-2 px-3">
         <span className="font-mono text-xs font-semibold text-cw-blue">{question.code}</span>
       </td>
-      <td className="py-2 px-3 text-xs text-gray-600 max-w-[260px] truncate" title={text}>
+      <td className="py-2 px-3 text-xs text-cw-gray-text max-w-[260px] truncate" title={text}>
         {text}
       </td>
       <td className="py-2 px-3">
@@ -185,7 +185,7 @@ function QuestionRow({
           <select
             value={value}
             onChange={(e) => onChange(question.code, e.target.value)}
-            className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light bg-white"
+            className="w-full border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30 bg-white"
           >
             <option value="">— {t('choose', lang)} —</option>
             {opts.map((opt) => (
@@ -202,7 +202,7 @@ function QuestionRow({
             min={(question as any).min}
             max={(question as any).max}
             onChange={(e) => onChange(question.code, e.target.value)}
-            className="w-28 border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-28 border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             placeholder="0"
           />
         ) : question.type === 'stringInput' ? (
@@ -210,7 +210,7 @@ function QuestionRow({
             type="text"
             value={value}
             onChange={(e) => onChange(question.code, e.target.value)}
-            className="w-40 border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-40 border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             placeholder={t('textDots', lang)}
           />
         ) : question.type === 'dateInput' ? (
@@ -218,10 +218,10 @@ function QuestionRow({
             type={question.includeTime ? 'datetime-local' : 'date'}
             value={value}
             onChange={(e) => onChange(question.code, e.target.value)}
-            className="border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="border border-cw-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           />
         ) : (
-          <span className="text-xs text-gray-400 italic">
+          <span className="text-xs text-cw-gray-text italic">
             {t('notSupported', lang)}
           </span>
         )}
@@ -251,16 +251,16 @@ function SectionGroup({
 
   return (
     <details open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
-      <summary className="flex items-center gap-2 px-3 py-2 bg-cw-gray border-b border-cw-border cursor-pointer select-none hover:bg-blue-50/40 list-none">
+      <summary className="flex items-center gap-2 px-3 py-2 bg-cw-gray border-b border-cw-border cursor-pointer select-none hover:bg-cw-blue-soft/40 list-none">
         {open
-          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          ? <ChevronDown className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
         }
         <span className="text-xs font-semibold text-cw-blue">{title}</span>
         {section.code && (
-          <span className="text-[10px] font-mono text-gray-400">[{section.code}]</span>
+          <span className="text-[10px] font-mono text-cw-gray-text">[{section.code}]</span>
         )}
-        <span className="text-[10px] text-gray-400 ml-auto">
+        <span className="text-[10px] text-cw-gray-text ml-auto">
           {questions.length} {t('questionsWord', lang)}
         </span>
       </summary>
@@ -305,16 +305,16 @@ function SectionGroup({
 // ─── Results panel ────────────────────────────────────────────────────────────
 
 const TYPE_COLORS: Record<Calculation['type'], string> = {
-  SUM:    'bg-blue-50 text-blue-700 border-blue-200',
-  MEAN:   'bg-purple-50 text-purple-700 border-purple-200',
-  COUNT:  'bg-green-50 text-green-700 border-green-200',
-  CUSTOM: 'bg-amber-50 text-amber-700 border-amber-200',
+  SUM:    'bg-cw-blue-soft text-cw-blue border-cw-blue/30',
+  MEAN:   'bg-white text-cw-blue-light border-cw-blue-light',
+  COUNT:  'bg-cw-positive-soft text-cw-positive border-cw-positive/30',
+  CUSTOM: 'bg-cw-orange-soft text-cw-orange border-cw-orange/40',
 };
 
 const FLAG_TYPE_COLORS: Record<string, string> = {
-  INFO:     'bg-blue-50 text-blue-700 border-blue-200',
-  WARNING:  'bg-amber-50 text-amber-700 border-amber-200',
-  CRITICAL: 'bg-red-50 text-red-700 border-red-200',
+  INFO:     'bg-cw-blue-soft text-cw-blue border-cw-blue/30',
+  WARNING:  'bg-cw-orange-soft text-cw-orange border-cw-orange/40',
+  CRITICAL: 'bg-cw-negative-soft text-cw-negative border-cw-negative/30',
 };
 
 const OP_LABELS: Record<string, string> = {
@@ -336,11 +336,11 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
     <div className="space-y-6 p-4">
       {/* Calculations table */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-2">
           {t('tabCalculations', lang)}
         </h3>
         {calcs.length === 0 ? (
-          <p className="text-xs text-gray-400 italic">
+          <p className="text-xs text-cw-gray-text italic">
             {t('noCalcsDefined', lang)}
           </p>
         ) : (
@@ -348,16 +348,16 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-cw-gray border-b border-cw-border">
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('code', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('name', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('typeLabel', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500 text-right">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text text-right">
                     {t('result', lang)}
                   </th>
                 </tr>
@@ -369,7 +369,7 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                   return (
                     <tr key={calc.code} className="border-b border-cw-border last:border-0 hover:bg-cw-gray/40">
                       <td className="px-3 py-2 font-mono font-semibold text-cw-blue">{calc.code}</td>
-                      <td className="px-3 py-2 text-gray-600 max-w-[200px] truncate" title={calc.name}>
+                      <td className="px-3 py-2 text-cw-gray-text max-w-[200px] truncate" title={calc.name}>
                         {calc.name}
                       </td>
                       <td className="px-3 py-2">
@@ -379,15 +379,15 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                       </td>
                       <td className="px-3 py-2 text-right">
                         {isCustom ? (
-                          <span className="text-gray-400 italic text-[10px]">
+                          <span className="text-cw-gray-text italic text-[10px]">
                             {t('notEvaluable', lang)}
                           </span>
                         ) : result !== null && result !== undefined ? (
-                          <span className="font-mono font-bold text-gray-800">
+                          <span className="font-mono font-bold text-cw-ink">
                             {Number.isInteger(result) ? result : result.toFixed(4)}
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-cw-gray-text">—</span>
                         )}
                       </td>
                     </tr>
@@ -401,11 +401,11 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
 
       {/* Flags table */}
       <section>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <h3 className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-2">
           {t('tabFlags', lang)}
         </h3>
         {flags.length === 0 ? (
-          <p className="text-xs text-gray-400 italic">
+          <p className="text-xs text-cw-gray-text italic">
             {t('noFlagsDefined', lang)}
           </p>
         ) : (
@@ -413,19 +413,19 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-cw-gray border-b border-cw-border">
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('code', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('name', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('typeLabel', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('conditionCol', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500 text-center">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text text-center">
                     {t('result', lang)}
                   </th>
                 </tr>
@@ -437,11 +437,11 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                     <tr
                       key={flag.code}
                       className={`border-b border-cw-border last:border-0 ${
-                        active ? 'bg-green-50' : 'bg-red-50/30'
+                        active ? 'bg-cw-positive-soft' : 'bg-cw-negative-soft/30'
                       }`}
                     >
                       <td className="px-3 py-2 font-mono font-semibold text-cw-blue">{flag.code}</td>
-                      <td className="px-3 py-2 text-gray-600 max-w-[160px] truncate" title={flag.name}>
+                      <td className="px-3 py-2 text-cw-gray-text max-w-[160px] truncate" title={flag.name}>
                         {flag.name}
                       </td>
                       <td className="px-3 py-2">
@@ -452,17 +452,17 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                       <td className="px-3 py-2">
                         <div className="space-y-0.5">
                           {flag.conditions.map((fc, i) => (
-                            <div key={i} className="text-[10px] font-mono text-gray-500">
+                            <div key={i} className="text-[10px] font-mono text-cw-gray-text">
                               CALC({fc.calculationCode})
-                              {' '}<span className="text-gray-800 font-semibold">{OP_LABELS[fc.operator] ?? fc.operator}</span>
+                              {' '}<span className="text-cw-ink font-semibold">{OP_LABELS[fc.operator] ?? fc.operator}</span>
                               {' '}{fc.threshold}
                               {i < flag.conditions.length - 1 && (
-                                <span className="ml-1 text-blue-500 font-medium">{flag.logic}</span>
+                                <span className="ml-1 text-cw-blue font-medium">{flag.logic}</span>
                               )}
                             </div>
                           ))}
                           {flag.conditions.length === 0 && (
-                            <span className="text-gray-300 text-[10px]">—</span>
+                            <span className="text-cw-gray-text text-[10px]">—</span>
                           )}
                         </div>
                       </td>
@@ -470,8 +470,8 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                         <span
                           className={`inline-block text-xs font-bold px-2 py-0.5 rounded ${
                             active
-                              ? 'bg-green-500 text-white'
-                              : 'bg-red-400/80 text-white'
+                              ? 'bg-cw-positive text-white'
+                              : 'bg-cw-negative/80 text-white'
                           }`}
                         >
                           {active ? (t('trueLabel', lang)) : (t('falseLabel', lang))}
@@ -489,23 +489,23 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
       {/* Norm lookups (if any calculations reference norms) */}
       {questionnaire.calculations?.norms && questionnaire.calculations.norms.length > 0 && (
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <h3 className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-2">
             {t('normLookups', lang)}
           </h3>
           <div className="border border-cw-border rounded-lg overflow-hidden">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-cw-gray border-b border-cw-border">
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('code', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('name', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text">
                     {t('referencedBy', lang)}
                   </th>
-                  <th className="px-3 py-2 font-semibold text-gray-500 text-right">
+                  <th className="px-3 py-2 font-semibold text-cw-gray-text text-right">
                     {t('inputValue', lang)}
                   </th>
                 </tr>
@@ -521,14 +521,14 @@ function ResultsPanel({ calcResults, flagResults, questionnaire, lang }: Results
                   return (
                     <tr key={norm.code} className="border-b border-cw-border last:border-0 hover:bg-cw-gray/40">
                       <td className="px-3 py-2 font-mono font-semibold text-cw-blue">{norm.code}</td>
-                      <td className="px-3 py-2 text-gray-600">{norm.name}</td>
-                      <td className="px-3 py-2 font-mono text-xs text-gray-500">
-                        {referencingCalc ? referencingCalc.code : <span className="text-gray-300">—</span>}
+                      <td className="px-3 py-2 text-cw-gray-text">{norm.name}</td>
+                      <td className="px-3 py-2 font-mono text-xs text-cw-gray-text">
+                        {referencingCalc ? referencingCalc.code : <span className="text-cw-gray-text">—</span>}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono text-gray-800">
+                      <td className="px-3 py-2 text-right font-mono text-cw-ink">
                         {inputVal !== undefined && inputVal !== null
                           ? (Number.isInteger(inputVal) ? inputVal : inputVal.toFixed(2))
-                          : <span className="text-gray-300">—</span>
+                          : <span className="text-cw-gray-text">—</span>
                         }
                       </td>
                     </tr>
@@ -607,7 +607,7 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
           <h2 className="text-sm font-semibold text-cw-blue">
             {t('scoringDebugger', lang)}
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-cw-gray-text mt-0.5">
             {answeredCount} / {totalCount}{' '}
             {t('questionsAnswered', lang)}
           </p>
@@ -615,7 +615,7 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleReset}
-            className="px-3 py-1.5 text-xs border border-cw-border rounded text-gray-500 hover:bg-cw-gray transition-colors"
+            className="px-3 py-1.5 text-xs border border-cw-border rounded text-cw-gray-text hover:bg-cw-gray transition-colors"
           >
             {t('reset', lang)}
           </button>
@@ -635,7 +635,7 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
         {/* Left: question inputs. Full width on phones, at most half the pane on larger screens. */}
         <div className="w-full max-h-[42vh] md:max-h-none md:w-[480px] md:max-w-[50%] shrink-0 border-b md:border-b-0 md:border-r border-cw-border overflow-auto bg-white min-h-0">
           {allQuestions.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-32 text-cw-gray-text text-sm">
               {t('noQuestionsWithCode', lang)}
             </div>
           ) : (
@@ -655,13 +655,13 @@ export function ScoringDebugger({ questionnaire }: ScoringDebuggerProps) {
         {/* Right: results */}
         <div className="flex-1 overflow-auto bg-cw-gray/30 min-w-0 min-h-0">
           {!hasRun ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 select-none gap-3">
+            <div className="flex flex-col items-center justify-center h-full text-cw-gray-text select-none gap-3">
               <Play className="w-10 h-10 opacity-30" />
               <p className="text-sm">
                 {t('enterTestValues', lang)}
               </p>
               {calcs.length === 0 && flags.length === 0 && (
-                <p className="text-xs text-gray-300">
+                <p className="text-xs text-cw-gray-text">
                   {t('noCalcsOrFlagsYet', lang)}
                 </p>
               )}

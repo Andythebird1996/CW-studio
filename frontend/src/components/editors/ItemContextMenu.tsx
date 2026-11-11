@@ -57,12 +57,12 @@ export function ItemContextMenu({ x, y, items, onClose }: Props) {
     >
       {items.map((entry, i) => {
         if ('separator' in entry) {
-          return <div key={i} className="border-t border-gray-100 my-0.5" />;
+          return <div key={i} className="border-t border-cw-border my-0.5" />;
         }
         return (
           <button
             key={i}
-            className={`${base} ${entry.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`${base} ${entry.danger ? 'text-cw-negative hover:bg-cw-negative-soft' : 'text-cw-ink hover:bg-cw-gray'}`}
             onClick={() => { entry.onClick(); onClose(); }}
           >
             {entry.icon}

@@ -50,10 +50,10 @@ function Btn({
         <Tooltip.Portal>
           <Tooltip.Content
             side="bottom"
-            className="bg-gray-800 text-white text-xs px-2 py-1 rounded z-50"
+            className="bg-cw-ink text-white text-xs px-2 py-1 rounded z-50"
           >
             {label}
-            <Tooltip.Arrow className="fill-gray-800" />
+            <Tooltip.Arrow className="fill-cw-ink" />
           </Tooltip.Content>
         </Tooltip.Portal>
       </Tooltip.Root>

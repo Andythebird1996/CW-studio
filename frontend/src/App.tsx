@@ -70,16 +70,16 @@ function EmptyState({
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cw-gray text-cw-blue">
           <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
         </div>
-        <p className="text-lg font-medium text-gray-700 text-center">{t('noQuestionnaire', lang)}</p>
+        <p className="text-lg font-medium text-cw-ink text-center">{t('noQuestionnaire', lang)}</p>
         <p className="text-sm mt-1 mb-5 text-cw-gray-text text-center">{t('noQuestionnaireHint', lang)}</p>
         <div className="flex flex-wrap justify-center gap-3">
           <button onClick={onNew} className="px-4 py-2.5 xl:py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light">
             {t('newQuestionnaire', lang)}
           </button>
-          <button onClick={onOpenFile} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-cw-gray text-gray-700 bg-white">
+          <button onClick={onOpenFile} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-cw-gray text-cw-ink bg-white">
             {t('openFile', lang)}
           </button>
-          <button onClick={onImport} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-cw-gray text-gray-700 bg-white">
+          <button onClick={onImport} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-cw-gray text-cw-ink bg-white">
             {t('import', lang)}
           </button>
         </div>
@@ -93,7 +93,7 @@ function EmptyState({
                 <li key={f.uid}>
                   <button
                     onClick={() => onOpenRecent(f.uid)}
-                    className="w-full text-left px-3 py-1.5 text-sm text-gray-600 rounded hover:bg-gray-100 hover:text-cw-blue transition-colors truncate"
+                    className="w-full text-left px-3 py-1.5 text-sm text-cw-gray-text rounded hover:bg-cw-gray hover:text-cw-blue transition-colors truncate"
                     title={f.title}
                   >
                     {f.title}
@@ -151,7 +151,7 @@ function SubTabBar({
             className={`px-3 py-2.5 xl:py-1.5 text-xs rounded-t border-b-2 transition-colors shrink-0 whitespace-nowrap ${
               activeSubTab === tab.id
                 ? 'border-cw-blue text-cw-blue font-medium'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-cw-gray-text hover:text-cw-ink'
             } ${isReport && !hasReport ? 'opacity-50' : ''}`}
           >
             {tab.label}
@@ -761,7 +761,7 @@ export default function App() {
     <div data-testid="app-shell" className="flex flex-col h-dvh max-h-dvh w-full max-w-full min-w-0 bg-cw-gray overflow-hidden">
       {/* ── Session restore banner ── */}
       {sessionRestorePrompt && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex flex-wrap items-center gap-3 text-sm text-amber-800 shrink-0 z-40">
+        <div className="bg-cw-orange-soft border-b border-cw-orange/40 px-4 py-2 flex flex-wrap items-center gap-3 text-sm text-cw-orange shrink-0 z-40">
           <span className="flex-1">
             {sessionRestorePrompt.length === 1
               ? t('sessionRestoreOne', lang)
@@ -769,13 +769,13 @@ export default function App() {
           </span>
           <button
             onClick={handleSessionRestore}
-            className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 text-xs font-medium"
+            className="px-3 py-1 bg-cw-orange text-white rounded hover:bg-cw-orange text-xs font-medium"
           >
             {t('sessionRestore', lang)}
           </button>
           <button
             onClick={handleSessionDismiss}
-            className="px-3 py-1 border border-amber-400 rounded hover:bg-amber-100 text-xs"
+            className="px-3 py-1 border border-cw-orange/40 rounded hover:bg-cw-orange-soft text-xs"
           >
             {t('sessionDismiss', lang)}
           </button>
@@ -841,7 +841,7 @@ export default function App() {
                 onClick={() => setSearchOpen(true)}
                 title={t('searchShortcut', lang)}
                 aria-label={t('searchShortcut', lang)}
-                className="ml-auto mr-1 shrink-0 p-2 xl:p-1 text-gray-400 hover:text-gray-700 rounded"
+                className="ml-auto mr-1 shrink-0 p-2 xl:p-1 text-cw-gray-text hover:text-cw-ink rounded"
               >
                 <Search size={15} />
               </button>
@@ -995,14 +995,14 @@ export default function App() {
                     className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded border transition-colors ${
                       validationOpen
                         ? 'bg-cw-blue text-white border-cw-blue'
-                        : 'border-cw-border text-gray-500 hover:text-gray-700'
+                        : 'border-cw-border text-cw-gray-text hover:text-cw-ink'
                     }`}
                     title={t('validationResults', lang)}
                   >
                     <ShieldAlert size={12} />
                     {t('validationPanel', lang)}
                     {validationIssues.length > 0 && (
-                      <span className={`ml-1 px-1 rounded text-xs font-medium ${validationOpen ? 'bg-white text-cw-blue' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`ml-1 px-1 rounded text-xs font-medium ${validationOpen ? 'bg-white text-cw-blue' : 'bg-cw-negative-soft text-cw-negative'}`}>
                         {validationIssues.length}
                       </span>
                     )}
@@ -1016,7 +1016,7 @@ export default function App() {
       </div>
 
       {toast && (
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-sm bg-gray-800 text-white text-sm px-4 py-2 rounded shadow-lg z-50 break-words">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-sm bg-cw-ink text-white text-sm px-4 py-2 rounded shadow-lg z-50 break-words">
           {toast}
         </div>
       )}

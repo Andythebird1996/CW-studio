@@ -737,6 +737,25 @@ describe('RAP interpreter — wrapHtml', () => {
     const html = interpretRap('Test', makeCtx());
     expect(html).toContain('<title>Testskjema</title>');
   });
+
+  it('uses the report-engine stylesheet unless portal style is requested', () => {
+    const engine = interpretRap('Hei', makeCtx());
+    expect(engine).toContain('font-family:Calibri,Arial,sans-serif; font-size:9pt!important; line-height:1.3em;');
+    expect(engine).toContain('.checkware-maincolor { color:#25b8ec!important; font-weight:bolder; }');
+    expect(engine).not.toContain('Open Sans');
+    expect(engine).not.toContain('#006393');
+
+    const graphed = interpretRap('[GRAPH_PLOT(g,bar,serie)][GRAPH_RENDER(g)]', makeCtx());
+    expect(graphed).toContain('#25b8ec');
+    expect(graphed).toContain('font-family="Calibri,Arial,sans-serif"');
+    expect(graphed).not.toContain('Open Sans');
+
+    const portal = interpretRap('[GRAPH_PLOT(g,bar,serie)][GRAPH_RENDER(g)]', makeCtx({ reportStyle: 'portal' }));
+    expect(portal).toContain('Open Sans');
+    expect(portal).toContain('#006393');
+    expect(portal).not.toContain('Calibri');
+    expect(portal).not.toContain('#25b8ec');
+  });
 });
 
 describe('RAP interpreter — comment stripping', () => {

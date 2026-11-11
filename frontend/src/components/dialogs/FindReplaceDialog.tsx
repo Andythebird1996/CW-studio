@@ -279,15 +279,15 @@ function HighlightedPreview({
   find: string;
   caseSensitive: boolean;
 }) {
-  if (!find) return <span className="text-gray-700">{text}</span>;
+  if (!find) return <span className="text-cw-ink">{text}</span>;
   const flags = caseSensitive ? 'g' : 'gi';
   const regex = new RegExp(`(${escapeRegex(find)})`, flags);
   const parts = text.split(regex);
   return (
-    <span className="text-gray-700">
+    <span className="text-cw-ink">
       {parts.map((part, i) =>
         regex.test(part) ? (
-          <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-[2px]">
+          <mark key={i} className="bg-cw-yellow text-cw-ink rounded-[2px]">
             {part}
           </mark>
         ) : (
@@ -373,7 +373,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
             </Dialog.Title>
             <button
               onClick={onClose}
-              className="p-1 rounded hover:bg-cw-gray text-cw-gray-text hover:text-gray-700 transition-colors"
+              className="p-1 rounded hover:bg-cw-gray text-cw-gray-text hover:text-cw-ink transition-colors"
               aria-label={t('close', uiLang)}
             >
               <X className="w-4 h-4" />
@@ -386,7 +386,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
             {/* Find / Replace inputs */}
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-cw-ink mb-1">
                   {t('find', uiLang)}
                 </label>
                 <input
@@ -399,7 +399,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-cw-ink mb-1">
                   {t('replaceWith', uiLang)}
                 </label>
                 <input
@@ -415,7 +415,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
             {/* Options row */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               {/* Case sensitive toggle */}
-              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-cw-ink">
                 <input
                   type="checkbox"
                   checked={caseSensitive}
@@ -435,7 +435,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
                 {scopeOptions.map(({ key, labelKey }) => (
                   <label
                     key={key}
-                    className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700"
+                    className="flex items-center gap-2 cursor-pointer select-none text-sm text-cw-ink"
                   >
                     <input
                       type="checkbox"
@@ -451,7 +451,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
 
             {/* Match count + action */}
             <div className="flex items-center justify-between gap-4">
-              <span className={`text-sm ${matches.length === 0 && find ? 'text-cw-gray-text' : 'text-gray-700'}`}>
+              <span className={`text-sm ${matches.length === 0 && find ? 'text-cw-gray-text' : 'text-cw-ink'}`}>
                 {matchCountLabel}
               </span>
               <button
@@ -465,7 +465,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
 
             {/* Replaced confirmation */}
             {replaced !== null && (
-              <div className="px-3 py-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+              <div className="px-3 py-2 bg-cw-positive-soft border border-cw-positive/30 rounded text-sm text-cw-positive">
                 {countPhrase(replaced, uiLang, 'nReplaceOne', 'nReplaceMany')}
               </div>
             )}
@@ -505,7 +505,7 @@ export function FindReplaceDialog({ questionnaire, onChange, onClose }: FindRepl
           <div className="px-5 py-3 border-t border-cw-border flex justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 border border-cw-border rounded hover:bg-cw-gray transition-colors"
+              className="px-4 py-2 text-sm text-cw-ink border border-cw-border rounded hover:bg-cw-gray transition-colors"
             >
               {t('close', uiLang)}
             </button>

@@ -67,7 +67,7 @@ export function ConnectPage() {
 
         <form onSubmit={connect} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-cw-ink mb-1">
               {t('serverWsdl', lang)}
             </label>
             <input
@@ -81,7 +81,7 @@ export function ConnectPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-cw-ink mb-1">
               {t('username', lang)}
             </label>
             <input
@@ -95,7 +95,7 @@ export function ConnectPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-cw-ink mb-1">
               {t('password', lang)}
             </label>
             <input
@@ -109,7 +109,7 @@ export function ConnectPage() {
           </div>
 
           {error && (
-            <p className="text-sm bg-red-50 text-red-700 p-3 rounded border border-red-200">
+            <p className="text-sm bg-cw-negative-soft text-cw-negative p-3 rounded border border-cw-negative/30">
               {error}
             </p>
           )}

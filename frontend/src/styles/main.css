@@ -22,9 +22,11 @@
   /* ── Checkware portal palette ─────────────────────── */
   --color-cw-blue:       #006393;   /* navigation, buttons, links               */
   --color-cw-blue-light: #1a7eab;   /* hover, focus, secondary accent           */
+  --color-cw-blue-soft:  #e7f3f8;   /* tinted selection and info chips          */
   --color-cw-link:       #006393;   /* interactive links                        */
-  --color-cw-cyan:       #25b8ec;   /* brand cyan used in generated reports     */
+  --color-cw-cyan:       #25b8ec;   /* legacy report cyan; do not use in UI     */
   --color-cw-yellow:     #f6dc6b;   /* selected navigation row                  */
+  --color-cw-hover:      #00547d;   /* pressed / hovered primary button         */
 
   /* ── Surfaces ─────────────────────────────────────── */
   --color-cw-gray:       #e8e9e9;   /* page background                          */
@@ -33,8 +35,11 @@
   /* ── Semantic ─────────────────────────────────────── */
   --color-cw-gray-text:  #6b6e71;   /* labels, metadata, table headers          */
   --color-cw-positive:   #1f7a34;   /* positive / OK states                     */
+  --color-cw-positive-soft: #e8f5ec;
   --color-cw-negative:   #a32020;   /* negative / error states                  */
+  --color-cw-negative-soft: #f8ecec;
   --color-cw-orange:     #e07b00;   /* callout accent                           */
+  --color-cw-orange-soft: #fdf3e6;
 
   /* ── Respondent view (measured from the portal) ───── */
   --color-cw-ink:        #292c32;   /* question text, rgb(41, 44, 50)          */
@@ -58,8 +63,8 @@ body,
   overflow: hidden;
   font-family: "Open Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   font-weight: 400;
-  color: #333;
-  background: #e8e9e9;
+  color: var(--color-cw-ink);
+  background: var(--color-cw-gray);
 }
 
 /* Primary actions follow the portal's pill buttons. Segmented toggles opt out. */
@@ -68,7 +73,7 @@ button.bg-cw-blue {
   font-weight: 500;
 }
 button.bg-cw-blue:hover:not(:disabled) {
-  background-color: #00547d;
+  background-color: var(--color-cw-hover);
 }
 .overflow-hidden.rounded > button {
   border-radius: 0;
@@ -79,7 +84,7 @@ button.rounded.border:not(.rounded-lg):not(.rounded-xl):not(.rounded-l):not(.rou
 
 input[type="checkbox"],
 input[type="radio"] {
-  accent-color: #006393;
+  accent-color: var(--color-cw-blue);
 }
 
 /* Dialogs keep their authored width on desktop. The cap only binds when the
@@ -122,8 +127,8 @@ input[type="radio"] {
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d5d8dc; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #aab; }
+::-webkit-scrollbar-thumb { background: var(--color-cw-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-cw-gray-text); }
 
 /* ── Respondent view ───────────────────────────────────────────────────────
    Shared by the assessment preview, the simulator answer form, and print.

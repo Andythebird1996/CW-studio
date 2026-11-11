@@ -183,7 +183,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   return (
     <span>
       {text.slice(0, idx)}
-      <mark className="bg-yellow-200 text-yellow-900 rounded-[2px]">
+      <mark className="bg-cw-yellow text-cw-ink rounded-[2px]">
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -283,14 +283,14 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
-            className="flex-1 text-sm bg-transparent outline-none text-gray-800 placeholder-cw-gray-text"
+            className="flex-1 text-sm bg-transparent outline-none text-cw-ink placeholder-cw-gray-text"
           />
           {query && (
             <span className="text-xs text-cw-gray-text whitespace-nowrap">{countLabel}</span>
           )}
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-cw-gray text-cw-gray-text hover:text-gray-700 transition-colors"
+            className="p-1 rounded hover:bg-cw-gray text-cw-gray-text hover:text-cw-ink transition-colors"
             aria-label={t('closeSearch', uiLang)}
           >
             <X className="w-4 h-4" />
@@ -337,7 +337,7 @@ export function SearchPanel({ questionnaire, onNavigate, onClose }: SearchPanelP
                         {result.code}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-700 truncate mt-0.5">
+                    <div className="text-sm text-cw-ink truncate mt-0.5">
                       <HighlightedText text={result.matchText} query={query.trim()} />
                     </div>
                     <div className="text-xs text-cw-gray-text font-mono truncate mt-0.5 opacity-60">

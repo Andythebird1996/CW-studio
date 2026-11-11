@@ -114,7 +114,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
               {t('importFromStore', uiLang)}
             </Dialog.Title>
             <div className="relative mt-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cw-gray-text" />
               <input
                 type="text"
                 placeholder={t('searchPackages', uiLang)}
@@ -127,12 +127,12 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
 
           <div className="flex-1 overflow-auto min-h-0">
             {loading && (
-              <div className="flex items-center justify-center h-full text-sm text-gray-500">
+              <div className="flex items-center justify-center h-full text-sm text-cw-gray-text">
                 {t('loadingPackages', uiLang)}
               </div>
             )}
             {error && (
-              <div className="p-4 text-sm text-red-600">
+              <div className="p-4 text-sm text-cw-negative">
                 {tf('errorWithMessage', uiLang, { message: error })}
               </div>
             )}
@@ -144,7 +144,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                       <th
                         key={field}
                         onClick={() => toggleSort(field)}
-                        className="text-left px-4 py-2 font-medium text-gray-600 cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                        className="text-left px-4 py-2 font-medium text-cw-gray-text cursor-pointer select-none hover:bg-cw-gray whitespace-nowrap"
                       >
                         <span className="flex items-center gap-1">
                           {field === 'name' ? t('name', uiLang) : field === 'code' ? t('code', uiLang) : field === 'version' ? t('version', uiLang) : t('release', uiLang)}
@@ -159,19 +159,19 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                     <tr
                       key={p.uid}
                       onClick={() => setSelected(p.uid)}
-                      className={`cursor-pointer border-b border-cw-border hover:bg-blue-50 ${
-                        selected === p.uid ? 'bg-blue-100' : ''
+                      className={`cursor-pointer border-b border-cw-border hover:bg-cw-gray ${
+                        selected === p.uid ? 'bg-cw-yellow' : ''
                       }`}
                     >
                       <td className="px-4 py-2">{p.name}</td>
-                      <td className="px-4 py-2 text-gray-500 font-mono text-xs">{p.code}</td>
-                      <td className="px-4 py-2 text-gray-500">{p.version}</td>
-                      <td className="px-4 py-2 text-gray-500">{p.release}</td>
+                      <td className="px-4 py-2 text-cw-gray-text font-mono text-xs">{p.code}</td>
+                      <td className="px-4 py-2 text-cw-gray-text">{p.version}</td>
+                      <td className="px-4 py-2 text-cw-gray-text">{p.release}</td>
                     </tr>
                   ))}
                   {filtered.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={4} className="px-4 py-8 text-center text-cw-gray-text">
                         {t('noPackagesFound', uiLang)}
                       </td>
                     </tr>
@@ -182,8 +182,8 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
           </div>
 
           {conflict && (
-            <div className="mx-4 mb-2 p-3 bg-amber-50 border border-amber-300 rounded flex flex-col gap-2">
-              <div className="flex items-start gap-2 text-sm text-amber-800">
+            <div className="mx-4 mb-2 p-3 bg-cw-orange-soft border border-cw-orange/40 rounded flex flex-col gap-2">
+              <div className="flex items-start gap-2 text-sm text-cw-orange">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
                   {tf('packageAlreadyOpen', uiLang, { code: conflict.packageCode, title: conflict.tabTitle })}
@@ -192,7 +192,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setConflict(null)}
-                  className="px-3 py-1 text-xs border border-amber-400 text-amber-800 rounded hover:bg-amber-100"
+                  className="px-3 py-1 text-xs border border-cw-orange/40 text-cw-orange rounded hover:bg-cw-orange-soft"
                 >
                   {t('cancelBtn', uiLang)}
                 </button>
@@ -202,7 +202,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                     setConflict(null);
                     onImport(uid);
                   }}
-                  className="px-3 py-1 text-xs border border-amber-400 text-amber-800 rounded hover:bg-amber-100"
+                  className="px-3 py-1 text-xs border border-cw-orange/40 text-cw-orange rounded hover:bg-cw-orange-soft"
                 >
                   {t('openAsCopy', uiLang)}
                 </button>
@@ -212,7 +212,7 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
                     setConflict(null);
                     onImport(uid, tabId);
                   }}
-                  className="px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
+                  className="px-3 py-1 text-xs bg-cw-orange text-white rounded hover:bg-cw-orange"
                 >
                   {t('replaceOpenTab', uiLang)}
                 </button>
@@ -221,13 +221,13 @@ export function ImportDialog({ open, onClose, onImport }: Props) {
           )}
 
           <div className="p-4 border-t border-cw-border flex justify-between items-center">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-cw-gray-text">
               {tf('packageCount', uiLang, { shown: filtered.length, total: packages.length })}
             </span>
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50"
+                className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray"
               >
                 {t('cancelBtn', uiLang)}
               </button>

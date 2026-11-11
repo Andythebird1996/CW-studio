@@ -17,13 +17,13 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-cw-gray-text mb-1">{label}</label>
       {children}
     </div>
   );
 }
 
-const INPUT = 'w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light';
+const INPUT = 'w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30';
 
 export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Props) {
   const uiLang = useUILang();
@@ -49,16 +49,16 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
     <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0">
         <h2 className="text-sm font-semibold text-cw-blue">{t('tabMetadata', uiLang)}</h2>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-xs text-cw-gray-text mt-0.5">
           {readOnly ? t('metaReadOnly', uiLang) : t('metaEdit', uiLang)}
         </p>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 space-y-6">
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
         {/* ── Assessment ── */}
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <h3 className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-3">
             {t('tabQuiz', uiLang)}
           </h3>
           <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
@@ -68,7 +68,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                   value={questionnaire.code}
                   onChange={(e) => updateQ({ code: e.target.value })}
                   readOnly={readOnly}
-                  className={INPUT + (readOnly ? ' bg-gray-50 text-gray-600 font-mono' : ' font-mono')}
+                  className={INPUT + (readOnly ? ' bg-cw-gray text-cw-gray-text font-mono' : ' font-mono')}
                 />
               </Field>
               <Field label={t('version', uiLang)}>
@@ -76,7 +76,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                   value={questionnaire.version}
                   onChange={(e) => updateQ({ version: e.target.value })}
                   readOnly={readOnly}
-                  className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                  className={INPUT + (readOnly ? ' bg-cw-gray' : '')}
                 />
               </Field>
               <Field label={t('release', uiLang)}>
@@ -85,7 +85,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                   onChange={(e) => updateQ({ release: e.target.value || undefined })}
                   readOnly={readOnly}
                   placeholder="0"
-                  className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                  className={INPUT + (readOnly ? ' bg-cw-gray' : '')}
                 />
               </Field>
             </div>
@@ -93,7 +93,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('typeLabel', uiLang)}>
                 {readOnly ? (
-                  <input value={questionnaire.type} readOnly className={INPUT + ' bg-gray-50'} />
+                  <input value={questionnaire.type} readOnly className={INPUT + ' bg-cw-gray'} />
                 ) : (
                   <select
                     value={questionnaire.type}
@@ -110,7 +110,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 <input
                   value={questionnaire.defaultLanguage}
                   readOnly
-                  className={INPUT + ' bg-gray-50 font-mono'}
+                  className={INPUT + ' bg-cw-gray font-mono'}
                 />
               </Field>
             </div>
@@ -122,7 +122,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                   updateQ({ name: { ...questionnaire.name, [lang]: e.target.value } })
                 }
                 readOnly={readOnly}
-                className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                className={INPUT + (readOnly ? ' bg-cw-gray' : '')}
               />
             </Field>
 
@@ -139,7 +139,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 }
                 readOnly={readOnly}
                 rows={2}
-                className={INPUT + ' resize-none' + (readOnly ? ' bg-gray-50' : '')}
+                className={INPUT + ' resize-none' + (readOnly ? ' bg-cw-gray' : '')}
                 placeholder={t('optionalDescription', uiLang)}
               />
             </Field>
@@ -149,16 +149,16 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 value={questionnaire.copyright ?? ''}
                 onChange={(e) => updateQ({ copyright: e.target.value || undefined })}
                 readOnly={readOnly}
-                className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                className={INPUT + (readOnly ? ' bg-cw-gray' : '')}
                 placeholder="© 2024 Checkware AS"
               />
-              <p className="text-[11px] text-gray-400 mt-0.5">
+              <p className="text-[11px] text-cw-gray-text mt-0.5">
                 {t('copyrightHint', uiLang)}
               </p>
             </Field>
 
             <div className="pt-1 border-t border-cw-border">
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-cw-gray-text">
                 {t('supportedLanguages', uiLang)}: <span className="font-mono">{questionnaire.supportedLanguages.join(', ')}</span>
                 {' · '}
                 {t('sections', uiLang)}: <span className="font-mono">{questionnaire.sections.length}</span>
@@ -172,7 +172,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
 
         {/* ── Package (manifest) ── */}
         <section>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <h3 className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-3">
             {t('packageSection', uiLang)}
           </h3>
           <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
@@ -181,7 +181,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 value={packageMetadata?.code ?? questionnaire.code}
                 onChange={(e) => updatePM({ code: e.target.value })}
                 readOnly={readOnly}
-                className={INPUT + (readOnly ? ' bg-gray-50 font-mono' : ' font-mono')}
+                className={INPUT + (readOnly ? ' bg-cw-gray font-mono' : ' font-mono')}
               />
             </Field>
 
@@ -191,7 +191,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 onChange={(e) => updatePM({ description: e.target.value })}
                 readOnly={readOnly}
                 rows={2}
-                className={INPUT + ' resize-none' + (readOnly ? ' bg-gray-50' : '')}
+                className={INPUT + ' resize-none' + (readOnly ? ' bg-cw-gray' : '')}
                 placeholder={t('packageDescriptionPh', uiLang)}
               />
             </Field>
@@ -207,7 +207,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 disabled={readOnly}
                 className="w-4 h-4 accent-cw-blue"
               />
-              <span className="text-sm text-gray-600">{t('clinicianOnly', uiLang)}</span>
+              <span className="text-sm text-cw-gray-text">{t('clinicianOnly', uiLang)}</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -218,7 +218,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                 disabled={readOnly}
                 className="w-4 h-4 accent-cw-blue"
               />
-              <span className="text-sm text-gray-600">{t('publicPackage', uiLang)}</span>
+              <span className="text-sm text-cw-gray-text">{t('publicPackage', uiLang)}</span>
             </label>
           </div>
         </section>
@@ -226,14 +226,14 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
         {/* ── Navigasjon og visning ── */}
         <section>
           <details className="group">
-            <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 select-none">
+            <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-3 select-none">
               <span className="group-open:rotate-90 transition-transform inline-block">&#9654;</span>
               {t('navigationDisplay', uiLang)}
             </summary>
             <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
               <Field label={t('visualizeProgress', uiLang)}>
                 {readOnly ? (
-                  <input value={questionnaire.visualizeProgress ?? 'Percentage'} readOnly className={INPUT + ' bg-gray-50'} />
+                  <input value={questionnaire.visualizeProgress ?? 'Percentage'} readOnly className={INPUT + ' bg-cw-gray'} />
                 ) : (
                   <select
                     value={questionnaire.visualizeProgress ?? 'Percentage'}
@@ -266,7 +266,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
                       disabled={readOnly}
                       className="w-4 h-4 accent-cw-blue"
                     />
-                    <span className="text-sm text-gray-600">{label}</span>
+                    <span className="text-sm text-cw-gray-text">{label}</span>
                   </label>
                 ))}
               </div>
@@ -278,7 +278,7 @@ export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Pro
         {!readOnly && (
           <section>
             <details className="group">
-              <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 select-none">
+              <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-3 select-none">
                 <span className="group-open:rotate-90 transition-transform inline-block">&#9654;</span>
                 {t('remoteScoringLabel', uiLang)}
               </summary>

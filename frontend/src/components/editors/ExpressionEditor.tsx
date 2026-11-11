@@ -58,7 +58,7 @@ function StatementRow({
       <select
         value={stmt.questionCode}
         onChange={(e) => onChange({ ...stmt, questionCode: e.target.value, value: '' })}
-        className="border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+        className="border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
       >
         <option value="">{t('selectQuestion', uiLang)}</option>
         {questions.filter((q) => q.type !== 'text' && q.code).map((q) => (
@@ -70,7 +70,7 @@ function StatementRow({
       <select
         value={stmt.operator}
         onChange={(e) => onChange({ ...stmt, operator: e.target.value as SimpleStatement['operator'] })}
-        className="border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+        className="border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
       >
         {operators.map((op) => (
           <option key={op.value} value={op.value}>{op.label}</option>
@@ -83,7 +83,7 @@ function StatementRow({
           <select
             value={stmt.value ?? ''}
             onChange={(e) => onChange({ ...stmt, value: e.target.value })}
-            className="border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           >
             <option value="">{t('selectAnswer', uiLang)}</option>
             {(options as Array<{ code: string; texts: Record<string, string> }>).map((o) => (
@@ -98,12 +98,12 @@ function StatementRow({
             value={stmt.value ?? ''}
             onChange={(e) => onChange({ ...stmt, value: e.target.value })}
             placeholder={t('valuePlaceholder', uiLang)}
-            className="w-28 border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-28 border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           />
         )
       )}
 
-      <button onClick={onDelete} className="text-gray-300 hover:text-red-500">
+      <button onClick={onDelete} className="text-cw-gray-text hover:text-cw-negative">
         <Trash2 className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -139,11 +139,11 @@ export function ExpressionEditor({ label, expression, questions, onChange }: Pro
   return (
     <div className="border border-cw-border rounded p-3 bg-cw-gray">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-gray-600">{label}</span>
+        <span className="text-xs font-medium text-cw-gray-text">{label}</span>
         {hasExpr && (
           <button
             onClick={toggleLogic}
-            className="text-xs border border-cw-border bg-white rounded px-2 py-0.5 hover:bg-gray-50"
+            className="text-xs border border-cw-border bg-white rounded px-2 py-0.5 hover:bg-cw-gray"
           >
             {t('logicPrefix', uiLang)} <strong>{expression.logic === 'AND' ? t('logicAnd', uiLang) : t('logicOr', uiLang)}</strong>
           </button>

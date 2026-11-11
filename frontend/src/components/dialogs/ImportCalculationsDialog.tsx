@@ -106,12 +106,12 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
               <Dialog.Title className="text-sm font-semibold text-cw-blue">
                 {t('importCalcsTitle', uiLang)}
               </Dialog.Title>
-              <Dialog.Description className="text-xs text-gray-500 mt-0.5">
+              <Dialog.Description className="text-xs text-cw-gray-text mt-0.5">
                 {t('importCalcsHelp', uiLang)}
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
-              <button className="p-1.5 text-gray-400 hover:text-gray-700 rounded">
+              <button className="p-1.5 text-cw-gray-text hover:text-cw-ink rounded">
                 <X className="w-4 h-4" />
               </button>
             </Dialog.Close>
@@ -119,19 +119,19 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
 
           <div className="flex-1 overflow-auto min-h-0 px-4 sm:px-5 py-4 space-y-4">
             {/* Format hint */}
-            <div className="bg-gray-50 border border-cw-border rounded p-3 text-xs space-y-1">
-              <p className="font-medium text-gray-600">{hint}</p>
-              <p className="text-gray-500">{t('importCalcsTypes', uiLang)}</p>
-              <p className="text-gray-500">{t('importCalcsCodes', uiLang)}</p>
-              <p className="font-mono text-gray-700 bg-white border border-cw-border rounded px-2 py-1 mt-1 select-all">{example}</p>
-              <p className="text-gray-400 text-[11px]">
+            <div className="bg-cw-gray border border-cw-border rounded p-3 text-xs space-y-1">
+              <p className="font-medium text-cw-gray-text">{hint}</p>
+              <p className="text-cw-gray-text">{t('importCalcsTypes', uiLang)}</p>
+              <p className="text-cw-gray-text">{t('importCalcsCodes', uiLang)}</p>
+              <p className="font-mono text-cw-ink bg-white border border-cw-border rounded px-2 py-1 mt-1 select-all">{example}</p>
+              <p className="text-cw-gray-text text-[11px]">
                 {t('importCalcsSep', uiLang)}
               </p>
             </div>
 
             {/* Options */}
             <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-cw-gray-text cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasHeader}
@@ -140,7 +140,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                 />
                 {t('skipHeader', uiLang)}
               </label>
-              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-cw-gray-text cursor-pointer">
                 <input
                   type="checkbox"
                   checked={replaceExisting}
@@ -153,7 +153,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
 
             {/* Textarea */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">
                 {t('pasteData', uiLang)}
               </label>
               <textarea
@@ -162,52 +162,52 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
                 rows={8}
                 spellCheck={false}
                 placeholder={`code\tname\ttype\tquestionCodes\nTOTAL\tTotal score\tSUM\tQ1,Q2,Q3\nSUBSCALE\tSubscale\tMEAN\tQ4,Q5`}
-                className="w-full border border-cw-border rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-y"
+                className="w-full border border-cw-border rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-y"
               />
             </div>
 
             {/* Preview */}
             {parsedRows.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-2">
+                <p className="text-xs font-medium text-cw-gray-text mb-2">
                   {t('previewPanel', uiLang)}
                   {' — '}
-                  <span className="text-green-600">{validRows.length} {t('validWord', uiLang)}</span>
+                  <span className="text-cw-positive">{validRows.length} {t('validWord', uiLang)}</span>
                   {invalidRows.length > 0 && (
-                    <span className="text-red-500 ml-2">{invalidRows.length} {t('validationErrorsPlural', uiLang)}</span>
+                    <span className="text-cw-negative ml-2">{invalidRows.length} {t('validationErrorsPlural', uiLang)}</span>
                   )}
                 </p>
                 <div className="border border-cw-border rounded overflow-hidden">
                   <table className="w-full text-xs">
-                    <thead className="bg-gray-50 border-b border-cw-border">
+                    <thead className="bg-cw-gray border-b border-cw-border">
                       <tr>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500 w-8">#</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('code', uiLang)}</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('name', uiLang)}</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('typeLabel', uiLang)}</th>
-                        <th className="px-2 py-1.5 text-left font-medium text-gray-500">{t('questions', uiLang)}</th>
+                        <th className="px-3 py-2 text-left font-medium text-cw-gray-text w-8">#</th>
+                        <th className="px-3 py-2 text-left font-medium text-cw-gray-text">{t('code', uiLang)}</th>
+                        <th className="px-3 py-2 text-left font-medium text-cw-gray-text">{t('name', uiLang)}</th>
+                        <th className="px-3 py-2 text-left font-medium text-cw-gray-text">{t('typeLabel', uiLang)}</th>
+                        <th className="px-3 py-2 text-left font-medium text-cw-gray-text">{t('questions', uiLang)}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {parsedRows.map((row, i) => (
                         <tr
                           key={i}
-                          className={`border-t border-cw-border ${row.valid ? '' : 'bg-red-50'}`}
+                          className={`border-t border-cw-border ${row.valid ? '' : 'bg-cw-negative-soft'}`}
                         >
-                          <td className="px-2 py-1 text-gray-400">{i + 1 + (hasHeader ? 1 : 0)}</td>
-                          <td className="px-2 py-1 font-mono font-semibold text-cw-blue">{row.code || <span className="text-red-400 italic">{t('emptyWord', uiLang)}</span>}</td>
-                          <td className="px-2 py-1 text-gray-700">{row.name}</td>
+                          <td className="px-2 py-1 text-cw-gray-text">{i + 1 + (hasHeader ? 1 : 0)}</td>
+                          <td className="px-2 py-1 font-mono font-semibold text-cw-blue">{row.code || <span className="text-cw-negative italic">{t('emptyWord', uiLang)}</span>}</td>
+                          <td className="px-2 py-1 text-cw-ink">{row.name}</td>
                           <td className="px-2 py-1">
                             {row.valid ? (
-                              <span className="font-mono text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{row.type}</span>
+                              <span className="font-mono text-xs bg-cw-blue-soft text-cw-blue border border-cw-blue/30 rounded px-1.5 py-0.5">{row.type}</span>
                             ) : (
-                              <span className="text-red-500 font-mono">{row.type || '—'}</span>
+                              <span className="text-cw-negative font-mono">{row.type || '—'}</span>
                             )}
                           </td>
-                          <td className="px-2 py-1 text-gray-600">
+                          <td className="px-2 py-1 text-cw-gray-text">
                             {row.valid
-                              ? row.questionCodes.join(', ') || <span className="text-gray-400 italic">{t('noneWord', uiLang)}</span>
-                              : <span className="text-red-500 text-[11px]">{row.error}</span>
+                              ? row.questionCodes.join(', ') || <span className="text-cw-gray-text italic">{t('noneWord', uiLang)}</span>
+                              : <span className="text-cw-negative text-[11px]">{row.error}</span>
                             }
                           </td>
                         </tr>
@@ -221,7 +221,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
 
           {/* Footer */}
           <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-cw-border shrink-0">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-cw-gray-text">
               {replaceExisting
                 ? (t('willReplaceCalcs', uiLang))
                 : (t('willAppendCalcs', uiLang))}
@@ -229,7 +229,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="px-3 py-1.5 text-sm text-gray-600 border border-cw-border rounded hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 text-sm text-cw-gray-text border border-cw-border rounded hover:bg-cw-gray transition-colors"
               >
                 {t('cancelBtn', uiLang)}
               </button>
