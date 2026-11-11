@@ -788,6 +788,29 @@ const strings = {
   printSlider:       { EN: '[slider {min}–{max}]',            NO: '[glidebryter {min}–{max}]'        },
   printImage:        { EN: '[image]',                         NO: '[bilde]'                          },
   printCountry:      { EN: '[country]',                       NO: '[land]'                           },
+
+  // ── Respondent view (preview, simulator, print) ───────────────────────────
+  respMenu:          { EN: 'Menu',                            NO: 'Meny'                             },
+  respHome:          { EN: 'Home',                            NO: 'Hjem'                             },
+  respBack:          { EN: 'Back',                            NO: 'Tilbake'                          },
+  respForward:       { EN: 'Forward',                         NO: 'Frem'                             },
+  respTasks:         { EN: 'Tasks',                           NO: 'Oppgaver'                         },
+  respTasksCount:    { EN: 'Tasks, {n} notifications',        NO: 'Oppgaver, {n} varsler'            },
+  respMessages:      { EN: 'Messages',                        NO: 'Meldinger'                        },
+  respProfile:       { EN: 'Profile',                         NO: 'Profil'                           },
+  respLogOut:        { EN: 'Log out',                         NO: 'Logg ut'                          },
+  respMenuClose:     { EN: 'Close menu',                      NO: 'Lukk meny'                        },
+  previousPage:      { EN: 'Previous page',                   NO: 'Forrige side'                     },
+  nextPage:          { EN: 'Next page',                       NO: 'Neste side'                       },
+  finishAssessment:  { EN: 'Finish',                          NO: 'Ferdig'                           },
+  progressSteps:     { EN: '{page}/{total}',                  NO: '{page}/{total}'                   },
+  unansweredTitle:   { EN: 'Unanswered questions!',           NO: 'Ubesvarte spørsmål!'              },
+  unansweredOne:     { EN: 'You still have {n} unanswered question on this page.', NO: 'Du har fortsatt {n} ubesvart spørsmål på denne siden.' },
+  unansweredMany:    { EN: 'You still have {n} unanswered questions on this page.', NO: 'Du har fortsatt {n} ubesvarte spørsmål på denne siden.' },
+  unansweredAsk:     { EN: 'Do you want to continue anyway?', NO: 'Vil du likevel fortsette?'        },
+  confirmYes:        { EN: 'Yes, confirm',                    NO: 'Ja, bekreft'                      },
+  confirmNo:         { EN: 'No, cancel',                      NO: 'Nei, avbryt'                      },
+  previewFinished:   { EN: 'The assessment is marked as finished in this preview.', NO: 'Kartleggingen er markert som ferdig i denne forhåndsvisningen.' },
 } as const;
 
 /** Replace `{name}` placeholders in a catalog string. */

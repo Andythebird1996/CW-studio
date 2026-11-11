@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { respondentProgress, showRespondentBackArrow } from './AssessmentPreview';
 
 // ── Types (minimal, mirroring questionnaire.ts) ───────────────────────────────
 
@@ -440,5 +441,29 @@ describe('flattenSections', () => {
     expect(result[1]).toBe(sub1);
     expect(result[2]).toBe(b);
     expect(result[3]).toBe(sub2);
+  });
+});
+
+describe('respondentProgress', () => {
+  it('rounds the share of items reached at the end of the page', () => {
+    // 22 items paged 6 / 5 / 5 / 6 — same shape as a 4-page respondent form.
+    expect(respondentProgress([6, 5, 5, 6], 0)).toBe(27);
+    expect(respondentProgress([6, 5, 5, 6], 1)).toBe(50);
+    expect(respondentProgress([6, 5, 5, 6], 2)).toBe(73);
+    expect(respondentProgress([6, 5, 5, 6], 3)).toBe(100);
+  });
+
+  it('returns 0 when there is nothing to measure', () => {
+    expect(respondentProgress([], 0)).toBe(0);
+    expect(respondentProgress([0, 0], 1)).toBe(0);
+  });
+});
+
+describe('showRespondentBackArrow', () => {
+  it('follows the reference pages: hidden at 27 and 50, shown at 73 and 100', () => {
+    expect(showRespondentBackArrow(0, 27)).toBe(false);
+    expect(showRespondentBackArrow(1, 50)).toBe(false);
+    expect(showRespondentBackArrow(2, 73)).toBe(true);
+    expect(showRespondentBackArrow(3, 100)).toBe(true);
   });
 });
