@@ -23,7 +23,7 @@ export function s(no: string, en: string, lang: UILang): string {
 
 const strings = {
   // ── App chrome ─────────────────────────────────────────────────────────
-  appTitle:          { EN: 'Checkware Studio', NO: 'Checkware Studio' },
+  appTitle:          { EN: 'CW Studio Web', NO: 'CW Studio Web' },
 
   // ── Toolbar buttons ────────────────────────────────────────────────────
   newQuestionnaire:  { EN: 'New package', NO: 'Ny pakke' },
@@ -39,6 +39,7 @@ const strings = {
   tabDimensions:     { EN: 'Dimensions',        NO: 'Dimensjoner' },
   tabFlags:          { EN: 'Flags',             NO: 'Flagg' },
   tabNorms:          { EN: 'Norms',             NO: 'Normer' },
+  tabReport:         { EN: 'Report',            NO: 'Rapport' },
   tabReports:        { EN: 'Reports',           NO: 'Rapporter' },
   tabMedia:          { EN: 'Media',             NO: 'Media' },
   tabMetadata:       { EN: 'Metadata',          NO: 'Metadata' },
@@ -409,7 +410,7 @@ const strings = {
   openedFile:          { EN: 'Opened “{name}”',                 NO: 'Åpnet «{name}»'                   },
   openedWithParts:     { EN: 'Opened “{name}” + {parts}',       NO: 'Åpnet «{name}» + {parts}'         },
   loadedReport:      { EN: 'Loaded report from “{name}”',     NO: 'Lastet inn rapport fra «{name}»'  },
-  openAssessmentFirst: { EN: 'Open an assessment first to load a report template', NO: 'Åpne en kartlegging først for å laste inn en rapportmal' },
+  openAssessmentFirst: { EN: 'Open a questionnaire first to load a report template', NO: 'Åpne en kartlegging først for å laste inn en rapportmal' },
   unknownFileType:   { EN: 'Unknown file type: .{ext}',       NO: 'Ukjent filtype: .{ext}'           },
   openError:         { EN: 'Could not open the file: {message}', NO: 'Feil ved åpning: {message}'    },
   noQuestionnaireInZip: { EN: 'No .questionnaire file found in the ZIP', NO: 'Ingen .questionnaire-fil funnet i ZIP-filen' },
@@ -474,7 +475,7 @@ const strings = {
   deleteProfile:     { EN: 'Delete profile',                  NO: 'Slett profil'                     },
   profileNamePh:     { EN: 'Profile name…',                   NO: 'Profilnavn…'                      },
   saveProfile:       { EN: 'Save profile',                    NO: 'Lagre profil'                     },
-  assessmentNamePh:  { EN: 'Assessment name',                 NO: 'Navn på kartleggingen'            },
+  assessmentNamePh:  { EN: 'Questionnaire name',              NO: 'Kartleggingsnavn'                 },
   codeRequired:      { EN: 'Code is required.',               NO: 'Kode er påkrevd.'                 },
   allowExportShort:  { EN: 'Allow export',                    NO: 'Tillat eksport'                   },
 
@@ -526,8 +527,8 @@ const strings = {
   replacesExisting:  { EN: 'Replaces existing ones',          NO: 'Erstatter eksisterende'           },
   showValidationIssues: { EN: 'Show validation issues',       NO: 'Vis valideringsproblemer'         },
   noProblems:        { EN: 'No issues',                       NO: 'Ingen problemer'                  },
-  assessmentCodePh:  { EN: 'assessment_code',                 NO: 'kartleggingskode'                 },
-  assessmentNameFieldPh: { EN: 'Assessment name',             NO: 'Kartleggingsnavn'                 },
+  assessmentCodePh:  { EN: 'questionnaire_code',              NO: 'kartleggingskode'                 },
+  assessmentNameFieldPh: { EN: 'Questionnaire name',          NO: 'Kartleggingsnavn'                 },
   importTexts:       { EN: 'Import texts',                    NO: 'Importer tekster'                 },
   importTextsTitle:  { EN: 'Import question texts from text', NO: 'Importer spørsmålstekster fra tekst' },
   selectPreviewLang: { EN: 'Choose the preview language',     NO: 'Velg språk for forhåndsvisning'   },
@@ -620,7 +621,7 @@ const strings = {
   reportLanguage:    { EN: 'report language',                 NO: 'rapportspråk'                     },
   rapTemplatePrefix: { EN: 'RAP template — Checkware',       NO: 'RAP-mal — Checkware'              },
   copyrightField:    { EN: 'Copyright / $COPYRIGHT',          NO: 'Opphavsrett / $COPYRIGHT'         },
-  generateTemplateTitle: { EN: 'Generate a default template from the assessment questions', NO: 'Generer en standardmal fra kartleggingens spørsmål' },
+  generateTemplateTitle: { EN: 'Generate a default template from the questionnaire questions', NO: 'Generer en standardmal fra kartleggingens spørsmål' },
   generateTemplate:  { EN: 'Generate template',               NO: 'Generer mal'                      },
   deleteFile:        { EN: 'Delete file',                     NO: 'Slett fil'                        },
   newReportFile:     { EN: 'New report file',                 NO: 'Ny rapportfil'                    },
@@ -651,14 +652,14 @@ const strings = {
   snippetDiff:       { EN: 'difference',                      NO: 'differanse'                       },
   rapUnanswered:     { EN: 'Unanswered',                      NO: 'Ubesvart'                         },
   rapPatientInfo:    { EN: 'Patient information',             NO: 'Pasientinformasjon'               },
-  rapAssessmentInfo: { EN: 'Assessment information',          NO: 'Kartleggingsinformasjon'          },
+  rapAssessmentInfo: { EN: 'Questionnaire information',       NO: 'Kartleggingsinformasjon'          },
   rapSubmitted:      { EN: 'Submission date',                 NO: 'Leveringsdato'                    },
   rapGenerated:      { EN: 'Report generated',                NO: 'Rapport generert'                 },
   rapPlaceholderNote:{ EN: 'Add report content here',         NO: 'Legg til rapportinnhold her'      },
   rapPlaceholderIf:  { EN: 'Use $VAR for variables and [if(...){...}] for conditions', NO: 'Bruk $VAR for variabler og [if(...){...}] for betingelser' },
   rapPlaceholderCall:{ EN: 'and [CALL functionName()] to call subfunctions', NO: 'og [CALL funksjonsnavn()] for å kalle underfunksjoner' },
   simulateAnswers:   { EN: 'Simulate answers',                NO: 'Simuler svar'                     },
-  selectAssessmentLang: { EN: 'Choose the assessment language', NO: 'Velg språk for kartleggingen'   },
+  selectAssessmentLang: { EN: 'Choose the questionnaire language', NO: 'Velg språk for kartleggingen'   },
   livePreview:       { EN: 'Live preview',                    NO: 'Direkte forhåndsvisning'          },
   livePreviewHint:   { EN: '— updates on every answer',       NO: '— oppdateres ved hvert svar'      },
   downloadPdf:       { EN: 'Download PDF',                    NO: 'Last ned PDF'                     },
@@ -668,7 +669,7 @@ const strings = {
   reportStylePortal: { EN: 'Show as portal',                  NO: 'Vis som portal'                   },
 
   // ── Remote scoring, media, dimensions, norms, metadata ────────────────────
-  remoteScoringHelp: { EN: 'External scoring sends calculation results to an external service after the assessment is completed.', NO: 'Ekstern skåring sender beregningsresultater til en ekstern tjeneste etter utfylling.' },
+  remoteScoringHelp: { EN: 'External scoring sends calculation results to an external service after the questionnaire is completed.', NO: 'Ekstern skåring sender beregningsresultater til en ekstern tjeneste etter utfylling.' },
   remoteScoringUrl:  { EN: 'External scoring URL',            NO: 'Adresse for ekstern skåring'      },
   addParameter:      { EN: 'Add parameter',                   NO: 'Legg til parameter'               },
   removeRemoteScoring: { EN: 'Remove external scoring configuration', NO: 'Fjern konfigurasjon for ekstern skåring' },
@@ -766,8 +767,8 @@ const strings = {
   closeHint:         { EN: 'close',                           NO: 'lukk'                             },
 
   // ── Translation editor chrome ─────────────────────────────────────────────
-  ctxAssessmentName: { EN: 'Assessment: name',                NO: 'Kartlegging: navn'                },
-  ctxAssessmentDesc: { EN: 'Assessment: description',         NO: 'Kartlegging: beskrivelse'         },
+  ctxAssessmentName: { EN: 'Questionnaire: name',             NO: 'Kartlegging: navn'                },
+  ctxAssessmentDesc: { EN: 'Questionnaire: description',      NO: 'Kartlegging: beskrivelse'         },
   ctxSectionTitle:   { EN: 'Section {code}: title',           NO: 'Seksjon {code}: tittel'           },
   ctxQuestion:       { EN: '{code}: question',                NO: '{code}: spørsmål'                 },
   ctxHelp:           { EN: '{code}: help text',               NO: '{code}: hjelpetekst'              },
@@ -813,7 +814,7 @@ const strings = {
   unansweredAsk:     { EN: 'Do you want to continue anyway?', NO: 'Vil du likevel fortsette?'        },
   confirmYes:        { EN: 'Yes, confirm',                    NO: 'Ja, bekreft'                      },
   confirmNo:         { EN: 'No, cancel',                      NO: 'Nei, avbryt'                      },
-  previewFinished:   { EN: 'The assessment is marked as finished in this preview.', NO: 'Kartleggingen er markert som ferdig i denne forhåndsvisningen.' },
+  previewFinished:   { EN: 'The questionnaire is marked as finished in this preview.', NO: 'Kartleggingen er markert som ferdig i denne forhåndsvisningen.' },
 } as const;
 
 /** Replace `{name}` placeholders in a catalog string. */
@@ -834,6 +835,17 @@ export type StringKey = keyof typeof strings;
 
 export function t(key: StringKey, lang: UILang): string {
   return strings[key][lang];
+}
+
+/** Code for a newly duplicated item. Empty codes stay empty. Stored codes are not rewritten. */
+export function copyCode(code: string | undefined, lang: UILang): string {
+  if (!code) return '';
+  return `${code}${t('copySuffix', lang)}`;
+}
+
+/** Sub-tab and explorer label: singular only when exactly one report is open. */
+export function reportTabLabel(count: number, lang: UILang): string {
+  return t(count === 1 ? 'tabReport' : 'tabReports', lang);
 }
 
 export const ALL_STRINGS = strings;

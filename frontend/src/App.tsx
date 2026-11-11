@@ -27,7 +27,7 @@ import { validateQuestionnaire } from './services/validate-questionnaire';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWorkspaceStore } from './stores/workspace-store';
 import { useSettingsStore } from './stores/settings-store';
-import { t, tf, countPhrase, type UILang, UILangContext } from './i18n';
+import { t, tf, countPhrase, reportTabLabel, type UILang, UILangContext } from './i18n';
 import { storeApi } from './services/store-api';
 import { parseQuestionnaire, parseCalculationFile, parseFlagFile, parseNormFile, applyTranslationFile, parseManifestFile } from './services/xml-parser';
 import { serializeQuestionnaire } from './services/xml-serializer';
@@ -129,15 +129,17 @@ function getSubTabs(lang: UILang) {
 function SubTabBar({
   activeSubTab,
   onChangeSubTab,
-  hasReport,
+  reportCount,
   lang,
 }: {
   activeSubTab: string;
   onChangeSubTab: (id: string) => void;
-  hasReport: boolean;
+  reportCount: number;
   lang: UILang;
 }) {
-  const subTabs = getSubTabs(lang);
+  const subTabs = getSubTabs(lang).map((tab) =>
+    tab.id === 'report' ? { ...tab, label: reportTabLabel(reportCount, lang) } : tab,
+  );
   return (
     <div data-testid="subtab-bar" className="flex border-b border-cw-border bg-white shrink-0 min-w-0 flex-1 overflow-x-auto px-2 xl:px-4 pt-2 gap-1">
       {subTabs.map((tab) => {
@@ -152,7 +154,7 @@ function SubTabBar({
               activeSubTab === tab.id
                 ? 'border-cw-blue text-cw-blue font-medium'
                 : 'border-transparent text-cw-gray-text hover:text-cw-ink'
-            } ${isReport && !hasReport ? 'opacity-50' : ''}`}
+            } ${isReport && reportCount === 0 ? 'opacity-50' : ''}`}
           >
             {tab.label}
           </button>
@@ -737,7 +739,11 @@ export default function App() {
   }
 
   const hasData = !!activeTab?.data;
-  const hasReport = Object.keys(activeTab?.rapFiles ?? {}).length > 0;
+  const reportCount = Object.keys(activeTab?.rapFiles ?? {}).length;
+
+  useEffect(() => {
+    document.title = t('appTitle', lang);
+  }, [lang]);
 
   // Hidden file input is managed by Toolbar, but we need a trigger for EmptyState
   function triggerFileOpen() {
@@ -834,7 +840,7 @@ export default function App() {
               <SubTabBar
                 activeSubTab={subTab}
                 onChangeSubTab={(s) => setSubTab(s as SubTab)}
-                hasReport={hasReport}
+                reportCount={reportCount}
                 lang={lang}
               />
               <button

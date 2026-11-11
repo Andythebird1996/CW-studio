@@ -52,7 +52,7 @@ import type {
 import { ExpressionEditor } from './ExpressionEditor';
 import { AssessmentPreview } from '../preview/AssessmentPreview';
 import { SpreadsheetOptionsEditor } from './SpreadsheetOptionsEditor';
-import { t, tf, countPhrase, useUILang, type UILang } from '../../i18n';
+import { t, tf, countPhrase, copyCode, useUILang, type UILang } from '../../i18n';
 import { useClipboardStore } from '../../stores/clipboard-store';
 
 // ── Question type catalogue ───────────────────────────────────────────────────
@@ -1144,7 +1144,7 @@ function SectionEditor({
     const original = section.questions[i];
     const clone: Question = JSON.parse(JSON.stringify(original));
     clone.id = crypto.randomUUID();
-    clone.code = clone.code ? `${clone.code}-kopi` : '';
+    clone.code = copyCode(clone.code, uiLang);
     const next = [...section.questions];
     next.splice(i + 1, 0, clone);
     onChange({ ...section, questions: next });
@@ -1154,11 +1154,11 @@ function SectionEditor({
     const original = (section.subSections ?? [])[i];
     const clone: Section = JSON.parse(JSON.stringify(original));
     clone.id = crypto.randomUUID();
-    clone.code = clone.code ? `${clone.code}-kopi` : '';
+    clone.code = copyCode(clone.code, uiLang);
     clone.questions = clone.questions.map((q) => ({
       ...q,
       id: crypto.randomUUID(),
-      code: q.code ? `${q.code}-kopi` : '',
+      code: copyCode(q.code, uiLang),
     }));
     // subSections on nested sections are not supported (no infinite nesting)
     const subs = [...(section.subSections ?? [])];
@@ -1663,35 +1663,35 @@ function isEditableElement(el: Element | null): boolean {
   return false;
 }
 
-/** Deep-clone a question, assigning a new id. Appends '-kopi' to code if the code
+/** Deep-clone a question, assigning a new id. Appends the copy suffix if the code
  *  already exists anywhere in the given all-codes set. */
-function cloneQuestion(q: Question, allCodes: Set<string>): Question {
+function cloneQuestion(q: Question, allCodes: Set<string>, lang: UILang): Question {
   const clone: Question = JSON.parse(JSON.stringify(q));
   clone.id = crypto.randomUUID();
   if (clone.code && allCodes.has(clone.code)) {
-    clone.code = `${clone.code}-kopi`;
+    clone.code = copyCode(clone.code, lang);
   }
   return clone;
 }
 
 /** Deep-clone a section with fresh ids on section and all questions */
-function cloneSection(s: Section): Section {
+function cloneSection(s: Section, lang: UILang): Section {
   const clone: Section = JSON.parse(JSON.stringify(s));
   clone.id = crypto.randomUUID();
-  clone.code = clone.code ? `${clone.code}-kopi` : '';
+  clone.code = copyCode(clone.code, lang);
   clone.questions = clone.questions.map((q) => ({
     ...q,
     id: crypto.randomUUID(),
-    code: q.code ? `${q.code}-kopi` : '',
+    code: copyCode(q.code, lang),
   }));
   clone.subSections = (clone.subSections ?? []).map((sub) => ({
     ...sub,
     id: crypto.randomUUID(),
-    code: sub.code ? `${sub.code}-kopi` : '',
+    code: copyCode(sub.code, lang),
     questions: sub.questions.map((q) => ({
       ...q,
       id: crypto.randomUUID(),
-      code: q.code ? `${q.code}-kopi` : '',
+      code: copyCode(q.code, lang),
     })),
   }));
   return clone;
@@ -2149,7 +2149,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
   function duplicateSection(i: number) {
     const original = questionnaire.sections[i];
-    const clone = cloneSection(original);
+    const clone = cloneSection(original, uiLang);
     const next = [...questionnaire.sections];
     next.splice(i + 1, 0, clone);
     onChange({ ...questionnaire, sections: next });
@@ -2203,7 +2203,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
   function handlePasteQuestion(targetSectionId: string) {
     if (!clipboard.item || clipboard.item.kind !== 'question') return;
-    const pasted = cloneQuestion(clipboard.item.data, allQuestionCodes);
+    const pasted = cloneQuestion(clipboard.item.data, allQuestionCodes, uiLang);
     let nextSections = addQuestionToSection(questionnaire.sections, targetSectionId, pasted);
     if (clipboard.isCut) {
       // Remove original — but only if id differs (cut already removed it above, this is cross-tab paste)
@@ -2215,7 +2215,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
   function handlePasteOverQuestion(questionId: string, sectionId: string) {
     if (!clipboard.item || clipboard.item.kind !== 'question') return;
-    const pasted = cloneQuestion(clipboard.item.data, allQuestionCodes);
+    const pasted = cloneQuestion(clipboard.item.data, allQuestionCodes, uiLang);
     // Insert pasted item before the target question, then remove the target
     const newSections = questionnaire.sections.map((s) => {
       if (s.id === sectionId) {
@@ -2239,8 +2239,8 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
     if (!sec) return;
     const idx = sec.questions.findIndex((q) => q.id === questionId);
     if (idx === -1) return;
-    const clone = cloneQuestion(sec.questions[idx], allQuestionCodes);
-    if (!clone.code && sec.questions[idx].code) clone.code = `${sec.questions[idx].code}-kopi`;
+    const clone = cloneQuestion(sec.questions[idx], allQuestionCodes, uiLang);
+    if (!clone.code && sec.questions[idx].code) clone.code = copyCode(sec.questions[idx].code, uiLang);
 
     function dupInSections(sections: Section[]): Section[] {
       return sections.map((s) => {
@@ -2287,7 +2287,7 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
 
   function handlePasteSection() {
     if (!clipboard.item || clipboard.item.kind !== 'section') return;
-    const clone = cloneSection(clipboard.item.data);
+    const clone = cloneSection(clipboard.item.data, uiLang);
     if (clipboard.isCut) clipboard.clear();
     onChange({ ...questionnaire, sections: [...questionnaire.sections, clone] });
   }

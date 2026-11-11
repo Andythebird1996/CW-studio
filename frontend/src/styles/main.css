@@ -464,12 +464,18 @@ input[type="radio"] {
 .cw-resp-choice[type="radio"] { border-radius: 50%; }
 .cw-resp-choice[type="checkbox"] { border-radius: 2px; }
 .cw-resp-choice:checked { border-color: var(--color-cw-blue); }
-.cw-resp-choice[type="radio"]:checked::after {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+/* Filled radio. The portal references only show the empty 16px ring, so the
+   selected state keeps that ring size and the existing focus outline, and
+   fills the control in portal blue instead of drawing a small inner dot.
+   The option row stays plain: the references have no row chrome, and the
+   yellow selection bar is the clinician navigation, not the respondent form. */
+.cw-resp-choice[type="radio"]:checked {
   background: var(--color-cw-blue);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.cw-resp-choice[type="radio"]:checked::after {
+  content: none;
 }
 .cw-resp-choice[type="checkbox"]:checked {
   background: var(--color-cw-blue);
@@ -680,32 +686,36 @@ textarea.cw-resp-field { width: calc(100% - 26px); resize: vertical; }
 
 @container (max-width: 640px) {
   .cw-resp-top { height: 48px; }
-  .cw-resp-menu { width: 48px; height: 48px; }
+  .cw-resp-menu { width: 44px; height: 48px; }
   .cw-resp-drawer-head { height: 48px; }
-  .cw-resp-tools { gap: 0; padding-left: 4px; }
+  .cw-resp-tools { gap: 0; padding-left: 2px; }
+  .cw-resp-icon { width: 30px; height: 36px; }
+  .cw-resp-icon svg { width: 18px; height: 18px; }
+  /* Keep the task count inside the icon so the centered percent cannot cover it. */
+  .cw-resp-badge { top: 1px; right: 1px; }
   .cw-resp-pct { font-size: 18px; }
-  /* Keep the percent and its arrows inside the header, clear of the icons. */
-  .cw-resp-progress {
-    left: auto;
-    right: 6px;
-    transform: none;
-    gap: 2px;
-  }
-  .cw-resp-arrow,
-  .cw-resp-arrow-left,
-  .cw-resp-arrow-right {
-    position: static;
-    top: auto;
-    right: auto;
-    left: auto;
-    transform: none;
-  }
+  .cw-resp-arrow { width: 26px; height: 26px; }
+  .cw-resp-arrow svg { width: 18px; height: 18px; }
+  .cw-resp-arrow-left { right: calc(100% + 8px); }
+  .cw-resp-arrow-right { left: calc(100% + 8px); }
   .cw-resp-card { margin: 10px 8px 12px; padding: 22px 16px 14px; }
   .cw-resp-title { font-size: 22px; }
   .cw-resp-options { padding-left: 18px; }
   .cw-resp-field { margin-left: 18px; }
   textarea.cw-resp-field { width: calc(100% - 18px); }
   .cw-resp-slider { margin-left: 18px; }
+}
+
+/* Phones and a preview pane dragged narrow: shrink the tools further so the
+   centered percent and its back arrow still clear the badge. */
+@container (max-width: 380px) {
+  .cw-resp-menu { width: 36px; }
+  .cw-resp-icon { width: 26px; }
+  .cw-resp-icon svg { width: 16px; height: 16px; }
+  .cw-resp-pct { font-size: 16px; }
+  .cw-resp-arrow { width: 22px; }
+  .cw-resp-arrow-left { right: calc(100% + 4px); }
+  .cw-resp-arrow-right { left: calc(100% + 4px); }
 }
 
 /* Print / PDF of the assessment. Same type scale, no portal chrome. */

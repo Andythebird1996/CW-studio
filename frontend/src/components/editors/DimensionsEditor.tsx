@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Copy, PlusCircle, Trash2, LayoutGrid, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Questionnaire, Dimension, Section, Question } from '../../types/questionnaire';
-import { t, countPhrase, useUILang } from '../../i18n';
+import { t, countPhrase, copyCode, useUILang } from '../../i18n';
 import { ItemContextMenu } from './ItemContextMenu';
 
 function flattenQuestions(sections: Section[]): Question[] {
@@ -193,7 +193,7 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
 
   function dupDim(idx: number) {
     const src = dims[idx];
-    const dup: Dimension = { ...src, code: src.code ? `${src.code}-kopi` : '', questionCodes: [...src.questionCodes] };
+    const dup: Dimension = { ...src, code: copyCode(src.code, uiLang), questionCodes: [...src.questionCodes] };
     const next = [...dims];
     next.splice(idx + 1, 0, dup);
     onChange({ ...questionnaire, dimensions: next });
