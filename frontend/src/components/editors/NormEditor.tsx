@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ClipboardPaste, Copy, PlusCircle, Trash2, Upload } from 'lucide-react';
 import type { Questionnaire, Norm, NormType, Calculations } from '../../types/questionnaire';
-import { t, useUILang } from '../../i18n';
+import { t, copyCode, useUILang } from '../../i18n';
 import { ImportNormDialog, type NormDataRow } from '../dialogs/ImportNormDialog';
 import { ItemContextMenu } from './ItemContextMenu';
 
@@ -375,7 +375,7 @@ export function NormEditor({ questionnaire, onChange }: Props) {
   }
   function dupNorm(i: number) {
     const src = norms[i];
-    const dup: Norm = { ...src, code: src.code ? `${src.code}-kopi` : '', data: src.data.map((r) => ({ ...r })) };
+    const dup: Norm = { ...src, code: copyCode(src.code, uiLang), data: src.data.map((r) => ({ ...r })) };
     const next = [...norms];
     next.splice(i + 1, 0, dup);
     setNorms(next);

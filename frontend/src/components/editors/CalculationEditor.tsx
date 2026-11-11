@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Copy, FileInput, Pencil, PlusCircle, Trash2, X } from 'lucide-react';
 import type { Questionnaire, Calculation, Calculations, InnerCalculation, Norm } from '../../types/questionnaire';
-import { t, tf, countPhrase, useUILang } from '../../i18n';
+import { t, tf, countPhrase, copyCode, useUILang } from '../../i18n';
 import { ImportCalculationsDialog } from '../dialogs/ImportCalculationsDialog';
 import { ItemContextMenu } from './ItemContextMenu';
 
@@ -554,7 +554,7 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
   function deleteCalc(i: number) { setCalcs(calcs.filter((_, idx) => idx !== i)); }
   function dupCalc(i: number) {
     const src = calcs[i];
-    const dup: Calculation = { ...src, code: src.code ? `${src.code}-kopi` : '' };
+    const dup: Calculation = { ...src, code: copyCode(src.code, uiLang) };
     const next = [...calcs];
     next.splice(i + 1, 0, dup);
     setCalcs(next);

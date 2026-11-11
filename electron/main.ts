@@ -71,7 +71,7 @@ async function startServer(): Promise<void> {
   }
 
   serve({ fetch: honoApp.fetch, port: PORT }, () => {
-    console.log(`Checkware Studio server running on http://localhost:${PORT}`);
+    console.log(`CW Studio Web server running on http://localhost:${PORT}`);
   });
 }
 
@@ -85,7 +85,7 @@ async function createWindow(): Promise<void> {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    title: 'Checkware Studio',
+    title: 'CW Studio Web',
     show: false, // Show only when ready to avoid white flash
   });
 
@@ -104,6 +104,10 @@ async function createWindow(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  app.setAboutPanelOptions({
+    applicationName: 'CW Studio Web',
+    applicationVersion: app.getVersion(),
+  });
   await startServer();
   createWindow();
 

@@ -19,7 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { useWorkspaceStore, type EditorTab } from '../../stores/workspace-store';
-import { t, type UILang } from '../../i18n';
+import { t, reportTabLabel, type UILang } from '../../i18n';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -212,7 +212,6 @@ function PackageNode({
   const extraLangs = (q?.supportedLanguages.length ?? 1) - 1;
   const mediaCount = tab.mediaFiles?.length ?? 0;
   const rapFileCount = Object.keys(tab.rapFiles ?? {}).length;
-  const hasReport = rapFileCount > 0;
   const responseTemplates = q?.responseTemplates?.templates ?? [];
 
   const lang = q?.defaultLanguage ?? 'NO';
@@ -489,7 +488,7 @@ function PackageNode({
           {/* Report */}
           <ResourceRow
             icon={<FileCode className="w-3.5 h-3.5" />}
-            label={t('tabReports', uiLang)}
+            label={reportTabLabel(rapFileCount, uiLang)}
             active={isActive && activeSubTab === 'report'}
             onClick={() => { nav('report'); if (rapFileCount > 1) setRapExpanded(true); }}
             expandable={rapFileCount > 1}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Copy, List, PlusCircle, Trash2 } from 'lucide-react';
 import type { Questionnaire, ResponseTemplate, TextOption } from '../../types/questionnaire';
-import {t,  useUILang } from '../../i18n';
+import { t, copyCode, useUILang } from '../../i18n';
 import { ItemContextMenu } from './ItemContextMenu';
 import { SpreadsheetOptionsEditor } from './SpreadsheetOptionsEditor';
 
@@ -51,7 +51,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
     const src = templates[i];
     const dup: ResponseTemplate = {
       ...src,
-      code: src.code ? `${src.code}-kopi` : '',
+      code: copyCode(src.code, uiLang),
       options: src.options.map((o) => ({ ...o })),
     };
     const next = [...templates];

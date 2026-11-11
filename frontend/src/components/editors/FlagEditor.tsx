@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Copy, PlusCircle, Trash2, Flag as FlagIcon } from 'lucide-react';
 import type { Questionnaire, Flag, FlagCondition, FlagType } from '../../types/questionnaire';
-import { t, useUILang } from '../../i18n';
+import { t, copyCode, useUILang } from '../../i18n';
 import { ItemContextMenu } from './ItemContextMenu';
 
 interface Props {
@@ -247,7 +247,7 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
   }
   function dupFlag(i: number) {
     const src = flags[i];
-    const dup: Flag = { ...src, code: src.code ? `${src.code}-kopi` : '', conditions: [...src.conditions] };
+    const dup: Flag = { ...src, code: copyCode(src.code, uiLang), conditions: [...src.conditions] };
     const next = [...flags];
     next.splice(i + 1, 0, dup);
     setFlags(next);

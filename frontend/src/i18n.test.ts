@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ALL_STRINGS, t, tf, type UILang } from './i18n';
+import { ALL_STRINGS, copyCode, reportTabLabel, t, tf, type UILang } from './i18n';
 
 const LANGS: UILang[] = ['EN', 'NO'];
 
@@ -52,6 +52,18 @@ describe('UI catalog parity', () => {
     expect(t('publish', 'EN')).toBe('Publish');
     expect(tf('openedFile', 'NO', { name: 'PHQ-9' })).toBe('Åpnet «PHQ-9»');
     expect(tf('openedFile', 'EN', { name: 'PHQ-9' })).toBe('Opened “PHQ-9”');
+    expect(t('appTitle', 'NO')).toBe('CW Studio Web');
+    expect(t('appTitle', 'EN')).toBe('CW Studio Web');
+    expect(t('tabDebugger', 'NO')).toBe('Feilsøking');
+    expect(t('tabDebugger', 'EN')).toBe('Debugger');
+    expect(reportTabLabel(1, 'NO')).toBe('Rapport');
+    expect(reportTabLabel(1, 'EN')).toBe('Report');
+    expect(reportTabLabel(0, 'NO')).toBe('Rapporter');
+    expect(reportTabLabel(2, 'EN')).toBe('Reports');
+    expect(copyCode('Q1', 'NO')).toBe('Q1-kopi');
+    expect(copyCode('Q1', 'EN')).toBe('Q1-copy');
+    expect(copyCode('', 'NO')).toBe('');
+    expect(copyCode(undefined, 'EN')).toBe('');
   });
 });
 
