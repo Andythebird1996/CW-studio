@@ -64,7 +64,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-cw-blue">{t('tabMedia', uiLang)}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-cw-gray-text mt-0.5">
             {mediaFiles.length} {t(mediaFiles.length === 1 ? 'nFileOne' : 'nFileMany', uiLang)}
           </p>
         </div>
@@ -89,13 +89,13 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
       </div>
 
       {mediaFiles.length === 0 && (
-        <div className="flex flex-col items-center justify-center flex-1 text-gray-400 gap-3">
+        <div className="flex flex-col items-center justify-center flex-1 text-cw-gray-text gap-3">
           <div className="text-4xl">🖼</div>
           <p className="text-sm">{t('noMedia', uiLang)}</p>
           {onChange && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-xs px-3 py-1.5 border border-cw-border rounded hover:bg-gray-50"
+              className="text-xs px-3 py-1.5 border border-cw-border rounded hover:bg-cw-gray"
             >
               {t('uploadFiles', uiLang)}
             </button>
@@ -103,7 +103,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
         </div>
       )}
 
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-6">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
           {mediaFiles.map((f) => {
             const isImage = IMAGE_MIMES.has(f.mimeType) && !!f.dataUrl;
@@ -111,7 +111,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
               <div key={f.fileName} className="border border-cw-border rounded-lg overflow-hidden bg-white shadow-sm flex flex-col">
                 {/* Preview */}
                 <div
-                  className={`h-32 bg-gray-50 flex items-center justify-center overflow-hidden ${isImage ? 'cursor-zoom-in' : ''}`}
+                  className={`h-32 bg-cw-gray flex items-center justify-center overflow-hidden ${isImage ? 'cursor-zoom-in' : ''}`}
                   onClick={() => isImage && setLightbox(f)}
                 >
                   {isImage ? (
@@ -131,11 +131,11 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
                 </div>
 
                 {/* Info */}
-                <div className="px-2 py-1.5 border-t border-cw-border">
-                  <p className="text-xs font-medium text-gray-700 truncate" title={f.fileName}>
+                <div className="px-3 py-2 border-t border-cw-border">
+                  <p className="text-xs font-medium text-cw-ink truncate" title={f.fileName}>
                     {f.fileName}
                   </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
+                  <p className="text-[10px] text-cw-gray-text mt-0.5">
                     {f.sizeKb < 1024 ? `${f.sizeKb} B` : `${Math.round(f.sizeKb / 1024)} KB`} · {f.extension.toUpperCase()}
                   </p>
                 </div>
@@ -145,7 +145,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
                   <a
                     href={f.dataUrl}
                     download={f.fileName}
-                    className="block text-center text-[10px] text-cw-link hover:underline py-1 border-t border-cw-border bg-gray-50"
+                    className="block text-center text-[10px] text-cw-link hover:underline py-1 border-t border-cw-border bg-cw-gray"
                   >
                     {t('download', uiLang)}
                   </a>
@@ -163,7 +163,7 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
           onClick={() => setLightbox(null)}
         >
           <button
-            className="absolute top-4 right-4 text-white hover:text-gray-300"
+            className="absolute top-4 right-4 text-white hover:text-cw-gray-text"
             onClick={() => setLightbox(null)}
           >
             <X className="w-6 h-6" />

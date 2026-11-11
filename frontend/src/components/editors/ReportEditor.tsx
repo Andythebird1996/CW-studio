@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Play, Wand2, CodeSquare } from 'lucide-react';
-import { ReportSimulator } from './ReportSimulator';
+import { ReportSimulator, ReportStyleSwitch, type ReportSheetStyle } from './ReportSimulator';
 import type { Questionnaire } from '../../types/questionnaire';
 import { t, type UILang, useUILang } from '../../i18n';
 
@@ -17,7 +17,7 @@ function highlightRap(code: string): string {
     .map((line) => {
       // Block comments /* ... */  (single-line form only in RAP)
       if (/^\s*\/\*/.test(line)) {
-        return `<span style="color:#008000">${escapeHtml(line)}</span>`;
+        return `<span style="color:var(--color-cw-positive)">${escapeHtml(line)}</span>`;
       }
 
       let out = escapeHtml(line);
@@ -25,37 +25,37 @@ function highlightRap(code: string): string {
       // [KEYWORD...] constructs — control flow
       out = out.replace(
         /(\[(?:CALL|DIE|function|function_end|group|group_end|if|else|endif|return|loop|loop_end|while|while_end)\b[^\]]*\])/g,
-        '<span style="color:#0000ff;font-weight:600">$1</span>',
+        '<span style="color:var(--color-cw-blue);font-weight:600">$1</span>',
       );
 
       // $VARIABLE
       out = out.replace(
         /(\$[A-Z_][A-Z0-9_]*)/g,
-        '<span style="color:#0070c1">$1</span>',
+        '<span style="color:var(--color-cw-blue-light)">$1</span>',
       );
 
       // Built-in functions A( L( Q( EXIST( NOT( etc.
       out = out.replace(
         /\b(A|L|Q|EXIST|NOT|AND|OR|CALC|NORM|FLAG|PERCENTILE|ZSCORE)\(/g,
-        '<span style="color:#795e26">$1</span>(',
+        '<span style="color:var(--color-cw-orange)">$1</span>(',
       );
 
       // String literals in "..."
       out = out.replace(
         /(&quot;[^&]*?&quot;)/g,
-        '<span style="color:#a31515">$1</span>',
+        '<span style="color:var(--color-cw-negative)">$1</span>',
       );
 
       // HTML tags inside the template
       out = out.replace(
         /(&lt;\/?[a-zA-Z][^&gt;]*&gt;)/g,
-        '<span style="color:#800000">$1</span>',
+        '<span style="color:var(--color-cw-negative)">$1</span>',
       );
 
       // Inline comments /* ... */ on a line
       out = out.replace(
         /(\/\*.*?\*\/)/g,
-        '<span style="color:#008000">$1</span>',
+        '<span style="color:var(--color-cw-positive)">$1</span>',
       );
 
       return out;
@@ -235,7 +235,7 @@ function SnippetDropdown({ onInsert }: SnippetDropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded hover:bg-gray-50 text-gray-600"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded hover:bg-cw-gray text-cw-gray-text"
         title={t('insertSnippet', uiLang)}
       >
         <CodeSquare className="w-3.5 h-3.5" /> {t('snippet', uiLang)}
@@ -244,20 +244,20 @@ function SnippetDropdown({ onInsert }: SnippetDropdownProps) {
         <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-white border border-cw-border rounded-lg shadow-lg overflow-hidden">
           {rapSnippets(uiLang).map((grp) => (
             <div key={grp.group}>
-              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 bg-gray-50 border-b border-cw-border">
+              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-cw-gray-text bg-cw-gray border-b border-cw-border">
                 {grp.group}
               </div>
               {grp.snippets.map((s) => (
                 <button
                   key={s.label}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-cw-gray text-gray-700 border-b border-cw-border last:border-0"
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-cw-gray text-cw-ink border-b border-cw-border last:border-0"
                   onClick={() => {
                     onInsert(s.code);
                     setOpen(false);
                   }}
                 >
                   <span className="font-medium">{s.label}</span>
-                  <span className="block font-mono text-[10px] text-gray-400 truncate mt-0.5">{s.code.split('\n')[0]}</span>
+                  <span className="block font-mono text-[10px] text-cw-gray-text truncate mt-0.5">{s.code.split('\n')[0]}</span>
                 </button>
               ))}
             </div>
@@ -303,6 +303,7 @@ function makePlaceholder(questionnaire: Questionnaire): string {
 export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, onChangeFile, onSelectFile, onAddFile, onDeleteFile }: Props) {
   const uiLang = useUILang();
   const [mode, setMode] = useState<'editor' | 'simulator'>('editor');
+  const [reportStyle, setReportStyle] = useState<ReportSheetStyle>('engine');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
@@ -353,9 +354,11 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
       <div className="bg-white border-b border-cw-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-cw-blue">{t('reportTemplate', uiLang)}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">{t('rapTemplatePrefix', uiLang)} {t('reportLanguage', uiLang)}</p>
+          <p className="text-xs text-cw-gray-text mt-0.5">{t('rapTemplatePrefix', uiLang)} {t('reportLanguage', uiLang)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <ReportStyleSwitch value={reportStyle} onChange={setReportStyle} />
+
           {/* Mode toggle */}
           <div className="flex rounded border border-cw-border overflow-hidden">
             <button
@@ -363,7 +366,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
               className={`px-3 py-1.5 text-xs transition-colors ${
                 mode === 'editor'
                   ? 'bg-cw-blue text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white text-cw-gray-text hover:bg-cw-gray'
               }`}
             >
               {t('editorMode', uiLang)}
@@ -373,7 +376,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
               className={`flex items-center gap-1 px-3 py-1.5 text-xs transition-colors ${
                 mode === 'simulator'
                   ? 'bg-cw-blue text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  : 'bg-white text-cw-gray-text hover:bg-cw-gray'
               }`}
             >
               <Play className="w-3 h-3" />
@@ -393,7 +396,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
                 onSelectFile(newName);
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded hover:bg-gray-50 text-gray-600"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded hover:bg-cw-gray text-cw-gray-text"
             title={t('generateTemplateTitle', uiLang)}
           >
             <Wand2 className="w-3.5 h-3.5" /> {t('generateTemplate', uiLang)}
@@ -414,7 +417,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
                 className={`px-2.5 py-1 text-xs rounded-l border transition-colors ${
                   fn === currentFileName
                     ? 'bg-white border-cw-blue text-cw-blue font-medium'
-                    : 'bg-cw-gray border-cw-border text-gray-500 hover:text-gray-700 hover:bg-white'
+                    : 'bg-cw-gray border-cw-border text-cw-gray-text hover:text-cw-ink hover:bg-white'
                 }`}
               >
                 {fn}
@@ -422,7 +425,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
               {fileNames.length > 1 && (
                 <button
                   onClick={() => onDeleteFile(fn)}
-                  className="px-1.5 py-1 text-xs rounded-r border border-l-0 border-cw-border text-gray-400 hover:text-red-500 hover:bg-white transition-colors"
+                  className="px-1.5 py-1 text-xs rounded-r border border-l-0 border-cw-border text-cw-gray-text hover:text-cw-negative hover:bg-white transition-colors"
                   title={t('deleteFile', uiLang)}
                 >✕</button>
               )}
@@ -430,7 +433,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
           ))}
           <button
             onClick={onAddFile}
-            className="px-2 py-1 text-xs border border-dashed border-cw-border rounded text-gray-400 hover:text-cw-blue hover:border-cw-blue transition-colors"
+            className="px-2 py-1 text-xs border border-dashed border-cw-border rounded text-cw-gray-text hover:text-cw-blue hover:border-cw-blue transition-colors"
             title={t('newReportFile', uiLang)}
           >+</button>
         </div>
@@ -452,7 +455,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
                   lineHeight: '1.6',
                   padding: '12px',
                   whiteSpace: 'pre',
-                  color: '#333',
+                  color: 'var(--color-cw-ink)',
                   background: 'transparent',
                 }}
                 dangerouslySetInnerHTML={{ __html: highlightRap(content) + '\n' }}
@@ -472,7 +475,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
                   padding: '12px',
                   background: 'transparent',
                   color: 'transparent',
-                  caretColor: '#333',
+                  caretColor: 'var(--color-cw-ink)',
                   tabSize: 2,
                   border: 'none',
                 }}
@@ -494,21 +497,27 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
             </div>
           </div>
           <div className="bg-white border-t border-cw-border px-4 py-2 shrink-0 overflow-x-auto">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-cw-gray-text">
               {t('keywords', uiLang)}:{' '}
-              <code className="bg-gray-100 px-1 rounded">$VAR</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">[if(A(Q1)=1){'{...}'}]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">[CALL fn()]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">[function {t('rapFnName', uiLang)}()]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">[group(&quot;{t('name', uiLang)}&quot;, true)]</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">Q({t('code', uiLang).toLowerCase()})</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">L({t('code', uiLang).toLowerCase()})</code>
+              <code className="bg-cw-gray px-1 rounded">$VAR</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">[if(A(Q1)=1){'{...}'}]</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">[CALL fn()]</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">[function {t('rapFnName', uiLang)}()]</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">[group(&quot;{t('name', uiLang)}&quot;, true)]</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">Q({t('code', uiLang).toLowerCase()})</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">L({t('code', uiLang).toLowerCase()})</code>
             </p>
           </div>
         </>
       ) : (
         <div className="flex-1 overflow-hidden">
-          <ReportSimulator questionnaire={questionnaire} rapContent={content} reportFileName={currentFileName} />
+          <ReportSimulator
+            questionnaire={questionnaire}
+            rapContent={content}
+            reportFileName={currentFileName}
+            reportStyle={reportStyle}
+            onReportStyleChange={setReportStyle}
+          />
         </div>
       )}
     </div>

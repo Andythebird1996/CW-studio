@@ -20,6 +20,32 @@
  */
 
 import type { Questionnaire } from '../types/questionnaire';
+import openSansLatin from '../styles/fonts/open-sans-latin.woff2?url';
+import openSansLatinExt from '../styles/fonts/open-sans-latin-ext.woff2?url';
+
+/** @font-face rules for standalone report and print documents. Same files as the app shell. */
+export function standaloneFontFaceCss(): string {
+  return `@font-face{font-family:"Open Sans";font-style:normal;font-weight:300 800;font-display:swap;src:url("${openSansLatinExt}") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:"Open Sans";font-style:normal;font-weight:300 800;font-display:swap;src:url("${openSansLatin}") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}`;
+}
+
+const REPORT_FONT = "'Open Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+/** Portal palette, matching the cw-* tokens in styles/main.css. */
+const CW = {
+  blue: '#006393',
+  blueSoft: '#e7f3f8',
+  ink: '#333333',
+  muted: '#6b6e71',
+  border: '#d5d6d7',
+  line: '#e8e9e9',
+  positive: '#1f7a34',
+  negative: '#a32020',
+  orange: '#e07b00',
+  orangeSoft: '#fdf3e6',
+  negativeSoft: '#f8ecec',
+  hilite: '#f4f6f7',
+  barFill: '#d6e8f2',
+} as const;
 
 // ─── Public API ────────────────────────────────────────────────────────────
 
@@ -49,6 +75,15 @@ export interface SimContext {
    * Session number 0 in RAP means "current session" → ctx.answers.
    */
   sessionHistory?: Map<string, SimAnswer>[];
+  /**
+   * Report sheet. `engine` (default) is the original report-engine CSS.
+   * `portal` uses Open Sans and the Checkware portal palette.
+   */
+  reportStyle?: 'engine' | 'portal';
+}
+
+function isPortalReport(ctx: SimContext): boolean {
+  return ctx.reportStyle === 'portal';
 }
 
 // ─── Graph state (reset per interpretation) ────────────────────────────────
@@ -327,8 +362,8 @@ function executeTokens(
         g.plots.push({
           plotType: p[1]?.trim() || 'bar',
           seriesName: p[2]?.trim() || '',
-          barColor: (p[3] ?? p[4] ?? '').trim().replace(/['"]/g, '') || '#25b8ec',
-          fillColor: (p[4] ?? '').trim().replace(/['"]/g, '') || '#d4f0fb',
+          barColor: (p[3] ?? p[4] ?? '').trim().replace(/['"]/g, '') || (isPortalReport(ctx) ? CW.blue : '#25b8ec'),
+          fillColor: (p[4] ?? '').trim().replace(/['"]/g, '') || (isPortalReport(ctx) ? CW.barFill : '#d4f0fb'),
         });
         _graphs.set(name, g);
       }
@@ -343,7 +378,7 @@ function executeTokens(
         const g = _graphs.get(name) ?? defaultGraph();
         const begin = parseFloat(p[3]?.trim() || '0');
         const end = parseFloat(p[4]?.trim() || '0');
-        const color = (p[5] ?? '').trim().replace(/['"]/g, '') || '#ffeaea';
+        const color = (p[5] ?? '').trim().replace(/['"]/g, '') || (isPortalReport(ctx) ? CW.negativeSoft : '#ffeaea');
         if (!isNaN(begin) && !isNaN(end)) g.bands.push({ begin, end, color });
         _graphs.set(name, g);
       }
@@ -355,7 +390,7 @@ function executeTokens(
         const name = p[0]?.trim();
         const g = _graphs.get(name) ?? defaultGraph();
         const pos2 = parseFloat(p[2]?.trim() || '0');
-        const color = (p[3] ?? '').trim().replace(/['"]/g, '') || '#888888';
+        const color = (p[3] ?? '').trim().replace(/['"]/g, '') || (isPortalReport(ctx) ? CW.muted : '#888888');
         if (!isNaN(pos2)) g.lines.push({ pos: pos2, color });
         _graphs.set(name, g);
       }
@@ -366,7 +401,9 @@ function executeTokens(
       const m = dir.match(/^GRAPH_RENDER\(\s*([^,)]*)/i);
       const name = m?.[1]?.trim() || '';
       const g = _graphs.get(name);
-      output += g ? renderGraphSvg(g, ctx) : `<div style="border:1px dashed #aaa;background:#f8f8f8;padding:16px;margin:8px 0;color:#888;font-size:9pt;text-align:center;">[Graf: ${name}]</div>`;
+      output += g ? renderGraphSvg(g, ctx) : (isPortalReport(ctx)
+        ? `<div class="report-placeholder">[Graf: ${name}]</div>`
+        : `<div style="border:1px dashed #aaa;background:#f8f8f8;padding:16px;margin:8px 0;color:#888;font-size:9pt;text-align:center;">[Graf: ${name}]</div>`);
       pos.i++;
     } else if (/^PLOT_GRAPH\(/i.test(dir)) {
       // Legacy graph format: [PLOT_GRAPH(name, calc_code, ...)]
@@ -387,7 +424,9 @@ function executeTokens(
       dir.startsWith('pie_chart(') || dir.startsWith('spider_chart(')
     ) {
       const diagramType = dir.slice(0, dir.indexOf('(')).toLowerCase().replace(/_/g, ' ');
-      output += `<div style="border:1px dashed #aaa;background:#f8f8f8;padding:16px;margin:8px 0;color:#888;font-size:9pt;text-align:center;">[${diagramType}]</div>`;
+      output += isPortalReport(ctx)
+        ? `<div class="report-placeholder">[${diagramType}]</div>`
+        : `<div style="border:1px dashed #aaa;background:#f8f8f8;padding:16px;margin:8px 0;color:#888;font-size:9pt;text-align:center;">[${diagramType}]</div>`;
       pos.i++;
     } else {
       // Attempt inline substitution — handles [CALC()], [A()], [L()], [SUM()], etc.
@@ -1121,13 +1160,20 @@ function renderGraphSvg(g: GraphDef, ctx: SimContext): string {
   const yScale = (v: number) => MT + PH - Math.round(((v - g.min) / range) * PH);
   const xC = ML + Math.round(PW * 0.15); // single bar at left side
   const barW = Math.max(8, Math.min(24, Math.round(PW * 0.06)));
-  const barColor = g.plots[0]?.barColor || '#25b8ec';
+  const portal = isPortalReport(ctx);
+  const font = portal ? REPORT_FONT : 'Calibri,Arial,sans-serif';
+  const muted = portal ? CW.muted : '#808080';
+  const ink = portal ? CW.ink : '#333';
+  const grid = portal ? CW.line : '#ebebeb';
+  const frame = portal ? CW.border : '#e0e0e0';
+  const axis = portal ? CW.muted : '#aaa';
+  const barColor = g.plots[0]?.barColor || (portal ? CW.blue : '#25b8ec');
 
   const parts: string[] = [];
   parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" class="reportgraph" style="display:block;margin:4px 0;">`);
 
   // Background
-  parts.push(`<rect x="${ML}" y="${MT}" width="${PW}" height="${PH}" fill="white" stroke="#e0e0e0" stroke-width="1"/>`);
+  parts.push(`<rect x="${ML}" y="${MT}" width="${PW}" height="${PH}" fill="white" stroke="${frame}" stroke-width="1"/>`);
 
   // Bands (horizontal, background)
   for (const band of g.bands) {
@@ -1141,8 +1187,8 @@ function renderGraphSvg(g: GraphDef, ctx: SimContext): string {
   for (let i = 0; i <= steps; i++) {
     const v = g.min + (range / steps) * i;
     const y = yScale(v);
-    parts.push(`<line x1="${ML}" y1="${y}" x2="${ML + PW}" y2="${y}" stroke="#ebebeb" stroke-width="1"/>`);
-    parts.push(`<text x="${ML - 4}" y="${y + 3}" text-anchor="end" font-size="7" fill="#808080" font-family="Calibri,Arial,sans-serif">${Math.round(v)}</text>`);
+    parts.push(`<line x1="${ML}" y1="${y}" x2="${ML + PW}" y2="${y}" stroke="${grid}" stroke-width="1"/>`);
+    parts.push(`<text x="${ML - 4}" y="${y + 3}" text-anchor="end" font-size="7" fill="${muted}" font-family="${font}">${Math.round(v)}</text>`);
   }
 
   // Reference lines
@@ -1159,18 +1205,18 @@ function renderGraphSvg(g: GraphDef, ctx: SimContext): string {
 
   // Value label above bar
   const valLabel = Number.isInteger(value) ? String(value) : value.toFixed(1);
-  parts.push(`<text x="${xC}" y="${barY - 4}" text-anchor="middle" font-size="8" font-weight="bold" fill="#333" font-family="Calibri,Arial,sans-serif">${valLabel}</text>`);
+  parts.push(`<text x="${xC}" y="${barY - 4}" text-anchor="middle" font-size="8" font-weight="bold" fill="${ink}" font-family="${font}">${valLabel}</text>`);
 
   // X-axis date label
-  parts.push(`<text x="${xC}" y="${MT + PH + 16}" text-anchor="middle" font-size="8" fill="#808080" font-family="Calibri,Arial,sans-serif">${dateLabel}</text>`);
+  parts.push(`<text x="${xC}" y="${MT + PH + 16}" text-anchor="middle" font-size="8" fill="${muted}" font-family="${font}">${dateLabel}</text>`);
 
   // Axes
-  parts.push(`<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT + PH}" stroke="#aaa" stroke-width="1"/>`);
-  parts.push(`<line x1="${ML}" y1="${MT + PH}" x2="${ML + PW}" y2="${MT + PH}" stroke="#aaa" stroke-width="1"/>`);
+  parts.push(`<line x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT + PH}" stroke="${axis}" stroke-width="1"/>`);
+  parts.push(`<line x1="${ML}" y1="${MT + PH}" x2="${ML + PW}" y2="${MT + PH}" stroke="${axis}" stroke-width="1"/>`);
 
   // Graph title
   if (g.header) {
-    parts.push(`<text x="${ML + PW / 2}" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="#333" font-family="Calibri,Arial,sans-serif">${g.header}</text>`);
+    parts.push(`<text x="${ML + PW / 2}" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="${ink}" font-family="${font}">${g.header}</text>`);
   }
 
   parts.push('</svg>');
@@ -1179,7 +1225,7 @@ function renderGraphSvg(g: GraphDef, ctx: SimContext): string {
 
 // ─── HTML wrapper ─────────────────────────────────────────────────────────
 
-function wrapHtml(body: string, ctx: SimContext): string {
+function wrapHtmlEngine(body: string, ctx: SimContext): string {
   const lang = ctx.questionnaire.defaultLanguage;
   const surveyName = ctx.questionnaire.name[lang] ?? ctx.questionnaire.code ?? '';
 
@@ -1266,6 +1312,128 @@ td.footer { padding-top:10px; }
 @media print {
   @page { size: A4 portrait; margin: 15mm 20mm 20mm 20mm; }
   body { background:#fff; }
+}
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+}
+
+function wrapHtml(body: string, ctx: SimContext): string {
+  return ctx.reportStyle === 'portal' ? wrapHtmlPortal(body, ctx) : wrapHtmlEngine(body, ctx);
+}
+
+function wrapHtmlPortal(body: string, ctx: SimContext): string {
+  const lang = ctx.questionnaire.defaultLanguage;
+  const surveyName = ctx.questionnaire.name[lang] ?? ctx.questionnaire.code ?? '';
+
+  return `<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<title>${surveyName}</title>
+<style>
+${standaloneFontFaceCss()}
+/* 960grid.css — fluid so the sheet fits the preview pane and A4 */
+* { box-sizing:border-box; }
+body { margin:0; padding:16px 12px 32px; background:#fff; color:${CW.ink}; }
+div.reportcanvas { padding:0; margin:0 auto; width:100%; max-width:960px; }
+div.maincolumn { width:62%; padding:0; margin:0; float:left; border:0; clear:both; }
+div.sidebarcolumn { width:32%; padding:0; margin:0; float:right; border:0; }
+table.canvas { padding:0; width:100%; max-width:960px; margin-left:auto; margin-right:auto; border:0; border-collapse:collapse; }
+table.canvas td.maincolumn { width:62%; margin:0; padding:0; font-size:1em; vertical-align:top; }
+table.canvas td.sidebar { width:32%; margin:0; padding:0; font-size:1em; vertical-align:top; }
+table.canvas td.spacecolumn { width:6%; margin:0; padding:0; font-size:1em; vertical-align:top; }
+div.footnote { width:100%; padding:10px; margin:0; float:left; border:0; clear:both; }
+div.reportwidget { display:block; width:100%; padding:0; margin:0; clear:both; }
+.tablewidth1{width:40px} .tablewidth2{width:100px} .tablewidth3{width:160px} .tablewidth4{width:220px} .tablewidth5{width:280px} .tablewidth6{width:340px} .tablewidth7{width:400px} .tablewidth8{width:460px} .tablewidth9{width:520px} .tablewidth10{width:580px}
+.width1{width:60px} .width2{width:120px} .width3{width:180px} .width4{width:240px} .width5{width:300px} .width6{width:360px} .width7{width:420px} .width8{width:480px} .width9{width:540px}
+.space1{margin-left:60px!important} .space2{margin-left:120px!important} .space3{margin-left:180px!important}
+div.reportcanvas p, div.reportcanvas table, div.reportcanvas h1, div.reportcanvas h2, div.reportcanvas h3, div.reportcanvas ul, div.reportcanvas ol, img.reportgraph { margin-left:10px; margin-right:10px; }
+td.maincolumn p, td.maincolumn table.reportlist, td.maincolumn table.reportsimple, td.maincolumn h1, td.maincolumn h2, td.maincolumn h3, td.maincolumn ul, td.maincolumn ol { margin-left:10px; margin-right:10px; }
+td.sidebar p, td.sidebar table, td.sidebar h1, td.sidebar h2, td.sidebar h3, td.sidebar ul, td.sidebar ol { margin-left:10px; margin-right:10px; }
+div.reportcolumns, table.reportcolumns { margin:0; padding:0; float:left; display:block; clear:none; }
+table.reportcolumns { margin-left:-10px; margin-right:-10px; }
+div.reportbreak { clear:both; }
+div.reportwidget h1 { margin-bottom:10px; }
+div.reportwidget h2 { margin-bottom:10px; }
+div.reportwidget table, td.maincolumn table, td.sidebar table { border-collapse:collapse; border-spacing:0; margin-right:0; }
+div.reportwidget td, div.reportwidget th, td.maincolumn td, td.maincolumn th, td.sidebar td, td.sidebar th { padding-left:10px; padding-right:10px; margin-left:0; margin-right:0; }
+div.reportwidget td, td.maincolumn td, td.sidebar td { vertical-align:top; }
+div.reportwidget th, td.maincolumn th, td.sidebar th { vertical-align:bottom; }
+div.reportwidget { display:block; float:left; }
+.nopaddingleft { padding-left:0; }
+.left { text-align:left; } .right { text-align:right; } .center { text-align:center; } .justify { text-align:justify; }
+.strong { font-weight:bold; } .underline { text-decoration:underline; }
+.small { font-size:0.9em; } .xl { font-size:1.5em; } .xxl { font-size:2em; }
+.reportindicator { margin-left:-10px; width:10px; }
+
+/* theme — Open Sans and the portal palette (cw-* tokens) */
+body, table.canvas { font-family:${REPORT_FONT}; font-size:10.5pt; line-height:1.5; color:${CW.ink}; }
+div.checkware-brand { width:150px; float:right; height:31px; margin-top:18px; margin-right:10px; }
+div.reportcanvas, div.maincolumn, div.sidebarcolumn, div.reportwidget { font-size:1em; }
+h1.reporttitle { font-size:1.7em; font-weight:600; letter-spacing:-0.01em; color:${CW.ink}; margin:8px 10px 22px; }
+h2 { font-size:1.05em; font-weight:600; color:${CW.ink}; margin:18px 10px 8px; }
+OL, UL { color:${CW.muted}; }
+OL SPAN, UL SPAN { color:${CW.ink}; }
+div.reportwidget { margin-top:16px; page-break-inside:avoid!important; }
+div.attention, .flag, .flag-warning {
+  border:1px solid ${CW.orange};
+  border-left-width:3px;
+  background:${CW.orangeSoft};
+  color:${CW.ink};
+  padding:8px 12px;
+  margin:12px 10px;
+  border-radius:4px;
+}
+.flag-critical, div.attention.negative {
+  border-color:${CW.negative};
+  background:${CW.negativeSoft};
+}
+.flag-info { border-color:${CW.blue}; background:${CW.blueSoft}; }
+div.reportwidget h1 { font-size:1.25em; color:${CW.ink}; font-weight:600; margin-bottom:8px; }
+div.reportwidget h2 { font-size:1.05em; color:${CW.ink}; font-weight:600; }
+div.reportwidget p { margin-top:4px; margin-bottom:12px; }
+div.reportwidget a, a { color:${CW.blue}; text-decoration:none; }
+div.reportwidget a:hover, a:hover { text-decoration:underline; }
+img.reportgraph { margin-top:8px!important; margin-bottom:8px!important; }
+p.reportgraphcaption { margin-top:0!important; margin-bottom:12px!important; text-align:center; font-style:italic; color:${CW.muted}; }
+p.reportgraphtitle { margin-top:12px!important; margin-bottom:0!important; text-align:center; font-style:italic; font-size:1.05em; color:${CW.ink}; }
+table.reportlist, table.reportsimple { width:calc(100% - 20px); border-collapse:collapse; }
+table.reportlist { border-top:1px solid ${CW.border}; border-bottom:1px solid ${CW.border}; margin-top:8px; margin-bottom:16px; }
+table.reportlist thead { border-bottom:1px solid ${CW.border}; }
+table.reportlist td { border-bottom:1px solid ${CW.line}; }
+table.reportlist tbody tr:last-child td { border-bottom:0; }
+table.reportlist tfoot td { border-top:1px solid ${CW.border}; border-bottom:0; }
+td { padding-top:7px; padding-bottom:7px; }
+th { text-align:left; vertical-align:bottom; color:${CW.muted}; font-weight:600; padding-top:8px; padding-bottom:8px; font-size:0.8em; letter-spacing:0.02em; }
+th.total { text-align:right; font-weight:600; }
+th.score { text-align:center; font-weight:600; }
+td.label { color:${CW.muted}; }
+td.value { color:${CW.ink}; }
+td.hilite { background-color:${CW.hilite}; }
+td.total { text-align:right; font-weight:600; color:${CW.ink}; }
+td.score { text-align:center; font-weight:600; color:${CW.ink}; }
+td.missing { color:${CW.muted}; font-style:italic; }
+.remark { font-style:italic; font-weight:600; }
+.addendum { font-style:italic; }
+.positive { color:${CW.positive}!important; }
+.negative { color:${CW.negative}!important; }
+sup { padding-left:2px; padding-right:2px; color:${CW.orange}; }
+.checkware-maincolor { color:${CW.blue}!important; font-weight:600; }
+h1.reporttitle.checkware-maincolor { color:${CW.ink}!important; font-weight:600; }
+.copyright { font-size:0.85em; color:${CW.muted}; }
+.rap-group-title { margin:2px 10px 0; font-size:0.72em; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:${CW.muted}; }
+.report-placeholder { border:1px dashed ${CW.border}; background:${CW.line}; padding:16px; margin:8px 10px; color:${CW.muted}; font-size:9pt; text-align:center; border-radius:4px; }
+div.footnote { margin-top:24px!important; padding-bottom:24px!important; }
+hr.footnote { border:0; border-top:1px solid ${CW.border}; width:100%; max-width:360px; float:left; }
+td.footer { padding-top:12px; }
+
+@media print {
+  @page { size: A4 portrait; margin: 15mm 18mm 18mm 18mm; }
+  body { background:#fff; padding:0; }
 }
 </style>
 </head>

@@ -11,10 +11,10 @@ interface Props {
 }
 
 const TYPE_COLORS: Record<Calculation['type'], string> = {
-  SUM: 'bg-blue-50 text-blue-700 border-blue-200',
-  MEAN: 'bg-purple-50 text-purple-700 border-purple-200',
-  COUNT: 'bg-green-50 text-green-700 border-green-200',
-  CUSTOM: 'bg-amber-50 text-amber-700 border-amber-200',
+  SUM: 'bg-cw-blue-soft text-cw-blue border-cw-blue/30',
+  MEAN: 'bg-white text-cw-blue-light border-cw-blue-light',
+  COUNT: 'bg-cw-positive-soft text-cw-positive border-cw-positive/30',
+  CUSTOM: 'bg-cw-orange-soft text-cw-orange border-cw-orange/40',
 };
 
 function getCalcTypeLabel(type: Calculation['type'], lang: ReturnType<typeof useUILang>): string {
@@ -54,24 +54,24 @@ function ImportedCalcCard({
         onClick={() => setExpanded((e) => !e)}
       >
         {expanded
-          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          ? <ChevronDown className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
         }
         <span className="font-mono text-sm font-semibold text-cw-blue">{calc.code}</span>
         <span className={`text-[10px] font-medium border rounded px-1.5 py-0.5 ${TYPE_COLORS[calc.type]}`}>
           {getCalcTypeLabel(calc.type, uiLang)}
         </span>
-        <span className="flex-1 text-xs text-gray-500 truncate">{calc.name}</span>
+        <span className="flex-1 text-xs text-cw-gray-text truncate">{calc.name}</span>
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="p-1 text-gray-300 hover:text-cw-blue transition-colors"
+          className="p-1 text-cw-gray-text hover:text-cw-blue transition-colors"
           title={t('editCalc', uiLang)}
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="text-gray-300 hover:text-red-500 p-1"
+          className="text-cw-gray-text hover:text-cw-negative p-1"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -79,9 +79,9 @@ function ImportedCalcCard({
 
       {/* Formula */}
       {expanded && calc.formula && (
-        <div className="border-t border-cw-border px-3 py-2 bg-gray-50">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('importedFormula', uiLang)}</p>
-          <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap leading-relaxed">
+        <div className="border-t border-cw-border px-3 py-2 bg-cw-gray">
+          <p className="text-[10px] font-semibold text-cw-gray-text uppercase tracking-wide mb-1">{t('importedFormula', uiLang)}</p>
+          <pre className="text-xs font-mono text-cw-ink whitespace-pre-wrap leading-relaxed">
             {calc.formula}
           </pre>
           <button
@@ -93,8 +93,8 @@ function ImportedCalcCard({
         </div>
       )}
       {expanded && !calc.formula && (
-        <div className="border-t border-cw-border px-3 py-2 bg-gray-50">
-          <p className="text-xs text-gray-400 italic">{t('noFormula', uiLang)}</p>
+        <div className="border-t border-cw-border px-3 py-2 bg-cw-gray">
+          <p className="text-xs text-cw-gray-text italic">{t('noFormula', uiLang)}</p>
         </div>
       )}
     </div>
@@ -176,25 +176,25 @@ function EditableCalcCard({
         onClick={() => setExpanded((e) => !e)}
       >
         {expanded
-          ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          : <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          ? <ChevronDown className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
         }
         <span className="font-mono text-sm font-semibold text-cw-blue">
-          {calc.code || <span className="text-gray-400 font-normal italic">{t('newCalcPH', uiLang)}</span>}
+          {calc.code || <span className="text-cw-gray-text font-normal italic">{t('newCalcPH', uiLang)}</span>}
         </span>
         <span className={`text-[10px] font-medium border rounded px-1.5 py-0.5 ${TYPE_COLORS[calc.type]}`}>
           {getCalcTypeLabel(calc.type, uiLang)}
         </span>
-        <span className="flex-1 text-xs text-gray-500 truncate">{calc.name}</span>
+        <span className="flex-1 text-xs text-cw-gray-text truncate">{calc.name}</span>
         {calc.normCode && (
-          <span className="text-[10px] font-mono bg-violet-50 text-violet-700 border border-violet-200 rounded px-1.5 py-0.5">
+          <span className="text-[10px] font-mono bg-cw-blue-soft text-cw-blue border border-cw-blue/30 rounded px-1.5 py-0.5">
             norm:{calc.normCode}
           </span>
         )}
         {onClose && (
           <button
             onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="p-1 text-gray-300 hover:text-gray-600 transition-colors"
+            className="p-1 text-cw-gray-text hover:text-cw-gray-text transition-colors"
             title={t('closeEdit', uiLang)}
           >
             <X className="w-3.5 h-3.5" />
@@ -202,7 +202,7 @@ function EditableCalcCard({
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="text-gray-300 hover:text-red-500 p-1"
+          className="text-cw-gray-text hover:text-cw-negative p-1"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -214,31 +214,31 @@ function EditableCalcCard({
           {/* Basic fields */}
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('code', uiLang)}</label>
+              <label className="block text-xs text-cw-gray-text mb-1">{t('code', uiLang)}</label>
               <input
                 type="text"
                 value={calc.code}
                 onChange={(e) => onChange({ ...calc, code: e.target.value })}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 placeholder="TOTAL"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('name', uiLang)}</label>
+              <label className="block text-xs text-cw-gray-text mb-1">{t('name', uiLang)}</label>
               <input
                 type="text"
                 value={calc.name}
                 onChange={(e) => onChange({ ...calc, name: e.target.value })}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 placeholder={t('totalScorePh', uiLang)}
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('typeLabel', uiLang)}</label>
+              <label className="block text-xs text-cw-gray-text mb-1">{t('typeLabel', uiLang)}</label>
               <select
                 value={calc.type}
                 onChange={(e) => onChange({ ...calc, type: e.target.value as Calculation['type'], _rawExpression: undefined })}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               >
                 {calcTypes.map((ct) => (
                   <option key={ct.value} value={ct.value}>{ct.label}</option>
@@ -250,11 +250,11 @@ function EditableCalcCard({
           {/* Norm reference */}
           {norms.length > 0 && (
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('linkedNorm', uiLang)}</label>
+              <label className="block text-xs text-cw-gray-text mb-1">{t('linkedNorm', uiLang)}</label>
               <select
                 value={calc.normCode ?? ''}
                 onChange={(e) => onChange({ ...calc, normCode: e.target.value || undefined })}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               >
                 <option value="">{t('noNormOption', uiLang)}</option>
                 {norms.map((n) => (
@@ -267,7 +267,7 @@ function EditableCalcCard({
           {/* Questions (SUM / MEAN / COUNT) */}
           {calc.type !== 'CUSTOM' && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t('includedQuestions', uiLang)}</label>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1.5">{t('includedQuestions', uiLang)}</label>
               <div className="space-y-1.5">
                 {calc.innerCalculations.map((ic, i) => {
                   // Determine which mode this row is in
@@ -306,7 +306,7 @@ function EditableCalcCard({
                               className={`px-2 py-1 text-[10px] font-medium transition-colors ${
                                 mode === m
                                   ? 'bg-cw-blue text-white'
-                                  : 'bg-white text-gray-500 hover:bg-cw-gray'
+                                  : 'bg-white text-cw-gray-text hover:bg-cw-gray'
                               }`}
                               title={
                                 m === 'question'
@@ -330,7 +330,7 @@ function EditableCalcCard({
                           <select
                             value={ic.questionCode ?? ''}
                             onChange={(e) => updateInner(i, { ...ic, questionCode: e.target.value })}
-                            className={`flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light ${qError ? 'border-red-400' : 'border-cw-border'}`}
+                            className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30 ${qError ? 'border-cw-negative' : 'border-cw-border'}`}
                           >
                             <option value="">{t('selectQuestion', uiLang)}</option>
                             {questions.map((q) => (
@@ -343,7 +343,7 @@ function EditableCalcCard({
                           <select
                             value={ic.calculationCode ?? ''}
                             onChange={(e) => updateInner(i, { ...ic, calculationCode: e.target.value })}
-                            className={`flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light ${cError ? 'border-red-400' : 'border-cw-border'}`}
+                            className={`flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30 ${cError ? 'border-cw-negative' : 'border-cw-border'}`}
                           >
                             <option value="">{t('selectCalculation', uiLang)}</option>
                             {calcCodes.filter((c) => c !== calc.code).map((c) => (
@@ -359,30 +359,30 @@ function EditableCalcCard({
                             onChange={(e) => updateInner(i, { ...ic, constantValue: parseFloat(e.target.value) || 0 })}
                             step="any"
                             placeholder="0"
-                            className="flex-1 border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                            className="flex-1 border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                           />
                         )}
 
-                        <span className="text-gray-400 text-xs shrink-0">×</span>
+                        <span className="text-cw-gray-text text-xs shrink-0">×</span>
                         <input
                           type="number"
                           value={ic.multiplier ?? 1}
                           onChange={(e) => updateInner(i, { ...ic, multiplier: parseFloat(e.target.value) || 1 })}
                           step="0.1"
                           title={t('multiplier', uiLang)}
-                          className="w-20 border border-cw-border rounded px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                          className="w-20 border border-cw-border rounded px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                         />
-                        <button onClick={() => deleteInner(i)} className="text-gray-300 hover:text-red-500 shrink-0">
+                        <button onClick={() => deleteInner(i)} className="text-cw-gray-text hover:text-cw-negative shrink-0">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                       {qError && (
-                        <p className="text-xs text-red-500 pl-1">
+                        <p className="text-xs text-cw-negative pl-1">
                           ⚠ {tf('questionMissing', uiLang, { code: qError })}
                         </p>
                       )}
                       {cError && (
-                        <p className="text-xs text-red-500 pl-1">
+                        <p className="text-xs text-cw-negative pl-1">
                           ⚠ {tf('calcMissing', uiLang, { code: cError })}
                         </p>
                       )}
@@ -399,9 +399,9 @@ function EditableCalcCard({
 
               {/* Formula preview */}
               {formulaPreview && calc.innerCalculations.length > 0 && (
-                <div className="mt-2 bg-gray-50 border border-cw-border rounded px-3 py-2">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">{t('formulaLabel', uiLang)}</p>
-                  <code className="text-xs text-gray-700">{formulaPreview}</code>
+                <div className="mt-2 bg-cw-gray border border-cw-border rounded px-3 py-2">
+                  <p className="text-[10px] font-semibold text-cw-gray-text uppercase tracking-wide mb-1">{t('formulaLabel', uiLang)}</p>
+                  <code className="text-xs text-cw-ink">{formulaPreview}</code>
                 </div>
               )}
             </div>
@@ -411,22 +411,22 @@ function EditableCalcCard({
           {calc.type === 'CUSTOM' && (
             <div className="space-y-2">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('customFormula', uiLang)}</label>
+                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('customFormula', uiLang)}</label>
                 <textarea
                   value={calc.formula ?? ''}
                   onChange={(e) => onChange({ ...calc, formula: e.target.value })}
                   rows={4}
-                  className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-y"
+                  className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-y"
                   placeholder={t('formulaExample', uiLang)}
                   spellCheck={false}
                 />
               </div>
               {calc._rawExpression && (
-                <div className="bg-gray-50 border border-cw-border rounded px-3 py-2">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                <div className="bg-cw-gray border border-cw-border rounded px-3 py-2">
+                  <p className="text-[10px] font-semibold text-cw-gray-text uppercase tracking-wide mb-1">
                     {t('rawExpression', uiLang)}
                   </p>
-                  <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  <pre className="text-xs font-mono text-cw-ink whitespace-pre-wrap leading-relaxed">
                     {calc._rawExpression}
                   </pre>
                 </div>
@@ -436,7 +436,7 @@ function EditableCalcCard({
 
           {/* Remote scoring */}
           <div>
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-500 mb-2">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-cw-gray-text mb-2">
               <input
                 type="checkbox"
                 checked={showRemote}
@@ -450,9 +450,9 @@ function EditableCalcCard({
             </label>
 
             {showRemote && (
-              <div className="border border-cw-border rounded p-3 space-y-2 bg-gray-50">
+              <div className="border border-cw-border rounded p-3 space-y-2 bg-cw-gray">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{t('serviceCode', uiLang)}</label>
+                  <label className="block text-xs text-cw-gray-text mb-1">{t('serviceCode', uiLang)}</label>
                   <input
                     type="text"
                     value={calc.remoteScoring?.serviceCode ?? ''}
@@ -463,11 +463,11 @@ function EditableCalcCard({
                       })
                     }
                     placeholder="SERVICE_CODE"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{t('parametersLabel', uiLang)}</label>
+                  <label className="block text-xs text-cw-gray-text mb-1">{t('parametersLabel', uiLang)}</label>
                   <textarea
                     rows={3}
                     value={Object.entries(calc.remoteScoring?.parameters ?? {}).map(([k, v]) => `${k}=${v}`).join('\n')}
@@ -483,7 +483,7 @@ function EditableCalcCard({
                       });
                     }}
                     placeholder="PARAM1=value1&#10;PARAM2=value2"
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-none"
                   />
                 </div>
               </div>
@@ -579,13 +579,13 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-cw-blue">{t('calcsHeader', uiLang)}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-cw-gray-text mt-0.5">
               {countPhrase(calcs.length, uiLang, 'calcTotalOne', 'calcTotalMany')}
             </p>
           </div>
           <button
             onClick={() => setShowImport(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-gray-600 border border-cw-border rounded hover:bg-gray-50 hover:text-cw-blue transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-cw-gray-text border border-cw-border rounded hover:bg-cw-gray hover:text-cw-blue transition-colors"
             title={t('importCalcsTitle', uiLang)}
           >
             <FileInput className="w-3.5 h-3.5" />
@@ -594,9 +594,9 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-6">
         {calcs.length === 0 && (
-          <div className="text-center text-gray-400 py-8 text-sm">
+          <div className="text-center text-cw-gray-text py-8 text-sm">
             {t('noCalcs', uiLang)}
           </div>
         )}
@@ -632,7 +632,7 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
             y={ctxMenu.y}
             onClose={() => setCtxMenu(null)}
             items={[
-              { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupCalc(ctxMenu.idx) },
+              { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-cw-gray-text" />, onClick: () => dupCalc(ctxMenu.idx) },
               { separator: true },
               { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteCalc(ctxMenu.idx), danger: true },
             ]}
@@ -641,7 +641,7 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
 
         <button
           onClick={addCalc}
-          className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-cw-border rounded-lg py-3 text-sm text-gray-400 hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
+          className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-cw-border rounded-lg py-3 text-sm text-cw-gray-text hover:border-cw-blue-light hover:text-cw-blue-light transition-colors"
         >
           <PlusCircle className="w-4 h-4" />
           <span>{t('addCalcBtn', uiLang)}</span>

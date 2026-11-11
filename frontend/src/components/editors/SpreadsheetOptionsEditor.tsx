@@ -110,10 +110,10 @@ export function SpreadsheetOptionsEditor({
   // ── Cell class ─────────────────────────────────────────────────────────────
 
   const cellInput =
-    'border-0 border-r border-cw-border bg-transparent px-1.5 py-0.5 text-xs focus:outline-none focus:bg-blue-50 w-full min-w-0';
+    'border-0 border-r border-cw-border bg-transparent px-1.5 py-0.5 text-xs focus:outline-none focus:bg-cw-blue-soft w-full min-w-0';
 
   const thCell =
-    'border-r border-cw-border px-1.5 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide text-left last:border-r-0 whitespace-nowrap';
+    'border-r border-cw-border px-1.5 py-1 text-[10px] font-semibold text-cw-gray-text uppercase tracking-wide text-left last:border-r-0 whitespace-nowrap';
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -163,7 +163,7 @@ export function SpreadsheetOptionsEditor({
               <tr>
                 <td
                   colSpan={3 + languages.length + 3}
-                  className="px-3 py-3 text-xs text-gray-400 italic text-center border-b border-cw-border"
+                  className="px-3 py-3 text-xs text-cw-gray-text italic text-center border-b border-cw-border"
                 >
                   {t('noRowsPaste', uiLang)}
                 </td>
@@ -174,7 +174,7 @@ export function SpreadsheetOptionsEditor({
               <tr
                 key={i}
                 className={`border-b border-cw-border last:border-b-0 ${
-                  focusedRow === i ? 'bg-blue-50/40' : 'hover:bg-gray-50/60'
+                  focusedRow === i ? 'bg-cw-blue-soft/40' : 'hover:bg-cw-gray/60'
                 }`}
                 onFocus={() => setFocusedRow(i)}
               >
@@ -234,7 +234,7 @@ export function SpreadsheetOptionsEditor({
                   <button
                     onClick={() => moveRow(i, -1)}
                     disabled={i === 0}
-                    className="w-full h-full flex items-center justify-center py-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 disabled:cursor-default"
+                    className="w-full h-full flex items-center justify-center py-0.5 text-cw-gray-text hover:text-cw-gray-text disabled:opacity-20 disabled:cursor-default"
                     title={t('moveUp', uiLang)}
                     tabIndex={-1}
                   >
@@ -247,7 +247,7 @@ export function SpreadsheetOptionsEditor({
                   <button
                     onClick={() => moveRow(i, 1)}
                     disabled={i === options.length - 1}
-                    className="w-full h-full flex items-center justify-center py-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 disabled:cursor-default"
+                    className="w-full h-full flex items-center justify-center py-0.5 text-cw-gray-text hover:text-cw-gray-text disabled:opacity-20 disabled:cursor-default"
                     title={t('moveDown', uiLang)}
                     tabIndex={-1}
                   >
@@ -259,7 +259,7 @@ export function SpreadsheetOptionsEditor({
                 <td className="text-center p-0">
                   <button
                     onClick={() => removeRow(i)}
-                    className="w-full h-full flex items-center justify-center py-0.5 text-gray-300 hover:text-red-500"
+                    className="w-full h-full flex items-center justify-center py-0.5 text-cw-gray-text hover:text-cw-negative"
                     title={t('deleteRow', uiLang)}
                     tabIndex={-1}
                   >
@@ -281,7 +281,7 @@ export function SpreadsheetOptionsEditor({
       </button>
 
       {/* Paste hint */}
-      <p className="mt-1 text-[10px] text-gray-400">
+      <p className="mt-1 text-[10px] text-cw-gray-text">
         {t('pasteHint', uiLang)}
       </p>
     </div>

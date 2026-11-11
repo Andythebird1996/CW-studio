@@ -87,21 +87,21 @@ function NormForm({
     <div className="flex-1 overflow-auto p-5">
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('code', uiLang)}</label>
+          <label className="block text-xs text-cw-gray-text mb-1">{t('code', uiLang)}</label>
           <input
             type="text"
             value={norm.code}
             onChange={(e) => onChange({ ...norm, code: e.target.value })}
-            className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             placeholder="NORM-TOTAL"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('typeLabel', uiLang)}</label>
+          <label className="block text-xs text-cw-gray-text mb-1">{t('typeLabel', uiLang)}</label>
           <select
             value={norm.type}
             onChange={(e) => onChange({ ...norm, type: e.target.value as NormType })}
-            className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           >
             {normTypes.map((nt) => (
               <option key={nt.value} value={nt.value}>{nt.label}</option>
@@ -111,42 +111,42 @@ function NormForm({
       </div>
 
       <div className="mb-3">
-        <label className="block text-xs text-gray-500 mb-1">{t('name', uiLang)}</label>
+        <label className="block text-xs text-cw-gray-text mb-1">{t('name', uiLang)}</label>
         <input
           type="text"
           value={norm.name}
           onChange={(e) => onChange({ ...norm, name: e.target.value })}
-          className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+          className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           placeholder={t('normPopulationPh', uiLang)}
         />
       </div>
 
       <div className="mb-3">
-        <label className="block text-xs text-gray-500 mb-1">{t('descriptionLabel', uiLang)}</label>
+        <label className="block text-xs text-cw-gray-text mb-1">{t('descriptionLabel', uiLang)}</label>
         <textarea
           value={norm.description ?? ''}
           onChange={(e) => onChange({ ...norm, description: e.target.value })}
           rows={2}
-          className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
+          className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-none"
         />
       </div>
 
       <div className="mb-4">
-        <label className="block text-xs text-gray-500 mb-1">{t('sourceLabel', uiLang)}</label>
+        <label className="block text-xs text-cw-gray-text mb-1">{t('sourceLabel', uiLang)}</label>
         <input
           type="text"
           value={norm.origin ?? ''}
           onChange={(e) => onChange({ ...norm, origin: e.target.value })}
-          className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+          className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           placeholder={t('normSourcePh', uiLang)}
         />
       </div>
 
       {/* ZSCORE: mean + stdDev inputs */}
       {norm.type === 'ZSCORE' && (
-        <div className="grid grid-cols-2 gap-3 mb-4 p-3 border border-cw-border rounded bg-gray-50">
+        <div className="grid grid-cols-2 gap-3 mb-4 p-3 border border-cw-border rounded bg-cw-gray">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('zscoreMean', uiLang)}</label>
+            <label className="block text-xs text-cw-gray-text mb-1">{t('zscoreMean', uiLang)}</label>
             <input
               type="number"
               step="0.01"
@@ -156,11 +156,11 @@ function NormForm({
                 const sd = norm.data[0]?.normValue ?? 0;
                 onChange({ ...norm, data: [{ score: mean, normValue: sd }] });
               }}
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('zscoreStdDev', uiLang)}</label>
+            <label className="block text-xs text-cw-gray-text mb-1">{t('zscoreStdDev', uiLang)}</label>
             <input
               type="number"
               step="0.01"
@@ -170,7 +170,7 @@ function NormForm({
                 const sd = parseFloat(e.target.value) || 0;
                 onChange({ ...norm, data: [{ score: mean, normValue: sd }] });
               }}
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+              className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             />
           </div>
         </div>
@@ -179,11 +179,11 @@ function NormForm({
       {/* Data table (NORM / PERCENTILE only) */}
       {norm.type !== 'ZSCORE' && <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium text-gray-500">
+          <label className="text-xs font-medium text-cw-gray-text">
             {t('lookupTable', uiLang)}
           </label>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+            <label className="flex items-center gap-1 text-xs text-cw-gray-text cursor-pointer">
               <input
                 type="checkbox"
                 checked={showAge}
@@ -192,7 +192,7 @@ function NormForm({
               />
               {t('ageCol', uiLang)}
             </label>
-            <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+            <label className="flex items-center gap-1 text-xs text-cw-gray-text cursor-pointer">
               <input
                 type="checkbox"
                 checked={showGender}
@@ -212,19 +212,19 @@ function NormForm({
         </div>
 
         {showPaste && (
-          <div className="mb-3 p-3 bg-gray-50 border border-cw-border rounded">
-            <p className="text-xs text-gray-500 mb-2">
+          <div className="mb-3 p-3 bg-cw-gray border border-cw-border rounded">
+            <p className="text-xs text-cw-gray-text mb-2">
               {t('pasteColumns', uiLang)}{' '}
-              <code className="bg-gray-100 px-1 rounded">{t('rawScore', uiLang)}</code>{' '}
-              <code className="bg-gray-100 px-1 rounded">{normValueLabel}</code>
-              {showAge && <> <code className="bg-gray-100 px-1 rounded">{t('ageCol', uiLang)}</code></>}
-              {showGender && <> <code className="bg-gray-100 px-1 rounded">{t('genderCol', uiLang)}</code></>}
+              <code className="bg-cw-gray px-1 rounded">{t('rawScore', uiLang)}</code>{' '}
+              <code className="bg-cw-gray px-1 rounded">{normValueLabel}</code>
+              {showAge && <> <code className="bg-cw-gray px-1 rounded">{t('ageCol', uiLang)}</code></>}
+              {showGender && <> <code className="bg-cw-gray px-1 rounded">{t('genderCol', uiLang)}</code></>}
               {t('oneRowPerLine', uiLang)}
             </p>
             <textarea
               ref={pasteRef}
               rows={6}
-              className="w-full border border-cw-border rounded px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
+              className="w-full border border-cw-border rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-none"
               placeholder={`0\t50\n1\t52\n2\t54`}
             />
             <div className="flex gap-2 mt-2">
@@ -236,7 +236,7 @@ function NormForm({
               </button>
               <button
                 onClick={() => setShowPaste(false)}
-                className="px-3 py-1 text-xs border border-cw-border rounded hover:bg-gray-100"
+                className="px-3 py-1 text-xs border border-cw-border rounded hover:bg-cw-gray"
               >
                 {t('cancelBtn', uiLang)}
               </button>
@@ -248,10 +248,10 @@ function NormForm({
         <table className="w-full text-sm border border-cw-border rounded" style={{ minWidth: '28rem' }}>
           <thead className="bg-cw-gray">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">{t('rawScore', uiLang)}</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">{normValueLabel}</th>
-              {showAge && <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">{t('ageCol', uiLang)}</th>}
-              {showGender && <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">{t('genderCol', uiLang)}</th>}
+              <th className="px-3 py-2 text-left text-xs font-medium text-cw-gray-text">{t('rawScore', uiLang)}</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-cw-gray-text">{normValueLabel}</th>
+              {showAge && <th className="px-3 py-2 text-left text-xs font-medium text-cw-gray-text">{t('ageCol', uiLang)}</th>}
+              {showGender && <th className="px-3 py-2 text-left text-xs font-medium text-cw-gray-text">{t('genderCol', uiLang)}</th>}
               <th className="w-8" />
             </tr>
           </thead>
@@ -264,7 +264,7 @@ function NormForm({
                     value={row.score}
                     onChange={(e) => updateRow(i, 'score', parseFloat(e.target.value) || 0)}
                     step="0.1"
-                    className="w-full border border-cw-border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </td>
                 <td className="px-2 py-1">
@@ -273,7 +273,7 @@ function NormForm({
                     value={row.normValue}
                     onChange={(e) => updateRow(i, 'normValue', parseFloat(e.target.value) || 0)}
                     step="0.1"
-                    className="w-full border border-cw-border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </td>
                 {showAge && (
@@ -283,7 +283,7 @@ function NormForm({
                       value={row.age ?? ''}
                       onChange={(e) => updateRow(i, 'age', e.target.value === '' ? (undefined as unknown as number) : parseFloat(e.target.value))}
                       placeholder="–"
-                      className="w-full border border-cw-border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                      className="w-full border border-cw-border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                     />
                   </td>
                 )}
@@ -292,7 +292,7 @@ function NormForm({
                     <select
                       value={row.gender ?? ''}
                       onChange={(e) => updateRow(i, 'gender', e.target.value || (undefined as unknown as string))}
-                      className="w-full border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                      className="w-full border border-cw-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                     >
                       <option value="">–</option>
                       <option value="M">M</option>
@@ -301,7 +301,7 @@ function NormForm({
                   </td>
                 )}
                 <td className="px-2 py-1 text-center">
-                  <button onClick={() => deleteRow(i)} className="text-gray-300 hover:text-red-500">
+                  <button onClick={() => deleteRow(i)} className="text-cw-gray-text hover:text-cw-negative">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </td>
@@ -309,7 +309,7 @@ function NormForm({
             ))}
             {norm.data.length === 0 && (
               <tr>
-                <td colSpan={colCount} className="px-3 py-4 text-center text-xs text-gray-400">
+                <td colSpan={colCount} className="px-3 py-4 text-center text-xs text-cw-gray-text">
                   {t('noRows', uiLang)}
                 </td>
               </tr>
@@ -400,7 +400,7 @@ export function NormEditor({ questionnaire, onChange }: Props) {
       <div className="w-full max-h-[40vh] md:max-h-none md:w-60 border-b md:border-b-0 md:border-r border-cw-border flex flex-col bg-cw-gray shrink-0 min-h-0">
         <div className="px-3 py-3 border-b border-cw-border bg-white">
           <h2 className="text-sm font-semibold text-cw-blue">{t('normsHeader', uiLang)}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">{t('normsSubtitle', uiLang)}</p>
+          <p className="text-xs text-cw-gray-text mt-0.5">{t('normsSubtitle', uiLang)}</p>
         </div>
         <div className="flex-1 overflow-auto py-1">
           {norms.map((norm, i) => (
@@ -412,14 +412,14 @@ export function NormEditor({ questionnaire, onChange }: Props) {
                 selectedIdx === i ? 'bg-white border-l-2 border-l-cw-blue' : ''
               }`}
             >
-              <div className="text-xs font-mono truncate text-gray-700">{norm.code || t('noCode', uiLang)}</div>
-              <div className="text-xs text-gray-400 truncate">
+              <div className="text-xs font-mono truncate text-cw-ink">{norm.code || t('noCode', uiLang)}</div>
+              <div className="text-xs text-cw-gray-text truncate">
                 {norm.name || normTypes.find((nt) => nt.value === norm.type)?.label} · {norm.data.length} {t('rowsLabel', uiLang)}
               </div>
             </button>
           ))}
           {norms.length === 0 && (
-            <p className="text-xs text-gray-400 text-center mt-6 px-3">{t('noNorms', uiLang)}</p>
+            <p className="text-xs text-cw-gray-text text-center mt-6 px-3">{t('noNorms', uiLang)}</p>
           )}
         </div>
         <div className="p-2 border-t border-cw-border flex flex-col gap-1.5">
@@ -432,7 +432,7 @@ export function NormEditor({ questionnaire, onChange }: Props) {
           <button
             onClick={() => setImportNormOpen(true)}
             disabled={selectedIdx === null}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-gray-500 hover:bg-white hover:text-cw-blue-light rounded border border-dashed border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-cw-gray-text hover:bg-white hover:text-cw-blue-light rounded border border-dashed border-cw-border disabled:opacity-40 disabled:cursor-not-allowed"
             title={
               selectedIdx === null
                 ? t('selectNormFirst', uiLang)
@@ -460,12 +460,12 @@ export function NormEditor({ questionnaire, onChange }: Props) {
         {selected !== null && selectedIdx !== null ? (
           <>
             <div className="bg-white border-b border-cw-border px-5 py-3 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-semibold text-gray-700">
+              <h3 className="text-sm font-semibold text-cw-ink">
                 {selected.code || t('newNormBtn', uiLang)}
               </h3>
               <button
                 onClick={() => deleteNorm(selectedIdx)}
-                className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1"
+                className="text-xs text-cw-negative hover:text-cw-negative flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" /> {t('deleteBtn', uiLang)}
               </button>
@@ -476,7 +476,7 @@ export function NormEditor({ questionnaire, onChange }: Props) {
             />
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-full text-cw-gray-text text-sm">
             {t('selectOrCreateNorm', uiLang)}
           </div>
         )}
@@ -487,7 +487,7 @@ export function NormEditor({ questionnaire, onChange }: Props) {
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[
-            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupNorm(ctxMenu.idx) },
+            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-cw-gray-text" />, onClick: () => dupNorm(ctxMenu.idx) },
             { separator: true },
             { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteNorm(ctxMenu.idx), danger: true },
           ]}

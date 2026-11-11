@@ -663,6 +663,9 @@ const strings = {
   livePreviewHint:   { EN: '— updates on every answer',       NO: '— oppdateres ved hvert svar'      },
   downloadPdf:       { EN: 'Download PDF',                    NO: 'Last ned PDF'                     },
   reportPreview:     { EN: 'Report preview',                  NO: 'Rapportforhåndsvisning'           },
+  reportStyleLabel:  { EN: 'Report appearance',               NO: 'Rapportvisning'                   },
+  reportStyleEngine: { EN: 'Show as report engine',           NO: 'Vis som rapportmotor'             },
+  reportStylePortal: { EN: 'Show as portal',                  NO: 'Vis som portal'                   },
 
   // ── Remote scoring, media, dimensions, norms, metadata ────────────────────
   remoteScoringHelp: { EN: 'External scoring sends calculation results to an external service after the assessment is completed.', NO: 'Ekstern skåring sender beregningsresultater til en ekstern tjeneste etter utfylling.' },

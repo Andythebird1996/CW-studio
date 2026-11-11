@@ -17,11 +17,11 @@ export function TabBar() {
           className={`flex items-center gap-2 px-4 py-2 text-sm cursor-pointer select-none border-r border-cw-border shrink-0 ${
             tab.id === activeTabId
               ? 'bg-white border-b-2 border-b-cw-blue text-cw-blue font-medium'
-              : 'text-gray-600 hover:bg-white/60'
+              : 'text-cw-gray-text hover:bg-white/60'
           }`}
         >
           <span className="max-w-[180px] truncate">
-            {tab.isDirty && <span className="mr-1 text-orange-500">●</span>}
+            {tab.isDirty && <span className="mr-1 text-cw-orange">●</span>}
             {tab.title}
           </span>
           <button
@@ -29,7 +29,7 @@ export function TabBar() {
               e.stopPropagation();
               closeTab(tab.id);
             }}
-            className="text-gray-400 hover:text-gray-700 rounded p-1 xl:p-0.5 hover:bg-gray-200"
+            className="text-cw-gray-text hover:text-cw-ink rounded p-1 xl:p-0.5 hover:bg-cw-gray"
             aria-label={t('closeTab', uiLang)}
             title={t('closeTab', uiLang)}
           >

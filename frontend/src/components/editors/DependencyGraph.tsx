@@ -122,9 +122,9 @@ function computeThread(selectedId: string, edges: GraphEdge[]): Set<string> {
 // ─── Column colour palette ─────────────────────────────────────────────────────
 
 const COL_STYLE = [
-  { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8', highlight: '#2563eb' }, // blue — questions
-  { bg: '#f5f3ff', border: '#7c3aed', text: '#5b21b6', highlight: '#6d28d9' }, // purple — calcs
-  { bg: '#fff7ed', border: '#f97316', text: '#c2410c', highlight: '#ea580c' }, // orange — flags
+  { bg: 'var(--color-cw-blue-soft)', border: 'var(--color-cw-blue)', text: 'var(--color-cw-blue)', highlight: 'var(--color-cw-blue)' },
+  { bg: 'var(--color-cw-gray)', border: 'var(--color-cw-blue-light)', text: 'var(--color-cw-blue)', highlight: 'var(--color-cw-blue-light)' },
+  { bg: 'var(--color-cw-orange-soft)', border: 'var(--color-cw-orange)', text: 'var(--color-cw-orange)', highlight: 'var(--color-cw-orange)' },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -172,14 +172,14 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center gap-3">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-cw-blue">{t('depGraphTitle', uiLang)}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-cw-gray-text mt-0.5">
             {t('depGraphHint', uiLang)}
           </p>
         </div>
         {selectedId && (
           <button
             onClick={() => setSelectedId(null)}
-            className="ml-auto text-[10px] border border-cw-border rounded px-2 py-1 text-gray-500 hover:bg-gray-50"
+            className="ml-auto text-[10px] border border-cw-border rounded px-2 py-1 text-cw-gray-text hover:bg-cw-gray"
           >
             {t('clearSelection', uiLang)}
           </button>
@@ -187,13 +187,13 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
       </div>
 
       {isEmpty ? (
-        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+        <div className="flex-1 flex items-center justify-center text-cw-gray-text text-sm">
           {calcs.length === 0 && flags.length === 0
             ? t('noDepsDefined', uiLang)
             : t('noDepsToShow', uiLang)}
         </div>
       ) : (
-        <div className="flex-1 overflow-auto p-4 min-w-0" onClick={() => setSelectedId(null)}>
+        <div className="flex-1 overflow-auto p-6 min-w-0" onClick={() => setSelectedId(null)}>
           {/* Column labels */}
           <div
             style={{
@@ -219,13 +219,13 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
           >
             <defs>
               <marker id="arrow-dim" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L6,3 z" fill="#e5e7eb" />
+                <path d="M0,0 L0,6 L6,3 z" fill="var(--color-cw-border)" />
               </marker>
               <marker id="arrow-active" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L6,3 z" fill="#6366f1" />
+                <path d="M0,0 L0,6 L6,3 z" fill="var(--color-cw-blue)" />
               </marker>
               <filter id="glow">
-                <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#6366f1" floodOpacity="0.5" />
+                <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="var(--color-cw-blue)" floodOpacity="0.5" />
               </filter>
             </defs>
 
@@ -246,7 +246,7 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
                   key={edge.id}
                   d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
                   fill="none"
-                  stroke={dim ? '#e5e7eb' : isActive ? '#6366f1' : '#d1d5db'}
+                  stroke={dim ? 'var(--color-cw-border)' : isActive ? 'var(--color-cw-blue)' : 'var(--color-cw-border)'}
                   strokeWidth={isActive ? 2.5 : 1.5}
                   strokeDasharray={isActive ? undefined : undefined}
                   opacity={dim ? 0.3 : 1}
@@ -280,7 +280,7 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
                       rx={7}
                       ry={7}
                       fill="none"
-                      stroke="#6366f1"
+                      stroke="var(--color-cw-blue)"
                       strokeWidth={2}
                       opacity={0.5}
                       filter="url(#glow)"
@@ -294,7 +294,7 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
                     rx={4}
                     ry={4}
                     fill={inThread && !isSelected ? cs.bg : isSelected ? cs.bg : cs.bg}
-                    stroke={isSelected ? '#6366f1' : inThread ? cs.highlight : cs.border}
+                    stroke={isSelected ? 'var(--color-cw-blue)' : inThread ? cs.highlight : cs.border}
                     strokeWidth={isSelected ? 2.5 : inThread && hasSelection ? 2 : 1}
                   />
                   <text
@@ -305,7 +305,7 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
                     fontSize={10}
                     fontFamily="Consolas, 'Courier New', monospace"
                     fontWeight={inThread ? '700' : '600'}
-                    fill={isSelected ? '#6366f1' : cs.text}
+                    fill={isSelected ? 'var(--color-cw-blue)' : cs.text}
                     style={{ userSelect: 'none', pointerEvents: 'none' }}
                   >
                     {node.label.length > 15 ? node.label.slice(0, 14) + '…' : node.label}
@@ -316,14 +316,14 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
           </svg>
 
           {/* Legend */}
-          <div className="mt-4 flex items-center gap-4 text-[10px] text-gray-500 flex-wrap">
+          <div className="mt-4 flex items-center gap-4 text-[10px] text-cw-gray-text flex-wrap">
             {COL_STYLE.map((cs, i) => (
               <span key={i} className="flex items-center gap-1.5">
                 <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: cs.bg, border: `1.5px solid ${cs.border}` }} />
                 {[t('question', uiLang), t('calculation', uiLang), t('flag', uiLang)][i]}
               </span>
             ))}
-            <span className="flex items-center gap-1.5 text-gray-400 italic">
+            <span className="flex items-center gap-1.5 text-cw-gray-text italic">
               {t('clickNodeChain', uiLang)}
             </span>
           </div>

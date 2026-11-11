@@ -109,7 +109,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
           <div className="p-4 flex flex-col gap-4 overflow-auto min-h-0">
             {/* Textarea */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">
                 {t('pasteQuestionTexts', uiLang)}
               </label>
               <textarea
@@ -126,13 +126,13 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
             {/* Separator */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-cw-gray-text mb-1">
                   {t('separator', uiLang)}
                 </label>
                 <select
                   value={separatorType}
                   onChange={(e) => setSeparatorType(e.target.value as SeparatorType)}
-                  className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                  className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 >
                   {SEPARATOR_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -144,7 +144,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
 
               {separatorType === 'custom' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
                     {t('customSeparator', uiLang)}
                   </label>
                   <input
@@ -152,7 +152,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
                     value={customSeparator}
                     onChange={(e) => setCustomSeparator(e.target.value)}
                     placeholder={t('separatorExample', uiLang)}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               )}
@@ -160,13 +160,13 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
 
             {/* Response template */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">
                 {t('templateLabel', uiLang)}
               </label>
               <select
                 value={templateCode}
                 onChange={(e) => setTemplateCode(e.target.value)}
-                className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
               >
                 <option value="">{t('noneParen', uiLang)}</option>
                 {templates.map((tpl) => (
@@ -212,7 +212,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
           <div className="p-4 border-t border-cw-border flex justify-end gap-2">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50"
+              className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray"
             >
               {t('cancelBtn', uiLang)}
             </button>

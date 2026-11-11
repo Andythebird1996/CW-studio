@@ -121,28 +121,28 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
 
           {/* Package info */}
           <div className="bg-cw-gray rounded p-3 mb-4 text-sm space-y-1">
-            <div><span className="text-gray-500">{t('code', uiLang)}:</span> <span className="font-mono">{questionnaire.code}</span></div>
-            <div><span className="text-gray-500">{t('name', uiLang)}:</span> {questionnaire.name[lang]}</div>
-            <div><span className="text-gray-500">{t('version', uiLang)}:</span> {questionnaire.version}</div>
+            <div><span className="text-cw-gray-text">{t('code', uiLang)}:</span> <span className="font-mono">{questionnaire.code}</span></div>
+            <div><span className="text-cw-gray-text">{t('name', uiLang)}:</span> {questionnaire.name[lang]}</div>
+            <div><span className="text-cw-gray-text">{t('version', uiLang)}:</span> {questionnaire.version}</div>
           </div>
 
           {step === 'done' ? (
             <div className="text-center py-6">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="text-green-700 font-medium">{t('published', uiLang)}</p>
+              <CheckCircle className="w-12 h-12 text-cw-positive mx-auto mb-3" />
+              <p className="text-cw-positive font-medium">{t('published', uiLang)}</p>
               <button onClick={() => { reset(); onClose(); }} className="mt-4 px-4 py-2 bg-cw-blue text-white rounded text-sm">{t('close', uiLang)}</button>
             </div>
           ) : step === 'error' ? (
             <div className="text-center py-6">
-              <XCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-              <p className="text-red-700 text-sm">{error}</p>
+              <XCircle className="w-12 h-12 text-cw-negative mx-auto mb-3" />
+              <p className="text-cw-negative text-sm">{error}</p>
               <button onClick={reset} className="mt-4 px-4 py-2 border border-cw-border rounded text-sm">{t('retry', uiLang)}</button>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('release', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('release', uiLang)}</label>
                   <input
                     type="text"
                     value={release}
@@ -151,7 +151,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('visibility', uiLang)}</label>
+                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('visibility', uiLang)}</label>
                   <label className="flex items-center gap-2 mt-2">
                     <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} className="w-4 h-4 accent-cw-blue" />
                     <span className="text-sm">{t('isPublic', uiLang)}</span>
@@ -160,32 +160,32 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
               </div>
 
               {overlap && (
-                <div className="bg-amber-50 border border-amber-300 rounded p-3 flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-                  <p className="text-xs text-amber-800">
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-orange">
                     {tf('versionExists', uiLang, { version: `${questionnaire.version}.${release}`, code: questionnaire.code })}
                   </p>
                 </div>
               )}
 
               {denials.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded p-3">
-                  <p className="text-xs font-medium text-red-700 mb-1">{t('validationErrorsLabel', uiLang)}</p>
-                  <ul className="text-xs text-red-600 space-y-0.5">
+                <div className="bg-cw-negative-soft border border-cw-negative/30 rounded p-3">
+                  <p className="text-xs font-medium text-cw-negative mb-1">{t('validationErrorsLabel', uiLang)}</p>
+                  <ul className="text-xs text-cw-negative space-y-0.5">
                     {denials.map((d, i) => <li key={i}>• {d}</li>)}
                   </ul>
                 </div>
               )}
 
               {step === 'valid' && (
-                <div className="bg-green-50 border border-green-200 rounded p-3 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-700">{t('validationOkPublish', uiLang)}</span>
+                <div className="bg-cw-positive-soft border border-cw-positive/30 rounded p-3 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-cw-positive" />
+                  <span className="text-sm text-cw-positive">{t('validationOkPublish', uiLang)}</span>
                 </div>
               )}
 
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => { reset(); onClose(); }} className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50">{t('cancelBtn', uiLang)}</button>
+                <button onClick={() => { reset(); onClose(); }} className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray">{t('cancelBtn', uiLang)}</button>
                 {step !== 'valid' ? (
                   <button
                     onClick={handleValidate}

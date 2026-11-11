@@ -85,7 +85,7 @@ function ContextMenu({
   function item(label: string, icon: React.ReactNode, action: () => void, danger = false) {
     return (
       <button
-        className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-gray-100 ${danger ? 'text-red-600' : 'text-gray-700'}`}
+        className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left hover:bg-cw-gray ${danger ? 'text-cw-negative' : 'text-cw-ink'}`}
         onClick={() => { action(); onClose(); }}
       >
         <span className="w-3.5 h-3.5 shrink-0">{icon}</span>
@@ -99,7 +99,7 @@ function ContextMenu({
       ref={ref}
       className="absolute right-0 top-6 z-50 bg-white border border-cw-border rounded shadow-lg py-1 min-w-[180px]"
     >
-      <p className="px-3 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{t('newResource', uiLang)}</p>
+      <p className="px-3 py-1 text-[10px] font-semibold text-cw-gray-text uppercase tracking-wide">{t('newResource', uiLang)}</p>
       {item(t('addCalcBtn', uiLang), <Calculator className="w-3.5 h-3.5" />, () => onNewCalculation(tabId))}
       {item(t('newFlag', uiLang), <Flag className="w-3.5 h-3.5" />, () => onNewFlag(tabId))}
       {item(t('newNormBtn', uiLang), <BarChart2 className="w-3.5 h-3.5" />, () => onNewNorm(tabId))}
@@ -133,11 +133,11 @@ function ResourceRow({
   onToggleExpand?: () => void;
 }) {
   return (
-    <div className={`flex items-center rounded transition-colors ${active ? 'bg-cw-yellow text-gray-900' : 'text-gray-700 hover:bg-white'}`}>
+    <div className={`flex items-center rounded transition-colors ${active ? 'bg-cw-yellow text-cw-ink' : 'text-cw-ink hover:bg-white'}`}>
       {expandable && (
         <button
           onClick={(e) => { e.stopPropagation(); onToggleExpand?.(); }}
-          className={`pl-1 pr-0.5 py-1 shrink-0 ${active ? 'text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`pl-1 pr-0.5 py-1 shrink-0 ${active ? 'text-cw-ink' : 'text-cw-gray-text hover:text-cw-gray-text'}`}
         >
           {expanded
             ? <ChevronDown className="w-3 h-3" />
@@ -152,7 +152,7 @@ function ResourceRow({
         <span className="w-3.5 h-3.5 shrink-0">{icon}</span>
         <span className="flex-1 truncate">{label}</span>
         {count !== undefined && count > 0 && (
-          <span className={`text-[10px] font-medium px-1 rounded ${active ? 'bg-white/80 text-gray-800' : 'bg-white text-gray-500'}`}>
+          <span className={`text-[10px] font-medium px-1 rounded ${active ? 'bg-white/80 text-cw-ink' : 'bg-white text-cw-gray-text'}`}>
             {count}
           </span>
         )}
@@ -229,7 +229,7 @@ function PackageNode({
       <div className="flex items-center gap-1 px-1 py-1 group">
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="text-gray-400 hover:text-gray-600 shrink-0"
+          className="text-cw-gray-text hover:text-cw-gray-text shrink-0"
           title={expanded ? (t('collapse', uiLang)) : (t('expand', uiLang))}
         >
           {expanded
@@ -242,12 +242,12 @@ function PackageNode({
           onClick={() => nav('questionnaire')}
           className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
         >
-          <Package className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-cw-blue' : 'text-gray-500'}`} />
-          <span className={`text-xs font-medium truncate ${isActive ? 'text-cw-blue' : 'text-gray-700'}`}>
+          <Package className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-cw-blue' : 'text-cw-gray-text'}`} />
+          <span className={`text-xs font-medium truncate ${isActive ? 'text-cw-blue' : 'text-cw-ink'}`}>
             {title}
           </span>
           {tab.isDirty && (
-            <span className="text-amber-500 text-xs shrink-0" title={t('unsaved', uiLang)}>●</span>
+            <span className="text-cw-orange text-xs shrink-0" title={t('unsaved', uiLang)}>●</span>
           )}
         </button>
 
@@ -255,7 +255,7 @@ function PackageNode({
         <div className="relative shrink-0">
           <button
             onClick={() => setShowMenu((m) => !m)}
-            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-gray-600 rounded"
+            className="opacity-0 group-hover:opacity-100 p-0.5 text-cw-gray-text hover:text-cw-gray-text rounded"
           >
             <MoreHorizontal className="w-3.5 h-3.5" />
           </button>
@@ -276,7 +276,7 @@ function PackageNode({
 
         <button
           onClick={() => onCloseTab(tab.id)}
-          className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-300 hover:text-red-500 rounded shrink-0"
+          className="opacity-0 group-hover:opacity-100 p-0.5 text-cw-gray-text hover:text-cw-negative rounded shrink-0"
           title={t('close', uiLang)}
           aria-label={t('close', uiLang)}
         >
@@ -314,13 +314,13 @@ function PackageNode({
                     nav('response-templates');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-response-template', { detail: { index: tplIdx } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={tpl.name || tpl.code}
                 >
-                  <List className="w-3 h-3 shrink-0 text-gray-400" />
+                  <List className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate font-mono">{tpl.code || `tpl-${tplIdx + 1}`}</span>
                   {tpl.options.length > 0 && (
-                    <span className="ml-auto text-[10px] text-gray-400 tabular-nums">{tpl.options.length}</span>
+                    <span className="ml-auto text-[10px] text-cw-gray-text tabular-nums">{tpl.options.length}</span>
                   )}
                 </button>
               ))}
@@ -346,13 +346,13 @@ function PackageNode({
                     nav('calculation');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-calculation', { detail: { index: i } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={calc.name || calc.code}
                 >
-                  <Calculator className="w-3 h-3 shrink-0 text-gray-400" />
+                  <Calculator className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate font-mono">{calc.code || `calc-${i + 1}`}</span>
                   {calc.name && calc.name !== calc.code && (
-                    <span className="ml-1 truncate text-gray-400 italic">{calc.name}</span>
+                    <span className="ml-1 truncate text-cw-gray-text italic">{calc.name}</span>
                   )}
                 </button>
               ))}
@@ -379,13 +379,13 @@ function PackageNode({
                     nav('flags');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-flag', { detail: { index: i } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={flag.name || flag.code}
                 >
-                  <Flag className="w-3 h-3 shrink-0 text-gray-400" />
+                  <Flag className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate font-mono">{flag.code || `flag-${i + 1}`}</span>
                   {flag.name && flag.name !== flag.code && (
-                    <span className="ml-1 truncate text-gray-400 italic">{flag.name}</span>
+                    <span className="ml-1 truncate text-cw-gray-text italic">{flag.name}</span>
                   )}
                 </button>
               ))}
@@ -412,13 +412,13 @@ function PackageNode({
                     nav('norms');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-norm', { detail: { index: i } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={norm.name || norm.code}
                 >
-                  <BarChart2 className="w-3 h-3 shrink-0 text-gray-400" />
+                  <BarChart2 className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate font-mono">{norm.code || `norm-${i + 1}`}</span>
                   {norm.name && norm.name !== norm.code && (
-                    <span className="ml-1 truncate text-gray-400 italic">{norm.name}</span>
+                    <span className="ml-1 truncate text-cw-gray-text italic">{norm.name}</span>
                   )}
                 </button>
               ))}
@@ -444,13 +444,13 @@ function PackageNode({
                     nav('dimensions');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-dimension', { detail: { index: i } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={dim.name || dim.code}
                 >
-                  <LayoutGrid className="w-3 h-3 shrink-0 text-gray-400" />
+                  <LayoutGrid className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate font-mono">{dim.code || `dim-${i + 1}`}</span>
                   {dim.name && dim.name !== dim.code && (
-                    <span className="ml-1 truncate text-gray-400 italic">{dim.name}</span>
+                    <span className="ml-1 truncate text-cw-gray-text italic">{dim.name}</span>
                   )}
                 </button>
               ))}
@@ -477,9 +477,9 @@ function PackageNode({
                     nav('translation');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-language', { detail: { lang } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                 >
-                  <Globe className="w-3 h-3 shrink-0 text-gray-400" />
+                  <Globe className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="font-mono">{lang}</span>
                 </button>
               ))}
@@ -505,10 +505,10 @@ function PackageNode({
                     nav('report');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-rap-file', { detail: { fileName } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={fileName}
                 >
-                  <FileCode className="w-3 h-3 shrink-0 text-gray-400" />
+                  <FileCode className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate font-mono">{fileName}</span>
                 </button>
               ))}
@@ -535,10 +535,10 @@ function PackageNode({
                     nav('media');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('select-media-file', { detail: { fileName: f.fileName } })), 80);
                   }}
-                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  className="flex items-center gap-1.5 w-full px-2 py-0.5 text-[11px] rounded text-left text-cw-gray-text hover:bg-cw-gray hover:text-cw-ink transition-colors"
                   title={f.fileName}
                 >
-                  <Image className="w-3 h-3 shrink-0 text-gray-400" />
+                  <Image className="w-3 h-3 shrink-0 text-cw-gray-text" />
                   <span className="truncate">{f.fileName}</span>
                 </button>
               ))}
@@ -579,12 +579,12 @@ export function PackageExplorer({
     <div data-testid="package-explorer" className="flex flex-col h-full bg-cw-gray border-r border-cw-border w-64 max-w-[85vw] xl:w-52 xl:max-w-none shrink-0 select-none">
       {/* Header */}
       <div className="flex items-center justify-between px-2 py-2 border-b border-cw-border shrink-0">
-        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-cw-gray-text uppercase tracking-wider">
           {t('explorerTitle', lang)}
         </span>
         <button
           onClick={onNewQuestionnaire}
-          className="text-gray-400 hover:text-cw-blue p-0.5 rounded"
+          className="text-cw-gray-text hover:text-cw-blue p-0.5 rounded"
           title={t('newQuestionnaire', lang)}
         >
           <PlusCircle className="w-3.5 h-3.5" />
@@ -594,7 +594,7 @@ export function PackageExplorer({
       {/* Tree */}
       <div className="flex-1 overflow-auto p-1.5">
         {tabs.length === 0 ? (
-          <div className="text-center text-gray-300 text-xs mt-8 px-3 leading-relaxed">
+          <div className="text-center text-cw-gray-text text-xs mt-8 px-3 leading-relaxed">
             {t('noPackagesOpen', lang)}{' '}
             <button
               onClick={onNewQuestionnaire}

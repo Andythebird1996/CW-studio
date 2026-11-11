@@ -79,14 +79,14 @@ export function SettingsDialog({ open, onClose }: Props) {
           {/* ── Left: saved profiles ─────────────────────────────────────── */}
           <div className="w-full max-h-40 md:max-h-none md:w-52 bg-cw-gray border-b md:border-b-0 md:border-r border-cw-border flex flex-col shrink-0 min-h-0">
             <div className="px-3 py-3 border-b border-cw-border">
-              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide">
                 {t('savedProfiles', lang)}
               </p>
             </div>
 
             <div className="flex-1 overflow-auto py-1">
               {profiles.length === 0 && (
-                <p className="text-xs text-gray-400 text-center mt-4 px-3 leading-relaxed">
+                <p className="text-xs text-cw-gray-text text-center mt-4 px-3 leading-relaxed">
                   {t('noProfilesYet', lang)}
                 </p>
               )}
@@ -100,14 +100,14 @@ export function SettingsDialog({ open, onClose }: Props) {
                     }`}
                     onClick={() => loadProfile(p)}
                   >
-                    <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <User className="w-3.5 h-3.5 text-cw-gray-text shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold text-gray-700 truncate">{p.name}</div>
-                      <div className="text-[10px] text-gray-400 truncate">{p.user}</div>
+                      <div className="text-xs font-semibold text-cw-ink truncate">{p.name}</div>
+                      <div className="text-[10px] text-cw-gray-text truncate">{p.user}</div>
                     </div>
                     {isActive && <Check className="w-3 h-3 text-cw-blue shrink-0" />}
                     <button
-                      className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 text-cw-gray-text hover:text-cw-negative shrink-0 transition-opacity"
                       onClick={(e) => { e.stopPropagation(); deleteProfile(p.id); }}
                       title={t('deleteProfile', lang)}
                     >
@@ -132,7 +132,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                       if (e.key === 'Enter') handleSaveProfile();
                       if (e.key === 'Escape') { setSavingAs(false); setProfileName(''); }
                     }}
-                    className="flex-1 text-xs border border-cw-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cw-blue-light min-w-0"
+                    className="flex-1 text-xs border border-cw-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cw-blue/30 min-w-0"
                   />
                   <button
                     onClick={handleSaveProfile}
@@ -162,7 +162,7 @@ export function SettingsDialog({ open, onClose }: Props) {
 
             <div className="space-y-4 flex-1">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-cw-ink mb-1">
                   {t('storeUrl', lang)}
                 </label>
                 <input
@@ -175,7 +175,7 @@ export function SettingsDialog({ open, onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-cw-ink mb-1">
                   {t('username', lang)}
                 </label>
                 <input
@@ -188,7 +188,7 @@ export function SettingsDialog({ open, onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-cw-ink mb-1">
                   {t('password', lang)}
                 </label>
                 <input
@@ -201,7 +201,7 @@ export function SettingsDialog({ open, onClose }: Props) {
               </div>
 
               {testResult && (
-                <p className={`text-sm p-2 rounded ${testResult.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                <p className={`text-sm p-2 rounded ${testResult.startsWith('✓') ? 'bg-cw-positive-soft text-cw-positive' : 'bg-cw-negative-soft text-cw-negative'}`}>
                   {testResult}
                 </p>
               )}
@@ -211,12 +211,12 @@ export function SettingsDialog({ open, onClose }: Props) {
               <button
                 onClick={testConnection}
                 disabled={testing || !form.storeUrl}
-                className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray disabled:opacity-50"
               >
                 {testing ? t('testing', lang) : t('testConnection', lang)}
               </button>
               <div className="flex gap-2">
-                <button onClick={onClose} className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50">
+                <button onClick={onClose} className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray">
                   {t('cancelBtn2', lang)}
                 </button>
                 <button onClick={save} className="px-4 py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light">

@@ -10,9 +10,9 @@ interface Props {
 }
 
 const FLAG_TYPE_VALUES: Array<{ value: FlagType; color: string; bg: string }> = [
-  { value: 'INFO',     color: 'text-blue-700',   bg: 'bg-blue-100'   },
-  { value: 'WARNING',  color: 'text-yellow-700', bg: 'bg-yellow-100' },
-  { value: 'CRITICAL', color: 'text-red-700',    bg: 'bg-red-100'    },
+  { value: 'INFO',     color: 'text-cw-blue',   bg: 'bg-cw-blue-soft'   },
+  { value: 'WARNING',  color: 'text-cw-orange', bg: 'bg-cw-orange-soft' },
+  { value: 'CRITICAL', color: 'text-cw-negative',    bg: 'bg-cw-negative-soft'    },
 ];
 
 const OPERATORS: Array<{ value: FlagCondition['operator']; label: string }> = [
@@ -59,7 +59,7 @@ function ConditionRow({
       <select
         value={cond.calculationCode}
         onChange={(e) => onChange({ ...cond, calculationCode: e.target.value })}
-        className="flex-1 border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+        className="flex-1 border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
       >
         <option value="">{t('selectCalc', uiLang)}</option>
         {calcCodes.map((c) => (
@@ -69,7 +69,7 @@ function ConditionRow({
       <select
         value={cond.operator}
         onChange={(e) => onChange({ ...cond, operator: e.target.value as FlagCondition['operator'] })}
-        className="w-16 border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+        className="w-16 border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
       >
         {OPERATORS.map((op) => (
           <option key={op.value} value={op.value}>{op.label}</option>
@@ -80,9 +80,9 @@ function ConditionRow({
         value={cond.threshold}
         onChange={(e) => onChange({ ...cond, threshold: parseFloat(e.target.value) || 0 })}
         step="0.1"
-        className="w-24 border border-cw-border rounded px-2 py-1.5 text-sm text-right font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+        className="w-24 border border-cw-border rounded px-3 py-2 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
       />
-      <button onClick={onDelete} className="text-gray-300 hover:text-red-500">
+      <button onClick={onDelete} className="text-cw-gray-text hover:text-cw-negative">
         <Trash2 className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -113,24 +113,24 @@ function FlagForm({
   const fc = flagColor(flag.type);
 
   return (
-    <div className="flex-1 overflow-auto p-5">
-      <div className="grid grid-cols-2 gap-3 mb-4">
+    <div className="flex-1 overflow-auto p-6">
+      <div className="grid grid-cols-2 gap-4 mb-5">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('code', uiLang)}</label>
+          <label className="block text-xs text-cw-gray-text mb-1">{t('code', uiLang)}</label>
           <input
             type="text"
             value={flag.code}
             onChange={(e) => onChange({ ...flag, code: e.target.value })}
-            className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
             placeholder="FLAG-HIGH"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('severity', uiLang)}</label>
+          <label className="block text-xs text-cw-gray-text mb-1">{t('severity', uiLang)}</label>
           <select
             value={flag.type}
             onChange={(e) => onChange({ ...flag, type: e.target.value as FlagType })}
-            className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+            className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           >
             {FLAG_TYPE_VALUES.map((ft) => (
               <option key={ft.value} value={ft.value}>{getFlagTypeLabel(ft.value, uiLang)}</option>
@@ -140,30 +140,30 @@ function FlagForm({
       </div>
 
       <div className="mb-3">
-        <label className="block text-xs text-gray-500 mb-1">{t('flagNameMsg', uiLang)}</label>
+        <label className="block text-xs text-cw-gray-text mb-1">{t('flagNameMsg', uiLang)}</label>
         <input
           type="text"
           value={flag.name}
           onChange={(e) => onChange({ ...flag, name: e.target.value })}
-          className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+          className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
           placeholder={t('flagNamePh', uiLang)}
         />
       </div>
 
       <div className="mb-4">
-        <label className="block text-xs text-gray-500 mb-1">{t('descriptionLabel', uiLang)}</label>
+        <label className="block text-xs text-cw-gray-text mb-1">{t('descriptionLabel', uiLang)}</label>
         <textarea
           value={flag.description ?? ''}
           onChange={(e) => onChange({ ...flag, description: e.target.value || undefined })}
           rows={2}
-          className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light resize-none"
+          className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30 resize-none"
           placeholder={t('flagDescPh', uiLang)}
         />
       </div>
 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium text-gray-500">{t('conditions', uiLang)}</label>
+          <label className="text-xs font-medium text-cw-gray-text">{t('conditions', uiLang)}</label>
           {flag.conditions.length > 1 && (
             <select
               value={flag.logic}
@@ -187,7 +187,7 @@ function FlagForm({
           ))}
         </div>
         {flag.conditions.length === 0 && (
-          <p className="text-xs text-gray-400 italic mt-1">{t('noConditions', uiLang)}</p>
+          <p className="text-xs text-cw-gray-text italic mt-1">{t('noConditions', uiLang)}</p>
         )}
         <button
           onClick={addCond}
@@ -262,7 +262,7 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
       <div className="w-full max-h-[40vh] md:max-h-none md:w-60 border-b md:border-b-0 md:border-r border-cw-border flex flex-col bg-cw-gray shrink-0 min-h-0">
         <div className="px-3 py-3 border-b border-cw-border bg-white">
           <h2 className="text-sm font-semibold text-cw-blue">{t('flagsHeader', uiLang)}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">{t('flagsSubtitle', uiLang)}</p>
+          <p className="text-xs text-cw-gray-text mt-0.5">{t('flagsSubtitle', uiLang)}</p>
         </div>
         <div className="flex-1 overflow-auto py-1">
           {flags.map((flag, i) => {
@@ -278,14 +278,14 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
               >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${fc.bg.replace('bg-', 'bg-').replace('-100', '-400')}`} />
                 <div className="min-w-0">
-                  <div className="text-xs font-mono truncate text-gray-700">{flag.code || t('noCode', uiLang)}</div>
-                  <div className="text-xs text-gray-400 truncate">{flag.name || getFlagTypeLabel(flag.type, uiLang)}</div>
+                  <div className="text-xs font-mono truncate text-cw-ink">{flag.code || t('noCode', uiLang)}</div>
+                  <div className="text-xs text-cw-gray-text truncate">{flag.name || getFlagTypeLabel(flag.type, uiLang)}</div>
                 </div>
               </button>
             );
           })}
           {flags.length === 0 && (
-            <p className="text-xs text-gray-400 text-center mt-6 px-3">{t('noFlags', uiLang)}</p>
+            <p className="text-xs text-cw-gray-text text-center mt-6 px-3">{t('noFlags', uiLang)}</p>
           )}
         </div>
         <div className="p-2 border-t border-cw-border">
@@ -303,12 +303,12 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
         {selected !== null && selectedIdx !== null ? (
           <>
             <div className="bg-white border-b border-cw-border px-5 py-3 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-semibold text-gray-700">
+              <h3 className="text-sm font-semibold text-cw-ink">
                 {selected.code || t('newFlag', uiLang)}
               </h3>
               <button
                 onClick={() => deleteFlag(selectedIdx)}
-                className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1"
+                className="text-xs text-cw-negative hover:text-cw-negative flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" /> {t('deleteBtn', uiLang)}
               </button>
@@ -320,7 +320,7 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
             />
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-full text-cw-gray-text text-sm">
             {t('selectOrCreateFlag', uiLang)}
           </div>
         )}
@@ -331,7 +331,7 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={[
-            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-gray-400" />, onClick: () => dupFlag(ctxMenu.idx) },
+            { label: t('duplicate', uiLang), icon: <Copy className="w-3.5 h-3.5 text-cw-gray-text" />, onClick: () => dupFlag(ctxMenu.idx) },
             { separator: true },
             { label: t('deleteBtn', uiLang), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => deleteFlag(ctxMenu.idx), danger: true },
           ]}

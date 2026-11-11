@@ -140,7 +140,7 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
           <div className="p-4 flex flex-col gap-4 overflow-auto min-h-0">
             {/* Textarea */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">
                 {t('importNormHelp', uiLang)}
               </label>
               <textarea
@@ -152,13 +152,13 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
                 spellCheck={false}
               />
               {/* Format hint */}
-              <p className="mt-1 text-xs text-gray-400 font-mono">{formatHint}</p>
+              <p className="mt-1 text-xs text-cw-gray-text font-mono">{formatHint}</p>
 
               {/* Validation errors */}
               {errors.length > 0 && (
                 <ul className="mt-2 space-y-0.5">
                   {errors.map((err, i) => (
-                    <li key={i} className="text-xs text-red-600">
+                    <li key={i} className="text-xs text-cw-negative">
                       {err}
                     </li>
                   ))}
@@ -167,7 +167,7 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
 
               {/* Row count feedback when valid */}
               {rawText.trim().length > 0 && errors.length === 0 && rows.length > 0 && (
-                <p className="mt-1 text-xs text-green-600">
+                <p className="mt-1 text-xs text-cw-positive">
                   {countPhrase(rows.length, uiLang, 'nRowReadyOne', 'nRowReadyMany')}
                 </p>
               )}
@@ -176,13 +176,13 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
             {/* Options row */}
             <div className="flex items-center gap-6">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-cw-gray-text mb-1">
                   {t('separator', uiLang)}
                 </label>
                 <select
                   value={sep}
                   onChange={(e) => setSep(e.target.value as SepType)}
-                  className="border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                  className="border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                 >
                   <option value="tab">{t('separatorTab', uiLang)}</option>
                   <option value="semicolon">{t('separatorSemicolon', uiLang)}</option>
@@ -204,7 +204,7 @@ export function ImportNormDialog({ open, normType, onClose, onImport }: Props) {
           <div className="p-4 border-t border-cw-border flex justify-end gap-2">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-gray-50"
+              className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-cw-gray"
             >
               {t('cancelBtn', uiLang)}
             </button>

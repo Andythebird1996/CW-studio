@@ -80,7 +80,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
       <div className="w-full max-h-[40vh] md:max-h-none md:w-60 border-b md:border-b-0 md:border-r border-cw-border flex flex-col bg-cw-gray shrink-0 min-h-0">
         <div className="px-3 py-3 border-b border-cw-border bg-white">
           <h2 className="text-sm font-semibold text-cw-blue">{listLabel}</h2>
-          <p className="text-xs text-gray-500 mt-0.5">{listSubtitle}</p>
+          <p className="text-xs text-cw-gray-text mt-0.5">{listSubtitle}</p>
         </div>
         <div className="flex-1 overflow-auto py-1">
           {templates.map((tpl, i) => (
@@ -96,12 +96,12 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
                 selectedIdx === i ? 'bg-white border-l-2 border-l-cw-blue' : ''
               }`}
             >
-              <List className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+              <List className="w-3.5 h-3.5 shrink-0 text-cw-gray-text" />
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-mono truncate text-gray-700">
+                <div className="text-xs font-mono truncate text-cw-ink">
                   {tpl.code || noCodeLabel}
                 </div>
-                <div className="text-xs text-gray-400 truncate">
+                <div className="text-xs text-cw-gray-text truncate">
                   {tpl.options.length > 0
                     ? `${tpl.options.length} ${altCountSuffix}`
                     : tpl.name || '—'}
@@ -110,7 +110,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
             </button>
           ))}
           {templates.length === 0 && (
-            <p className="text-xs text-gray-400 text-center mt-6 px-3">{noTemplatesLabel}</p>
+            <p className="text-xs text-cw-gray-text text-center mt-6 px-3">{noTemplatesLabel}</p>
           )}
         </div>
         <div className="p-2 border-t border-cw-border">
@@ -128,12 +128,12 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
         {selected !== null && selectedIdx !== null ? (
           <>
             <div className="bg-white border-b border-cw-border px-5 py-3 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-semibold text-gray-700">
+              <h3 className="text-sm font-semibold text-cw-ink">
                 {selected.code || newLabel}
               </h3>
               <button
                 onClick={() => deleteTemplate(selectedIdx)}
-                className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1"
+                className="text-xs text-cw-negative hover:text-cw-negative flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" /> {deleteLabel}
               </button>
@@ -141,30 +141,30 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
             <div className="flex-1 overflow-auto p-5">
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{codeLabel}</label>
+                  <label className="block text-xs text-cw-gray-text mb-1">{codeLabel}</label>
                   <input
                     type="text"
                     value={selected.code}
                     onChange={(e) => updateTemplate(selectedIdx, { ...selected, code: e.target.value })}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                     placeholder="LIKERT_5"
                     spellCheck={false}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{nameLabel}</label>
+                  <label className="block text-xs text-cw-gray-text mb-1">{nameLabel}</label>
                   <input
                     type="text"
                     value={selected.name}
                     onChange={(e) => updateTemplate(selectedIdx, { ...selected, name: e.target.value })}
-                    className="w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                     placeholder={t('likert5', uiLang)}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-2">{optionsLabel}</label>
+                <label className="block text-xs font-medium text-cw-gray-text mb-2">{optionsLabel}</label>
                 <SpreadsheetOptionsEditor
                   options={selected.options}
                   languages={languages}
@@ -176,7 +176,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-full text-cw-gray-text text-sm">
             {selectOrCreateLabel}
           </div>
         )}
@@ -190,7 +190,7 @@ export function ResponseTemplatesEditor({ questionnaire, onChange }: Props) {
           items={[
             {
               label: t('duplicate', uiLang),
-              icon: <Copy className="w-3.5 h-3.5 text-gray-400" />,
+              icon: <Copy className="w-3.5 h-3.5 text-cw-gray-text" />,
               onClick: () => dupTemplate(ctxMenu.idx),
             },
             { separator: true },
