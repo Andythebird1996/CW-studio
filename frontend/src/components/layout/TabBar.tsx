@@ -7,7 +7,7 @@ export function TabBar() {
   if (tabs.length === 0) return null;
 
   return (
-    <div className="flex border-b border-cw-border bg-cw-gray overflow-x-auto shrink-0">
+    <div className="flex border-b border-cw-border bg-cw-gray overflow-x-auto shrink-0 min-w-0">
       {tabs.map((tab) => (
         <div
           key={tab.id}
@@ -27,7 +27,7 @@ export function TabBar() {
               e.stopPropagation();
               closeTab(tab.id);
             }}
-            className="text-gray-400 hover:text-gray-700 rounded p-0.5 hover:bg-gray-200"
+            className="text-gray-400 hover:text-gray-700 rounded p-1 xl:p-0.5 hover:bg-gray-200"
           >
             <X className="w-3 h-3" />
           </button>

@@ -65,18 +65,18 @@ function EmptyState({
   lang: UILang;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400 select-none">
-      <div className="text-6xl mb-4">📋</div>
-      <p className="text-lg font-medium text-gray-500">{t('noQuestionnaire', lang)}</p>
-      <p className="text-sm mt-1 mb-4">{t('noQuestionnaireHint', lang)}</p>
-      <div className="flex gap-3">
-        <button onClick={onNew} className="px-4 py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light">
+    <div className="flex flex-col items-center justify-center h-full text-gray-400 select-none px-4 overflow-auto">
+      <div className="text-5xl xl:text-6xl mb-4">📋</div>
+      <p className="text-lg font-medium text-gray-500 text-center">{t('noQuestionnaire', lang)}</p>
+      <p className="text-sm mt-1 mb-4 text-center">{t('noQuestionnaireHint', lang)}</p>
+      <div className="flex flex-wrap justify-center gap-3">
+        <button onClick={onNew} className="px-4 py-2.5 xl:py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light">
           {t('newQuestionnaire', lang)}
         </button>
-        <button onClick={onOpenFile} className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-white text-gray-600">
+        <button onClick={onOpenFile} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-white text-gray-600">
           {t('openFile', lang)}
         </button>
-        <button onClick={onImport} className="px-4 py-2 text-sm border border-cw-border rounded hover:bg-white text-gray-600">
+        <button onClick={onImport} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-white text-gray-600">
           {t('import', lang)}
         </button>
       </div>
@@ -135,14 +135,16 @@ function SubTabBar({
 }) {
   const subTabs = getSubTabs(lang);
   return (
-    <div className="flex border-b border-cw-border bg-white shrink-0 px-4 pt-2 gap-1">
+    <div data-testid="subtab-bar" className="flex border-b border-cw-border bg-white shrink-0 min-w-0 flex-1 overflow-x-auto px-2 xl:px-4 pt-2 gap-1">
       {subTabs.map((tab) => {
         const isReport = tab.id === 'report';
         return (
           <button
             key={tab.id}
+            type="button"
+            data-testid={`subtab-${tab.id}`}
             onClick={() => onChangeSubTab(tab.id)}
-            className={`px-3 py-1.5 text-xs rounded-t border-b-2 transition-colors ${
+            className={`px-3 py-2.5 xl:py-1.5 text-xs rounded-t border-b-2 transition-colors shrink-0 whitespace-nowrap ${
               activeSubTab === tab.id
                 ? 'border-cw-blue text-cw-blue font-medium'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -175,6 +177,11 @@ export default function App() {
   const [fileInputTrigger, setFileInputTrigger] = useState(0);
   const [sessionRestorePrompt, setSessionRestorePrompt] = useState<EditorTab[] | null>(null);
   const [sessionRestoreActiveId, setSessionRestoreActiveId] = useState<string | null>(null);
+  const [explorerOpen, setExplorerOpen] = useState(false);
+
+  function closeExplorerIfNarrow() {
+    if (window.matchMedia('(max-width: 1279px)').matches) setExplorerOpen(false);
+  }
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -681,6 +688,7 @@ export default function App() {
 
   function handleExplorerNavigate(tabId: string, sub: SubTab) {
     setSubTab(sub);
+    closeExplorerIfNarrow();
   }
 
   async function handleSave() {
@@ -746,10 +754,10 @@ export default function App() {
 
   return (
     <UILangContext.Provider value={lang}>
-    <div className="flex flex-col h-screen bg-cw-gray">
+    <div data-testid="app-shell" className="flex flex-col h-dvh max-h-dvh w-full max-w-full min-w-0 bg-cw-gray overflow-hidden">
       {/* ── Session restore banner ── */}
       {sessionRestorePrompt && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-3 text-sm text-amber-800 shrink-0 z-40">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex flex-wrap items-center gap-3 text-sm text-amber-800 shrink-0 z-40">
           <span className="flex-1">
             {t('sessionRestoreMsg', lang).replace('{n}', String(sessionRestorePrompt.length))}
           </span>
@@ -779,31 +787,44 @@ export default function App() {
         onPrint={() => setShowPrint(true)}
         lang={lang}
         onToggleLang={() => setSettings({ uiLanguage: lang === 'NO' ? 'EN' : 'NO' })}
+        onToggleExplorer={() => setExplorerOpen((open) => !open)}
       />
 
       {/* ── Main area: sidebar + content ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-w-0 min-h-0 relative">
 
-        {/* Left: Package Explorer */}
-        <PackageExplorer
-          activeSubTab={subTab}
-          lang={lang}
-          onNavigate={handleExplorerNavigate}
-          onNewQuestionnaire={handleNewQuestionnaire}
-          onNewCalculation={handleNewCalculation}
-          onNewFlag={handleNewFlag}
-          onNewNorm={handleNewNorm}
-          onNewReport={handleNewReport}
-          onNewTranslation={handleNewTranslation}
-        />
+        {/* Backdrop for the overlay sidebar below the desktop breakpoint */}
+        {explorerOpen && (
+          <button
+            type="button"
+            className="xl:hidden absolute inset-0 z-30 bg-black/40"
+            aria-label={t('explorerTitle', lang)}
+            onClick={() => setExplorerOpen(false)}
+          />
+        )}
+
+        {/* Left: Package Explorer. Persistent from xl, overlay below. */}
+        <div className={`${explorerOpen ? 'absolute inset-y-0 left-0 z-40 flex h-full' : 'hidden'} xl:static xl:z-auto xl:flex xl:h-full`}>
+          <PackageExplorer
+            activeSubTab={subTab}
+            lang={lang}
+            onNavigate={handleExplorerNavigate}
+            onNewQuestionnaire={handleNewQuestionnaire}
+            onNewCalculation={handleNewCalculation}
+            onNewFlag={handleNewFlag}
+            onNewNorm={handleNewNorm}
+            onNewReport={handleNewReport}
+            onNewTranslation={handleNewTranslation}
+          />
+        </div>
 
         {/* Right: editor area */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0 min-h-0">
 
           <TabBar />
 
           {hasData && (
-            <div className="flex items-center shrink-0">
+            <div className="flex items-center shrink-0 min-w-0">
               <SubTabBar
                 activeSubTab={subTab}
                 onChangeSubTab={(s) => setSubTab(s as SubTab)}
@@ -813,14 +834,14 @@ export default function App() {
               <button
                 onClick={() => setSearchOpen(true)}
                 title={lang === 'NO' ? 'Søk (Ctrl+F)' : 'Search (Ctrl+F)'}
-                className="ml-auto mr-2 p-1 text-gray-400 hover:text-gray-700 rounded"
+                className="ml-auto mr-1 shrink-0 p-2 xl:p-1 text-gray-400 hover:text-gray-700 rounded"
               >
                 <Search size={15} />
               </button>
             </div>
           )}
 
-          <main className="flex-1 overflow-hidden flex flex-col">
+          <main className="flex-1 overflow-hidden flex flex-col min-w-0 min-h-0">
             {searchOpen && activeTab?.data && (
               <SearchPanel
                 questionnaire={activeTab.data}
@@ -988,7 +1009,7 @@ export default function App() {
       </div>
 
       {toast && (
-        <div className="fixed bottom-4 right-4 bg-gray-800 text-white text-sm px-4 py-2 rounded shadow-lg z-50 animate-fade-in">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:max-w-sm bg-gray-800 text-white text-sm px-4 py-2 rounded shadow-lg z-50 break-words">
           {toast}
         </div>
       )}

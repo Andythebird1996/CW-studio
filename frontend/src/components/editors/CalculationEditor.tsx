@@ -566,7 +566,7 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       {showImport && (
         <ImportCalculationsDialog
           questionnaire={questionnaire}
@@ -576,7 +576,7 @@ export function CalculationEditor({ questionnaire, onChange }: Props) {
       )}
 
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-cw-blue">{t('calcsHeader', uiLang)}</h2>
             <p className="text-xs text-gray-500 mt-0.5">

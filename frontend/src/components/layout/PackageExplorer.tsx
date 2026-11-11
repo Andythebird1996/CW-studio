@@ -147,7 +147,7 @@ function ResourceRow({
       )}
       <button
         onClick={onClick}
-        className={`flex items-center gap-1.5 flex-1 min-w-0 px-2 py-1 text-xs text-left ${expandable ? 'pl-0.5' : ''}`}
+        className={`flex items-center gap-1.5 flex-1 min-w-0 px-2 py-2 xl:py-1 text-xs text-left ${expandable ? 'pl-0.5' : ''}`}
       >
         <span className="w-3.5 h-3.5 shrink-0">{icon}</span>
         <span className="flex-1 truncate">{label}</span>
@@ -575,7 +575,7 @@ export function PackageExplorer({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-cw-border w-52 shrink-0 select-none">
+    <div data-testid="package-explorer" className="flex flex-col h-full bg-white border-r border-cw-border w-64 max-w-[85vw] xl:w-52 xl:max-w-none shrink-0 select-none">
       {/* Header */}
       <div className="flex items-center justify-between px-2 py-2 border-b border-cw-border shrink-0">
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">

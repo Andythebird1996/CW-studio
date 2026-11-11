@@ -26,7 +26,47 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  max-width: 100%;
+  overflow: hidden;
   font-family: Calibri, 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+/* Dialogs keep their authored width on desktop. The cap only binds when the
+   viewport is narrower or shorter than the dialog (phones, tablets, small
+   Electron windows). */
+.cw-dialog {
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100dvh - 1rem);
+}
+
+/* Side-by-side preview panes use an inline pixel width. Below the desktop
+   breakpoint that width is ignored so the pane can stack full-width. */
+@media (max-width: 1279px) {
+  .cw-preview-pane {
+    width: 100% !important;
+    flex: 1 1 42%;
+    min-height: 0;
+    max-height: 50%;
+  }
+}
+
+/* Multi-column form grids collapse only below desktop widths. */
+@media (max-width: 767px) {
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .text-\[10px\] { font-size: 12px; }
+  .text-\[11px\] { font-size: 13px; }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .grid.grid-cols-3,
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

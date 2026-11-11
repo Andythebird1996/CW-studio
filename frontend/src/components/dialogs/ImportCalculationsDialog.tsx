@@ -101,7 +101,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
     <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-        <Dialog.Content className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl w-[680px] max-w-[95vw] max-h-[90vh] flex flex-col">
+        <Dialog.Content className="cw-dialog fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl w-[680px] flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-cw-border shrink-0">
             <div>
@@ -121,7 +121,7 @@ export function ImportCalculationsDialog({ questionnaire, onImport, onClose }: P
             </Dialog.Close>
           </div>
 
-          <div className="flex-1 overflow-auto px-5 py-4 space-y-4">
+          <div className="flex-1 overflow-auto min-h-0 px-4 sm:px-5 py-4 space-y-4">
             {/* Format hint */}
             <div className="bg-gray-50 border border-cw-border rounded p-3 text-xs space-y-1">
               <p className="font-medium text-gray-600">{hint}</p>
