@@ -1,0 +1,292 @@
+import type { PackageMetadata, Questionnaire, QuestionnaireType } from '../../types/questionnaire';
+import { t, useUILang } from '../../i18n';
+import { RemoteScoringEditor } from './RemoteScoringEditor';
+
+interface Props {
+  questionnaire: Questionnaire;
+  packageMetadata?: PackageMetadata;
+  onChange?: (q: Questionnaire, pm?: PackageMetadata) => void;
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const INPUT = 'w-full border border-cw-border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-cw-blue-light';
+
+export function MetadataEditor({ questionnaire, packageMetadata, onChange }: Props) {
+  const uiLang = useUILang();
+  const lang = questionnaire.defaultLanguage;
+  const readOnly = !onChange;
+
+  const questionnaireTypes: Array<{ value: QuestionnaireType; label: string }> = [
+    { value: 'QUESTIONNAIRE', label: t('qtTypeQuestionnaire', uiLang) },
+    { value: 'SCALE',         label: t('qtTypeScale', uiLang) },
+    { value: 'EXERCISE',      label: t('qtTypeExercise', uiLang) },
+  ];
+
+  function updateQ(patch: Partial<Questionnaire>) {
+    onChange?.({ ...questionnaire, ...patch }, packageMetadata);
+  }
+
+  function updatePM(patch: Partial<PackageMetadata>) {
+    const base = packageMetadata ?? { code: questionnaire.code, isPublic: false };
+    onChange?.(questionnaire, { ...base, ...patch });
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0">
+        <h2 className="text-sm font-semibold text-cw-blue">{t('tabMetadata', uiLang)}</h2>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {readOnly ? t('metaReadOnly', uiLang) : t('metaEdit', uiLang)}
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4 space-y-6">
+
+        {/* ── Assessment ── */}
+        <section>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            {t('tabQuiz', uiLang)}
+          </h3>
+          <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <Field label={t('code', uiLang)}>
+                <input
+                  value={questionnaire.code}
+                  onChange={(e) => updateQ({ code: e.target.value })}
+                  readOnly={readOnly}
+                  className={INPUT + (readOnly ? ' bg-gray-50 text-gray-600 font-mono' : ' font-mono')}
+                />
+              </Field>
+              <Field label={t('version', uiLang)}>
+                <input
+                  value={questionnaire.version}
+                  onChange={(e) => updateQ({ version: e.target.value })}
+                  readOnly={readOnly}
+                  className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                />
+              </Field>
+              <Field label={uiLang === 'NO' ? 'Release' : 'Release'}>
+                <input
+                  value={questionnaire.release ?? ''}
+                  onChange={(e) => updateQ({ release: e.target.value || undefined })}
+                  readOnly={readOnly}
+                  placeholder="0"
+                  className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('typeLabel', uiLang)}>
+                {readOnly ? (
+                  <input value={questionnaire.type} readOnly className={INPUT + ' bg-gray-50'} />
+                ) : (
+                  <select
+                    value={questionnaire.type}
+                    onChange={(e) => updateQ({ type: e.target.value as QuestionnaireType })}
+                    className={INPUT}
+                  >
+                    {questionnaireTypes.map((qt) => (
+                      <option key={qt.value} value={qt.value}>{qt.label}</option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+              <Field label={t('defaultLanguage', uiLang)}>
+                <input
+                  value={questionnaire.defaultLanguage}
+                  readOnly
+                  className={INPUT + ' bg-gray-50 font-mono'}
+                />
+              </Field>
+            </div>
+
+            <Field label={`${t('name', uiLang)} (${lang})`}>
+              <input
+                value={questionnaire.name[lang] ?? ''}
+                onChange={(e) =>
+                  updateQ({ name: { ...questionnaire.name, [lang]: e.target.value } })
+                }
+                readOnly={readOnly}
+                className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+              />
+            </Field>
+
+            <Field label={`${t('descriptionLabel', uiLang)} (${lang})`}>
+              <textarea
+                value={questionnaire.description?.[lang] ?? ''}
+                onChange={(e) =>
+                  updateQ({
+                    description: {
+                      ...(questionnaire.description ?? {}),
+                      [lang]: e.target.value,
+                    } as Record<string, string>,
+                  })
+                }
+                readOnly={readOnly}
+                rows={2}
+                className={INPUT + ' resize-none' + (readOnly ? ' bg-gray-50' : '')}
+                placeholder={uiLang === 'NO' ? 'Valgfri beskrivelse...' : 'Optional description...'}
+              />
+            </Field>
+
+            <Field label="Copyright / $COPYRIGHT">
+              <input
+                value={questionnaire.copyright ?? ''}
+                onChange={(e) => updateQ({ copyright: e.target.value || undefined })}
+                readOnly={readOnly}
+                className={INPUT + (readOnly ? ' bg-gray-50' : '')}
+                placeholder="© 2024 Checkware AS"
+              />
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                {uiLang === 'NO' ? 'Tilgjengelig i RAP som $COPYRIGHT' : 'Available in RAP as $COPYRIGHT'}
+              </p>
+            </Field>
+
+            <div className="pt-1 border-t border-cw-border">
+              <p className="text-xs text-gray-400">
+                {uiLang === 'NO' ? 'Støttede språk' : 'Supported languages'}: <span className="font-mono">{questionnaire.supportedLanguages.join(', ')}</span>
+                {' · '}
+                {uiLang === 'NO' ? 'Seksjoner' : 'Sections'}: <span className="font-mono">{questionnaire.sections.length}</span>
+                {questionnaire.dimensions?.length ? (
+                  <>{' · '}{t('dimsHeader', uiLang)}: <span className="font-mono">{questionnaire.dimensions.length}</span></>
+                ) : null}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Package (manifest) ── */}
+        <section>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            {t('packageSection', uiLang)}
+          </h3>
+          <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
+            <Field label={t('packageCode', uiLang)}>
+              <input
+                value={packageMetadata?.code ?? questionnaire.code}
+                onChange={(e) => updatePM({ code: e.target.value })}
+                readOnly={readOnly}
+                className={INPUT + (readOnly ? ' bg-gray-50 font-mono' : ' font-mono')}
+              />
+            </Field>
+
+            <Field label={t('descriptionLabel', uiLang)}>
+              <textarea
+                value={packageMetadata?.description ?? ''}
+                onChange={(e) => updatePM({ description: e.target.value })}
+                readOnly={readOnly}
+                rows={2}
+                className={INPUT + ' resize-none' + (readOnly ? ' bg-gray-50' : '')}
+                placeholder={uiLang === 'NO' ? 'Pakkebeskrivelse...' : 'Package description...'}
+              />
+            </Field>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={packageMetadata?.requiredSkills === 'CLINICIAN' || questionnaire.clinicianOnly === true}
+                onChange={(e) => {
+                  updatePM({ requiredSkills: e.target.checked ? 'CLINICIAN' : '' });
+                  onChange?.({ ...questionnaire, clinicianOnly: e.target.checked || undefined }, packageMetadata);
+                }}
+                disabled={readOnly}
+                className="w-4 h-4 accent-cw-blue"
+              />
+              <span className="text-sm text-gray-600">{t('clinicianOnly', uiLang)}</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={packageMetadata?.isPublic ?? false}
+                onChange={(e) => updatePM({ isPublic: e.target.checked })}
+                disabled={readOnly}
+                className="w-4 h-4 accent-cw-blue"
+              />
+              <span className="text-sm text-gray-600">{t('publicPackage', uiLang)}</span>
+            </label>
+          </div>
+        </section>
+
+        {/* ── Navigasjon og visning ── */}
+        <section>
+          <details className="group">
+            <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 select-none">
+              <span className="group-open:rotate-90 transition-transform inline-block">&#9654;</span>
+              {uiLang === 'NO' ? 'Navigasjon og visning' : 'Navigation and display'}
+            </summary>
+            <div className="bg-white border border-cw-border rounded-lg p-4 space-y-3">
+              <Field label={t('visualizeProgress', uiLang)}>
+                {readOnly ? (
+                  <input value={questionnaire.visualizeProgress ?? 'Percentage'} readOnly className={INPUT + ' bg-gray-50'} />
+                ) : (
+                  <select
+                    value={questionnaire.visualizeProgress ?? 'Percentage'}
+                    onChange={(e) => updateQ({ visualizeProgress: e.target.value as Questionnaire['visualizeProgress'] })}
+                    className={INPUT}
+                  >
+                    <option value="Percentage">{t('vpPercentage', uiLang)}</option>
+                    <option value="Steps">{t('vpSteps', uiLang)}</option>
+                    <option value="None">{t('vpNone', uiLang)}</option>
+                  </select>
+                )}
+              </Field>
+
+              <div className="space-y-2 pt-1">
+                {(
+                  [
+                    { field: 'allowTOC',               label: uiLang === 'NO' ? 'Vis innholdsfortegnelse'           : 'Show table of contents'          },
+                    { field: 'restrictBackButton',      label: uiLang === 'NO' ? 'Skjul tilbake-knapp'              : 'Hide back button'                 },
+                    { field: 'allowSingleBackButton',   label: uiLang === 'NO' ? 'Tillat ett steg tilbake'          : 'Allow single step back'           },
+                    { field: 'unresponsiveUI',          label: uiLang === 'NO' ? 'Ikke-responsivt UI (kun desktop)' : 'Non-responsive UI (desktop only)' },
+                    { field: 'authorizedDevicesOnly',   label: uiLang === 'NO' ? 'Kun autoriserte enheter'          : 'Authorized devices only'          },
+                    { field: 'exportAllowed',           label: uiLang === 'NO' ? 'Tillat eksport av data'           : 'Allow data export'                },
+                  ] as Array<{ field: keyof Questionnaire; label: string }>
+                ).map(({ field, label }) => (
+                  <label key={field} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!(questionnaire[field])}
+                      onChange={(e) => updateQ({ [field]: e.target.checked || undefined })}
+                      disabled={readOnly}
+                      className="w-4 h-4 accent-cw-blue"
+                    />
+                    <span className="text-sm text-gray-600">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </details>
+        </section>
+
+        {/* ── Remote Scoring ── */}
+        {!readOnly && (
+          <section>
+            <details className="group">
+              <summary className="list-none cursor-pointer flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 select-none">
+                <span className="group-open:rotate-90 transition-transform inline-block">&#9654;</span>
+                {uiLang === 'NO' ? 'Remote Scoring' : 'Remote Scoring'}
+              </summary>
+              <RemoteScoringEditor questionnaire={questionnaire} onChange={(q) => onChange?.(q, packageMetadata)} />
+            </details>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

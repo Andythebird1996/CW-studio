@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Structural blues ─────────────────────────────── */
+  --color-cw-blue:       #1a5276;   /* dark navy — toolbar, primary buttons     */
+  --color-cw-blue-light: #25b8ec;   /* Checkware brand cyan — accents, focus    */
+  --color-cw-link:       #3c73b7;   /* interactive link blue (from theme.css)   */
+
+  /* ── Surfaces ─────────────────────────────────────── */
+  --color-cw-gray:       #f4f4f4;   /* page/panel background (theme.css match)  */
+  --color-cw-border:     #e0e3e6;   /* borders — lighter than before            */
+
+  /* ── Semantic ─────────────────────────────────────── */
+  --color-cw-gray-text:  #808080;   /* labels, metadata, table headers          */
+  --color-cw-positive:   #008800;   /* positive / OK states                     */
+  --color-cw-negative:   #880000;   /* negative / error states                  */
+  --color-cw-orange:     #f78d28;   /* callout accent (sup, highlights)         */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: Calibri, 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d5d8dc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aab; }

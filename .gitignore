@@ -1,0 +1,15 @@
+.env
+node_modules/
+frontend/dist/
+frontend/node_modules/
+backend/node_modules/
+
+# build output / OS
+.DS_Store
+dist-electron/
+releases/
+electron/dist/
+*.log
+.env.*
+!.env.example
+*.tsbuildinfo

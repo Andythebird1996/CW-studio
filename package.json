@@ -1,0 +1,56 @@
+{
+  "name": "checkware-studio-web",
+  "version": "1.0.15",
+  "workspaces": ["backend", "frontend"],
+  "main": "electron/dist/main.js",
+  "scripts": {
+    "dev":   "concurrently \"bun run --cwd backend dev\" \"bun run --cwd frontend dev\"",
+    "build": "bun run --cwd frontend build",
+    "start": "bun run --cwd backend start",
+
+    "electron:build:main": "esbuild electron/main.ts --bundle --platform=node --target=node20 --outfile=electron/dist/main.js --external:electron",
+    "electron:dev":      "concurrently \"bun run --cwd backend dev\" \"bun run --cwd frontend dev\" \"bunx wait-on http://localhost:5173 && electron .\"",
+    "electron:pack":     "bun run build && bun run electron:build:main && electron-builder",
+    "electron:pack:mac": "bun run build && bun run electron:build:main && electron-builder --mac",
+    "electron:pack:win": "bun run build && bun run electron:build:main && electron-builder --win",
+    "electron:pack:all": "bun run build && bun run electron:build:main && electron-builder --mac --win"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0"
+  },
+  "devDependencies": {
+    "concurrently":    "^8.2.0",
+    "electron":        "^36.0.0",
+    "electron-builder": "^26.0.0",
+    "esbuild":         "^0.25.0",
+    "wait-on":         "^8.0.0"
+  },
+  "build": {
+    "appId": "no.checkware.cwstudioweb",
+    "productName": "CW Studio Web",
+    "copyright": "Copyright © 2025 Checkware",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/dist/**",
+      "frontend/dist/**"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "guid": "no.checkware.cwstudioweb",
+      "include": "build/installer.nsh"
+    }
+  }
+}
