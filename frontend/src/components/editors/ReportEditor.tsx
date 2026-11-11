@@ -341,14 +341,14 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
   }, []);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       {/* Header */}
-      <div className="bg-white border-b border-cw-border px-4 py-2 flex items-center justify-between shrink-0">
-        <div>
+      <div className="bg-white border-b border-cw-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold text-cw-blue">{uiLang === 'NO' ? 'Rapportmal' : 'Report template'}</h2>
           <p className="text-xs text-gray-500 mt-0.5">RAP-template — Checkware {uiLang === 'NO' ? 'rapportspråk' : 'report language'}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Mode toggle */}
           <div className="flex rounded border border-cw-border overflow-hidden">
             <button
@@ -486,7 +486,7 @@ export function ReportEditor({ code, rapFiles, activeFileName, questionnaire, on
               />
             </div>
           </div>
-          <div className="bg-white border-t border-cw-border px-4 py-2 shrink-0">
+          <div className="bg-white border-t border-cw-border px-4 py-2 shrink-0 overflow-x-auto">
             <p className="text-xs text-gray-400">
               {uiLang === 'NO' ? 'Nøkkelord' : 'Keywords'}:{' '}
               <code className="bg-gray-100 px-1 rounded">$VAR</code>{' '}

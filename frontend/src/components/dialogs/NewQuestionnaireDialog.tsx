@@ -77,10 +77,10 @@ export function NewQuestionnaireDialog({ open, onClose, onCreate }: Props) {
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 flex flex-col"
+          className="cw-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 flex flex-col overflow-hidden"
           style={{ width: 440, maxHeight: '90vh' }}
         >
-          <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+          <div className="p-4 sm:p-6 flex flex-col gap-4 overflow-y-auto min-h-0">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
               {lang === 'NO' ? 'Ny kartlegging' : 'New questionnaire'}
             </Dialog.Title>

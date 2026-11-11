@@ -215,7 +215,7 @@ export function DimensionsEditor({ questionnaire, onChange }: Props) {
   }, []);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-cw-blue flex items-center gap-2">

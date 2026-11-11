@@ -257,9 +257,9 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
   const selected = selectedIdx !== null ? flags[selectedIdx] : null;
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Left: flag list */}
-      <div className="w-60 border-r border-cw-border flex flex-col bg-cw-gray shrink-0">
+    <div className="flex flex-col md:flex-row h-full overflow-hidden min-w-0 min-h-0">
+      {/* Left: flag list. Stacks above the form on phones. */}
+      <div className="w-full max-h-[40vh] md:max-h-none md:w-60 border-b md:border-b-0 md:border-r border-cw-border flex flex-col bg-cw-gray shrink-0 min-h-0">
         <div className="px-3 py-3 border-b border-cw-border bg-white">
           <h2 className="text-sm font-semibold text-cw-blue">{t('flagsHeader', uiLang)}</h2>
           <p className="text-xs text-gray-500 mt-0.5">{t('flagsSubtitle', uiLang)}</p>
@@ -299,7 +299,7 @@ export function FlagEditor({ questionnaire, onChange }: Props) {
       </div>
 
       {/* Right: editor */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
         {selected !== null && selectedIdx !== null ? (
           <>
             <div className="bg-white border-b border-cw-border px-5 py-3 flex items-center justify-between shrink-0">

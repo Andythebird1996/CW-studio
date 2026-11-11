@@ -60,8 +60,8 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
+      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold text-cw-blue">Media</h2>
           <p className="text-xs text-gray-500 mt-0.5">

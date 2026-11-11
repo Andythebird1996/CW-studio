@@ -165,10 +165,10 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-white">
+    <div className="flex flex-col h-full overflow-hidden bg-white min-w-0 min-h-0">
       {/* Header */}
-      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center gap-3">
-        <div>
+      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center gap-3">
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold text-cw-blue">Avhengighetsgraf</h2>
           <p className="text-xs text-gray-500 mt-0.5">
             Klikk på en node for å fremheve hele tråden &nbsp;·&nbsp; Spørsmål → Beregninger → Flagg
@@ -191,7 +191,7 @@ export function DependencyGraph({ questionnaire }: DependencyGraphProps) {
             : 'Ingen avhengigheter å vise.'}
         </div>
       ) : (
-        <div className="flex-1 overflow-auto p-4" onClick={() => setSelectedId(null)}>
+        <div className="flex-1 overflow-auto p-4 min-w-0" onClick={() => setSelectedId(null)}>
           {/* Column labels */}
           <div
             style={{

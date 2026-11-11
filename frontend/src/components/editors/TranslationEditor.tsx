@@ -616,10 +616,10 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
   );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-w-0 min-h-0">
       {/* Header */}
-      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between">
-        <div>
+      <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold text-cw-blue">{t('tabTranslations', uiLang)}</h2>
           <p className="text-xs text-gray-500 mt-0.5">
             {rows.length} {t('stringsLabel', uiLang)} · {missingCount > 0 ? (
@@ -635,7 +635,7 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
             <p className="text-xs text-green-600 mt-1">{staleTranslateStatus}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Oversett utdaterte button */}
           <button
             onClick={handleTranslateStale}
@@ -668,8 +668,8 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full text-sm border-collapse">
+      <div className="flex-1 overflow-auto min-w-0">
+        <table className="w-full text-sm border-collapse" style={{ minWidth: 280 + activeLangs.length * 220 }}>
           <thead className="sticky top-0 bg-cw-gray z-10">
             <tr>
               <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 border-b border-r border-cw-border w-40">

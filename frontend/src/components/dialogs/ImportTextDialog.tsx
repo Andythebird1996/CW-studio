@@ -98,7 +98,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[520px] flex flex-col z-50"
+          className="cw-dialog fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl w-[520px] flex flex-col z-50 overflow-hidden"
         >
           <div className="p-4 border-b border-cw-border">
             <Dialog.Title className="text-lg font-semibold text-cw-blue">
@@ -106,7 +106,7 @@ export function ImportTextDialog({ open, questionnaire, onClose, onImport }: Pro
             </Dialog.Title>
           </div>
 
-          <div className="p-4 flex flex-col gap-4 overflow-auto">
+          <div className="p-4 flex flex-col gap-4 overflow-auto min-h-0">
             {/* Textarea */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
