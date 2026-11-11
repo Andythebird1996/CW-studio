@@ -133,9 +133,12 @@ function evaluateCalcLive(calc: Calculation, entryMap: AnswerEntryMap): number |
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const CW_BLUE = '#25b8ec';
-const CW_DARK = '#1a5276';
-const CW_BORDER = '#d0dce8';
+const CW_BLUE = '#006393';
+const CW_INK = '#333333';
+const CW_MUTED = '#6b6e71';
+const CW_BORDER = '#c8c9ca';
+const CW_CANVAS = '#e8e9e9';
+const CW_LINE = '#e6e7e7';
 
 // ── Rank widget ───────────────────────────────────────────────────────────────
 
@@ -291,8 +294,8 @@ function CountryWidget({
       style={{
         border: `1px solid ${CW_BORDER}`,
         borderRadius: 4,
-        padding: '6px 8px',
-        fontSize: 14,
+        padding: '9px 12px',
+        fontSize: 15,
         outline: 'none',
         fontFamily: 'inherit',
         minWidth: 220,
@@ -354,43 +357,29 @@ function RadioWidget({
     return <EmptyOptions />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {options.map((opt) => {
         const active = selected === opt.code;
         return (
           <label
             key={opt.code}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}
             onClick={() => onSelect(active ? '' : opt.code)}
           >
             <span
               style={{
-                width: 18,
-                height: 18,
+                width: 20,
+                height: 20,
+                marginTop: 1,
                 borderRadius: '50%',
-                border: `2px solid ${active ? CW_BLUE : '#bbb'}`,
-                background: active ? CW_BLUE : 'white',
+                boxSizing: 'border-box',
+                border: active ? `6px solid ${CW_BLUE}` : '1.5px solid #b0b0b0',
+                background: 'white',
                 flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'border-color 0.15s, background 0.15s',
               }}
-            >
-              {active && (
-                <span
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    background: 'white',
-                    display: 'block',
-                  }}
-                />
-              )}
-            </span>
+            />
             <span
-              style={{ fontSize: 14, color: '#333', lineHeight: 1.4 }}
+              style={{ fontSize: 15, color: CW_INK, lineHeight: 1.45 }}
               dangerouslySetInnerHTML={{ __html: cwToHtml(opt.texts[lang] || opt.code) }}
             />
           </label>
@@ -417,27 +406,27 @@ function CheckboxWidget({
     return <EmptyOptions />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {options.map((opt) => {
         const active = selected.has(opt.code);
         return (
           <label
             key={opt.code}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}
             onClick={() => onToggle(opt.code)}
           >
             <span
               style={{
                 width: 18,
                 height: 18,
+                marginTop: 2,
                 borderRadius: 3,
-                border: `2px solid ${active ? CW_BLUE : '#bbb'}`,
+                border: `1.5px solid ${active ? CW_BLUE : '#b0b0b0'}`,
                 background: active ? CW_BLUE : 'white',
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'border-color 0.15s, background 0.15s',
               }}
             >
               {active && (
@@ -453,7 +442,7 @@ function CheckboxWidget({
               )}
             </span>
             <span
-              style={{ fontSize: 14, color: '#333', lineHeight: 1.4 }}
+              style={{ fontSize: 15, color: CW_INK, lineHeight: 1.45 }}
               dangerouslySetInnerHTML={{ __html: cwToHtml(opt.texts[lang] || opt.code) }}
             />
           </label>
@@ -485,8 +474,8 @@ function ComboboxWidget({
       style={{
         border: `1px solid ${CW_BORDER}`,
         borderRadius: 4,
-        padding: '6px 8px',
-        fontSize: 14,
+        padding: '9px 12px',
+        fontSize: 15,
         outline: 'none',
         fontFamily: 'inherit',
         minWidth: 200,
@@ -630,9 +619,9 @@ function QuestionPreview({
   return (
     <div
       style={{
-        marginBottom: 22,
-        paddingBottom: 22,
-        borderBottom: `1px solid #f0f0f0`,
+        marginBottom: 24,
+        paddingBottom: 20,
+        borderBottom: `1px solid ${CW_LINE}`,
       }}
     >
       {/* Label row */}
@@ -641,8 +630,8 @@ function QuestionPreview({
           <span
             style={{
               color: CW_BLUE,
-              fontWeight: 700,
-              fontSize: 14,
+              fontWeight: 600,
+              fontSize: 15,
               minWidth: 22,
               flexShrink: 0,
             }}
@@ -654,12 +643,12 @@ function QuestionPreview({
           {text ? (
             hasCwTags(text) ? (
               <span
-                style={{ fontSize: 14, fontWeight: isText ? 400 : 500, color: isText ? '#555' : '#222', lineHeight: 1.5 }}
+                style={{ fontSize: 15, fontWeight: 400, color: isText ? '#555' : CW_INK, lineHeight: 1.5 }}
                 dangerouslySetInnerHTML={{ __html: cwToHtml(text) }}
               />
             ) : (
               <span
-                style={{ fontSize: 14, fontWeight: isText ? 400 : 500, color: isText ? '#555' : '#222', lineHeight: 1.5 }}
+                style={{ fontSize: 15, fontWeight: 400, color: isText ? '#555' : CW_INK, lineHeight: 1.5 }}
               >
                 {text}
               </span>
@@ -691,8 +680,8 @@ function QuestionPreview({
             width: '100%',
             border: `1px solid ${CW_BORDER}`,
             borderRadius: 4,
-            padding: '6px 8px',
-            fontSize: 14,
+            padding: '9px 12px',
+            fontSize: 15,
             resize: 'vertical',
             outline: 'none',
             fontFamily: 'inherit',
@@ -758,8 +747,8 @@ function QuestionPreview({
                   width: 110,
                   border: `1px solid ${CW_BORDER}`,
                   borderRadius: 4,
-                  padding: '6px 8px',
-                  fontSize: 14,
+                  padding: '9px 12px',
+                  fontSize: 15,
                   outline: 'none',
                   fontFamily: 'inherit',
                 }}
@@ -780,8 +769,8 @@ function QuestionPreview({
                   width: '100%',
                   border: `1px solid ${CW_BORDER}`,
                   borderRadius: 4,
-                  padding: '6px 8px',
-                  fontSize: 14,
+                  padding: '9px 12px',
+                  fontSize: 15,
                   resize: 'vertical',
                   outline: 'none',
                   fontFamily: 'inherit',
@@ -804,8 +793,8 @@ function QuestionPreview({
                           : '100%',
                   border: `1px solid ${CW_BORDER}`,
                   borderRadius: 4,
-                  padding: '6px 8px',
-                  fontSize: 14,
+                  padding: '9px 12px',
+                  fontSize: 15,
                   outline: 'none',
                   fontFamily: 'inherit',
                 }}
@@ -819,8 +808,8 @@ function QuestionPreview({
               style={{
                 border: `1px solid ${CW_BORDER}`,
                 borderRadius: 4,
-                padding: '6px 8px',
-                fontSize: 14,
+                padding: '9px 12px',
+                fontSize: 15,
                 outline: 'none',
                 fontFamily: 'inherit',
               }}
@@ -931,34 +920,36 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
   return (
     <div
       style={{
-        fontFamily: 'Calibri, "Segoe UI", Roboto, sans-serif',
-        background: '#e8edf3',
+        fontFamily: 'inherit',
+        background: CW_CANVAS,
         height: '100%',
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        fontSize: 14,
+        fontSize: 15,
+        color: CW_INK,
       }}
     >
       {/* ── Header ── */}
       <div
         style={{
-          background: CW_DARK,
-          color: 'white',
-          padding: '10px 16px',
+          background: 'white',
+          color: CW_INK,
+          padding: '14px 18px 12px',
           flexShrink: 0,
+          borderBottom: `1px solid ${CW_LINE}`,
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 600 }}>{name}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: CW_BLUE }}>{name}</div>
         {total > 0 && (
-          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: CW_MUTED, marginTop: 2 }}>
             {tf('pageOf', uiLang, { page: idx + 1, total })}
           </div>
         )}
       </div>
 
       {/* ── Progress bar ── */}
-      <div style={{ height: 4, background: '#b5c9d8', flexShrink: 0 }}>
+      <div style={{ height: 3, background: '#d5d6d6', flexShrink: 0 }}>
         <div
           style={{
             height: '100%',
@@ -970,7 +961,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
       </div>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, padding: 16, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: 18, overflow: 'auto' }}>
         {total === 0 ? (
           <div style={{ textAlign: 'center', color: '#aaa', marginTop: 60 }}>
             <div style={{ fontSize: 36, marginBottom: 10 }}>📋</div>
@@ -981,15 +972,16 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
           <div
             style={{
               background: 'white',
-              borderRadius: 6,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-              padding: '20px 24px',
+              borderRadius: 8,
+              border: `1px solid ${CW_LINE}`,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              padding: '22px 22px 8px',
             }}
           >
             {/* Section title */}
             {currentSection.titles[lang] && (
               <h2
-                style={{ fontSize: 16, fontWeight: 700, color: CW_DARK, margin: '0 0 20px 0', paddingBottom: 10, borderBottom: `2px solid ${CW_BLUE}` }}
+                style={{ fontSize: 18, fontWeight: 600, color: CW_INK, margin: '0 0 18px 0', paddingBottom: 10, borderBottom: `1px solid ${CW_LINE}` }}
                 dangerouslySetInnerHTML={{ __html: cwToHtml(currentSection.titles[lang]) }}
               />
             )}
@@ -1236,24 +1228,27 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
           style={{
             flexShrink: 0,
             background: 'white',
-            borderTop: `1px solid ${CW_BORDER}`,
-            padding: '10px 16px',
+            borderTop: `1px solid ${CW_LINE}`,
+            padding: '12px 16px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            gap: 8,
           }}
         >
           <button
             onClick={() => { setSectionIndex((i) => Math.max(0, i - 1)); }}
             disabled={idx === 0}
             style={{
-              padding: '7px 16px',
-              background: idx === 0 ? '#f5f5f5' : 'white',
-              border: `1px solid ${idx === 0 ? '#ddd' : '#aaa'}`,
-              borderRadius: 4,
+              padding: '8px 18px',
+              background: 'white',
+              border: `1px solid ${idx === 0 ? '#e0e0e0' : CW_BORDER}`,
+              borderRadius: 999,
               cursor: idx === 0 ? 'default' : 'pointer',
-              fontSize: 13,
-              color: idx === 0 ? '#ccc' : '#444',
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: 'inherit',
+              color: idx === 0 ? '#b5b5b5' : CW_INK,
             }}
           >
             ← {t('previous', uiLang)}
@@ -1271,7 +1266,7 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
                     width: i === idx ? 10 : 8,
                     height: i === idx ? 10 : 8,
                     borderRadius: '50%',
-                    background: i === idx ? CW_BLUE : '#ccc',
+                    background: i === idx ? CW_BLUE : '#c5c6c7',
                     border: 'none',
                     cursor: 'pointer',
                     padding: 0,
@@ -1292,14 +1287,15 @@ export function AssessmentPreview({ questionnaire, lang, onAnswerChange }: Props
             disabled={idx === total - 1 || !canContinue(currentSection, answers)}
             title={!canContinue(currentSection, answers) ? t('cannotContinue', uiLang) : undefined}
             style={{
-              padding: '7px 16px',
-              background: (idx === total - 1 || !canContinue(currentSection, answers)) ? '#f5f5f5' : CW_BLUE,
+              padding: '8px 20px',
+              background: (idx === total - 1 || !canContinue(currentSection, answers)) ? '#e6e7e7' : CW_BLUE,
               border: 'none',
-              borderRadius: 4,
+              borderRadius: 999,
               cursor: (idx === total - 1 || !canContinue(currentSection, answers)) ? 'default' : 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-              color: (idx === total - 1 || !canContinue(currentSection, answers)) ? '#ccc' : 'white',
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: 'inherit',
+              color: (idx === total - 1 || !canContinue(currentSection, answers)) ? '#9a9a9a' : 'white',
             }}
           >
             {t('next', uiLang)} →

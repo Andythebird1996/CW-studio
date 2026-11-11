@@ -296,8 +296,8 @@ function QuestionRow({
     <div
       className={`border rounded mb-2 bg-white transition-shadow ${
         isSelected
-          ? 'border-blue-400 ring-2 ring-blue-300 ring-offset-1'
-          : 'border-cw-border'
+          ? 'border-cw-blue ring-2 ring-cw-blue/20'
+          : 'border-cw-border shadow-sm'
       }`}
       onContextMenu={onContextMenu}
       data-element-id={question.id}
@@ -1181,9 +1181,9 @@ function SectionEditor({
   // Visual depth cues: top-level gets border-2, nested get border-l-2 with indent
   const isNested = depth > 0;
   const borderClass = isNested
-    ? 'border border-cw-border border-l-2 border-l-cw-blue-light rounded-lg mb-2'
-    : 'border-2 border-cw-border rounded-lg mb-4';
-  const headerBg = isNested ? 'bg-gray-50' : 'bg-cw-gray';
+    ? 'border border-cw-border border-l-[3px] border-l-cw-blue rounded-lg mb-2 bg-white'
+    : 'border border-cw-border rounded-lg mb-4 bg-white shadow-sm';
+  const headerBg = 'bg-white';
 
   // Total question count including sub-sections (for display)
   function countAllQuestions(s: Section): number {
@@ -1194,7 +1194,7 @@ function SectionEditor({
     <div className={borderClass} data-element-id={section.id}>
       {/* Section header */}
       <div
-        className={`flex flex-wrap xl:flex-nowrap items-center gap-2 ${headerBg} px-3 py-2 rounded-t-lg`}
+        className={`flex flex-wrap xl:flex-nowrap items-center gap-2 ${headerBg} px-3 py-2 ${collapsed ? 'rounded-lg' : 'rounded-t-lg border-b border-cw-border'}`}
         onContextMenu={
           onSectionContextMenu
             ? (e) => onSectionContextMenu(e, section.id)
@@ -2645,9 +2645,9 @@ export function QuestionnaireEditor({ questionnaire, onChange, navigateToElement
           className={`cw-preview-pane shrink-0 border-cw-border flex flex-col overflow-hidden min-w-0 xl:border-l max-xl:border-t ${previewCollapsed ? 'max-xl:hidden' : ''}`}
         >
           <div className="px-3 py-2 border-b border-cw-border bg-white shrink-0 flex items-center gap-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex-1">
+            <span className="text-sm font-medium text-cw-blue flex-1 min-w-0 truncate">
               {t('previewPanel', uiLang)}
-              <span className="ml-2 normal-case tracking-normal font-normal">{t('previewHint', uiLang)}</span>
+              <span className="ml-2 font-normal text-cw-gray-text">{t('previewHint', uiLang)}</span>
             </span>
             <button
               type="button"

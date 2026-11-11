@@ -133,11 +133,11 @@ function ResourceRow({
   onToggleExpand?: () => void;
 }) {
   return (
-    <div className={`flex items-center rounded transition-colors ${active ? 'bg-cw-blue text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+    <div className={`flex items-center rounded transition-colors ${active ? 'bg-cw-yellow text-gray-900' : 'text-gray-700 hover:bg-white'}`}>
       {expandable && (
         <button
           onClick={(e) => { e.stopPropagation(); onToggleExpand?.(); }}
-          className={`pl-1 pr-0.5 py-1 shrink-0 ${active ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-gray-600'}`}
+          className={`pl-1 pr-0.5 py-1 shrink-0 ${active ? 'text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}
         >
           {expanded
             ? <ChevronDown className="w-3 h-3" />
@@ -152,7 +152,7 @@ function ResourceRow({
         <span className="w-3.5 h-3.5 shrink-0">{icon}</span>
         <span className="flex-1 truncate">{label}</span>
         {count !== undefined && count > 0 && (
-          <span className={`text-[10px] font-medium px-1 rounded ${active ? 'bg-white/20' : 'bg-gray-200 text-gray-500'}`}>
+          <span className={`text-[10px] font-medium px-1 rounded ${active ? 'bg-white/80 text-gray-800' : 'bg-white text-gray-500'}`}>
             {count}
           </span>
         )}
@@ -224,7 +224,7 @@ function PackageNode({
   }
 
   return (
-    <div className={`mb-1 rounded ${isActive ? 'bg-blue-50' : ''}`}>
+    <div className="mb-1">
       {/* Package header */}
       <div className="flex items-center gap-1 px-1 py-1 group">
         <button
@@ -576,7 +576,7 @@ export function PackageExplorer({
   }
 
   return (
-    <div data-testid="package-explorer" className="flex flex-col h-full bg-white border-r border-cw-border w-64 max-w-[85vw] xl:w-52 xl:max-w-none shrink-0 select-none">
+    <div data-testid="package-explorer" className="flex flex-col h-full bg-cw-gray border-r border-cw-border w-64 max-w-[85vw] xl:w-52 xl:max-w-none shrink-0 select-none">
       {/* Header */}
       <div className="flex items-center justify-between px-2 py-2 border-b border-cw-border shrink-0">
         <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">

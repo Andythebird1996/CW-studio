@@ -168,8 +168,8 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
         style={{ width: leftWidth }}
       >
         {/* Patient info header */}
-        <div className="bg-cw-gray border-b border-cw-border px-3 py-2 shrink-0 flex items-center justify-between">
-          <p className="text-xs font-semibold text-cw-blue">{t('simulateAnswers', uiLang)}</p>
+        <div className="bg-white border-b border-cw-border px-4 py-3 shrink-0 flex items-center justify-between">
+          <p className="text-sm font-medium text-cw-blue">{t('simulateAnswers', uiLang)}</p>
           {availableLangs.length > 1 && (
             <select
               value={lang}
@@ -185,32 +185,32 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
         </div>
 
         {/* Compact patient fields */}
-        <div className="px-3 py-2 border-b border-cw-border shrink-0 space-y-2">
+        <div className="px-4 py-3 border-b border-cw-border bg-white shrink-0 space-y-2">
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-[10px] text-gray-500 block mb-0.5">{t('name', uiLang)}</label>
+              <label className="text-xs text-cw-gray-text block mb-1">{t('name', uiLang)}</label>
               <input
                 type="text"
                 value={patient.name}
                 onChange={(e) => setPatient((p) => ({ ...p, name: e.target.value }))}
-                className="w-full text-xs border border-cw-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full text-sm border border-cw-border rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue"
               />
             </div>
             <div className="w-28">
-              <label className="text-[10px] text-gray-500 block mb-0.5">{t('dob', uiLang)}</label>
+              <label className="text-xs text-cw-gray-text block mb-1">{t('dob', uiLang)}</label>
               <input
                 type="text"
                 value={patient.dob}
                 onChange={(e) => setPatient((p) => ({ ...p, dob: e.target.value }))}
                 placeholder="DD.MM.YYYY"
-                className="w-full text-xs border border-cw-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cw-blue-light"
+                className="w-full text-sm border border-cw-border rounded px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-cw-blue"
               />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-gray-500">{t('genderColon', uiLang)}</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-cw-gray-text">{t('genderColon', uiLang)}</span>
             {([0, 1, 2] as const).map((g) => (
-              <label key={g} className="flex items-center gap-1 text-xs cursor-pointer">
+              <label key={g} className="flex items-center gap-1.5 text-sm cursor-pointer">
                 <input
                   type="radio"
                   name="sim-gender"
@@ -242,11 +242,11 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
       />
 
       {/* ── Right panel: rendered report ── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 min-w-0 min-h-0">
-        <div className="bg-white border-b border-cw-border px-3 py-2 shrink-0 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-cw-blue">{t('livePreview', uiLang)}</span>
-            <span className="text-[10px] text-gray-400">{t('livePreviewHint', uiLang)}</span>
+      <div className="flex-1 flex flex-col overflow-hidden bg-cw-gray min-w-0 min-h-0">
+        <div className="bg-white border-b border-cw-border px-4 py-2.5 shrink-0 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-medium text-cw-blue">{t('livePreview', uiLang)}</span>
+            <span className="text-xs text-cw-gray-text truncate">{t('livePreviewHint', uiLang)}</span>
           </div>
           <button
             onClick={() => {
@@ -257,7 +257,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
               win.focus();
               setTimeout(() => { win.print(); }, 400);
             }}
-            className="flex items-center gap-1.5 px-3 py-1 text-xs border border-cw-border rounded hover:bg-gray-50 text-gray-600"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-cw-border rounded bg-white hover:bg-cw-gray text-gray-700"
           >
             <Download className="w-3 h-3" /> {t('downloadPdf', uiLang)}
           </button>
@@ -266,7 +266,7 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName }: P
           <iframe
             ref={iframeRef}
             sandbox="allow-scripts allow-same-origin"
-            className="w-full h-full bg-white rounded shadow-sm border border-cw-border"
+            className="w-full h-full bg-white rounded-lg shadow-sm border border-cw-border"
             title={t('reportPreview', uiLang)}
           />
         </div>

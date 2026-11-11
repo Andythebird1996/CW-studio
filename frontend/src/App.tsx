@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, ShieldAlert } from 'lucide-react';
+import { ClipboardList, Search, ShieldAlert } from 'lucide-react';
 import { Toolbar } from './components/layout/Toolbar';
 import { TabBar } from './components/layout/TabBar';
 import { PackageExplorer, type SubTab } from './components/layout/PackageExplorer';
@@ -65,41 +65,45 @@ function EmptyState({
   lang: UILang;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400 select-none px-4 overflow-auto">
-      <div className="text-5xl xl:text-6xl mb-4">📋</div>
-      <p className="text-lg font-medium text-gray-500 text-center">{t('noQuestionnaire', lang)}</p>
-      <p className="text-sm mt-1 mb-4 text-center">{t('noQuestionnaireHint', lang)}</p>
-      <div className="flex flex-wrap justify-center gap-3">
-        <button onClick={onNew} className="px-4 py-2.5 xl:py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light">
-          {t('newQuestionnaire', lang)}
-        </button>
-        <button onClick={onOpenFile} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-white text-gray-600">
-          {t('openFile', lang)}
-        </button>
-        <button onClick={onImport} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-white text-gray-600">
-          {t('import', lang)}
-        </button>
-      </div>
-      {recentFiles.length > 0 && (
-        <div className="mt-8 w-full max-w-sm">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 text-center">
-            {t('recentlyOpened', lang)}
-          </p>
-          <ul className="space-y-1">
-            {recentFiles.map((f) => (
-              <li key={f.uid}>
-                <button
-                  onClick={() => onOpenRecent(f.uid)}
-                  className="w-full text-left px-3 py-1.5 text-sm text-gray-600 rounded hover:bg-gray-100 hover:text-cw-blue transition-colors truncate"
-                  title={f.title}
-                >
-                  {f.title}
-                </button>
-              </li>
-            ))}
-          </ul>
+    <div className="flex flex-col items-center justify-center h-full select-none px-4 overflow-auto">
+      <div className="bg-white border border-cw-border shadow-sm rounded-lg px-6 py-10 sm:px-10 w-full max-w-md text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cw-gray text-cw-blue">
+          <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
         </div>
-      )}
+        <p className="text-lg font-medium text-gray-700 text-center">{t('noQuestionnaire', lang)}</p>
+        <p className="text-sm mt-1 mb-5 text-cw-gray-text text-center">{t('noQuestionnaireHint', lang)}</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button onClick={onNew} className="px-4 py-2.5 xl:py-2 text-sm bg-cw-blue text-white rounded hover:bg-cw-blue-light">
+            {t('newQuestionnaire', lang)}
+          </button>
+          <button onClick={onOpenFile} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-cw-gray text-gray-700 bg-white">
+            {t('openFile', lang)}
+          </button>
+          <button onClick={onImport} className="px-4 py-2.5 xl:py-2 text-sm border border-cw-border rounded hover:bg-cw-gray text-gray-700 bg-white">
+            {t('import', lang)}
+          </button>
+        </div>
+        {recentFiles.length > 0 && (
+          <div className="mt-8 w-full">
+            <p className="text-xs font-semibold text-cw-gray-text uppercase tracking-wide mb-2 text-center">
+              {t('recentlyOpened', lang)}
+            </p>
+            <ul className="space-y-1">
+              {recentFiles.map((f) => (
+                <li key={f.uid}>
+                  <button
+                    onClick={() => onOpenRecent(f.uid)}
+                    className="w-full text-left px-3 py-1.5 text-sm text-gray-600 rounded hover:bg-gray-100 hover:text-cw-blue transition-colors truncate"
+                    title={f.title}
+                  >
+                    {f.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
