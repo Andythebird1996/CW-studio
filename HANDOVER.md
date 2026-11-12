@@ -20,7 +20,7 @@ Webversjonen er til intern bruk. Den kan kjøres på tre måter:
 
 | Sti | Innhold |
 |:---|:---|
-| `~/checkware-studio-web/` | **Hovedprosjektet** (monorepo: frontend + backend + electron). ⚠ Ikke et git-repo. |
+| `~/checkware-studio-web/` | **Hovedprosjektet** (monorepo: frontend + backend + electron). Git-remotes: `cw` = `github.com/Andythebird1996/CW-studio` (her merges PR-er), `origin` = `github.com/andreasfuglstad1996/checkware-studio-web`. |
 | `~/checkware-studio-web/frontend/` | React 19 + TS + Vite + Tailwind 4 + Zustand. All forretningslogikk ligger her. |
 | `~/checkware-studio-web/backend/` | Bun + Hono, en tynn proxy mot Checkware SOAP API og Claude API (oversettelse). |
 | `~/checkware-studio-web/electron/` | Electron main-prosess (`main.ts` → esbuild → `electron/dist/main.js`). |
@@ -83,7 +83,7 @@ Miljøvariabler (`.env`, **aldri commit / aldri lim inn verdier i chat**):
 cd frontend && bun run test
 ```
 
-Status 2026-11-11: **332 bestått, 10 hoppet over, 2 feilet** (344 totalt, 11 filer).
+Status 2026-11-11 (etter PR #5): **339 bestått, 10 hoppet over, 2 feilet** (351 totalt, 12 filer).
 De 2 som feiler er integrasjonstester i `src/services/store-api.test.ts`. De forventer at backend kjører på `localhost:3001` (feilen er `ECONNREFUSED`). Start `bun run dev` i et annet terminalvindu før testene, så skal de bestå. Dette er ikke en kodefeil.
 
 ### Ende-til-ende (Playwright)
@@ -114,18 +114,24 @@ bun run electron:pack:all   # begge
 - Produktnavnet ble endret fra "Checkware Studio" til **"CW Studio Web"** i 1.0.15, så filnavnene i `dist-electron/` har begge navnene.
 - `appId`: `no.checkware.cwstudioweb`. NSIS-installer per maskin, med `build/installer.nsh`.
 
+### Rapportvisning (PR #5)
+Rapportredigering og simulator har en bryter mellom **«Vis som rapportmotor»** (standard) og **«Vis som portal»**. Rapportmotor-visningen bruker samme CSS som den ekte rapportmotoren (`~/checkware-brain/checkware-report-engine-master/web/stylesheets/css/`: Calibri 9pt, `#25b8ec`, fast 960-grid), slik at forhåndsvisningen ligner det som faktisk publiseres. Portalvisningen er bare kosmetisk. **Ikke gjør portalstilen til standard**, fordi forhåndsvisningen da ikke lenger ligner den ekte rapporten.
+
 ### Fly.io (webversjon)
 - Konfig: `~/checkware-studio-web/fly.toml`
 - App: **`checkware-studio`**, region **`ams`**, intern port **3001**, 1 delt CPU / 1 GB RAM
 - `auto_stop_machines = 'stop'` og `min_machines_running = 0`, så maskinen sover når ingen bruker den, og første kall kan bruke lang tid (kaldstart).
 - Bygges fra `Dockerfile` (flerstegs: bygger frontend med Bun, kjører `bun run src/server.ts`).
-- URL (forventet): `https://checkware-studio.fly.dev`. Den svarte ikke innen 10 sekunder 2026-11-11, trolig på grunn av kaldstart. Om appen faktisk lever er ikke bekreftet.
+- URL: `https://checkware-studio.fly.dev`
+- **Fly-konto:** `andreas.fuglstad@checkware.com` (org `personal`). Den private kontoen (anh.fug@gmail.com) har ingen apper, så ikke deploy derfra.
+- **Status 2026-11-11 (kveld):** main til og med PR #5 (`c503c93`) er deployet som release v22 (v21 = deploy, v22 = fjerning av secrets). `/health` gir `{"ok":true}`.
+- **Ingen secrets er satt.** `STORE_*` ble satt for testing og fjernet igjen samme dag, fordi appen ikke har innlogging (se punkt 8). Brukerne legger inn egen server-URL og innlogging i innstillingene. `ANTHROPIC_API_KEY` er heller ikke satt, så AI-oversettelse virker ikke før eieren legger den inn selv. AI-assistenter skal ikke sette den.
 
 ```bash
-flyctl auth login                       # ⚠ ikke innlogget på denne maskinen 2026-11-11
+flyctl auth whoami                      # skal være andreas.fuglstad@checkware.com
 flyctl status   -a checkware-studio
 flyctl logs     -a checkware-studio
-flyctl secrets list -a checkware-studio # sjekk at STORE_* og ANTHROPIC_API_KEY er satt
+flyctl secrets list -a checkware-studio # viser bare navn og digest, ikke verdier
 flyctl deploy                           # kjøres fra ~/checkware-studio-web
 ```
 
@@ -175,7 +181,7 @@ Merk: `docker-compose.yml` sender bare `ANTHROPIC_API_KEY` videre, ikke `STORE_*
 
 ## 8. Åpne punkter / usikkerhet
 
-- `checkware-studio-web` har **ikke versjonskontroll**. Vurder `git init` og et privat repo før større endringer.
-- Fly-appens tilstand (kjører den, er secrets satt, hvilken versjon er deployet) er ukjent fordi vi ikke er innlogget.
+- ⚠ **Sikkerhet på Fly:** backend har **ingen autentisering**, og CORS er `*` i produksjon. **Ikke sett `STORE_*` som Fly-secrets** før appen har innlogging foran seg (f.eks. Basic Auth i Hono eller privat Fly-nettverk). Ellers kan alle som kjenner URL-en liste og publisere pakker med den Checkware-brukeren. I dag sender hver bruker sin egen innlogging via `X-Store-*`-headerne.
+- Fly-appen sover når den ikke brukes, så første kall etter en pause kan ta flere sekunder.
 - Tauri-varianten (`~/checkware-studio-tauri`, v0.1.2) og Electron-varianten utvikles hver for seg. Det er ikke avklart hvilken som er strategisk valgt.
-- `CLAUDE.md` sier "340 tester". Det faktiske tallet er 344.
+- `CLAUDE.md` sier "340 tester". Det faktiske tallet er 351.
