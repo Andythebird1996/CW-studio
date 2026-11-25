@@ -3,6 +3,7 @@ import { Play, Wand2, CodeSquare } from 'lucide-react';
 import { ReportSimulator, ReportStyleSwitch, type ReportSheetStyle } from './ReportSimulator';
 import type { Questionnaire } from '../../types/questionnaire';
 import { t, type UILang, useUILang } from '../../i18n';
+import { LANG_TO_BCP47 } from '../../services/package-builder';
 
 // ── RAP syntax highlighter ────────────────────────────────────────────────────
 
@@ -63,9 +64,6 @@ function highlightRap(code: string): string {
     .join('\n');
 }
 
-const LANG_TO_BCP47: Record<string, string> = {
-  NO: 'nb', EN: 'en', SV: 'sv', DA: 'da', FI: 'fi', DE: 'de', FR: 'fr', PL: 'pl',
-};
 
 function rapHeaders(questionnaire: Questionnaire): string {
   const name = questionnaire.name[questionnaire.defaultLanguage] || questionnaire.code;
@@ -111,11 +109,11 @@ function generateStarterTemplate(questionnaire: Questionnaire): string {
 
   return `${rapHeaders(questionnaire)}
 
-[CALL main()]
+[CALL standard_rapport()]
 [DIE]
 
-[function main()]
-[group("${t('reportGroup', ui)}", true)]
+[function standard_rapport()]
+[group("${t('reportGroup', ui)}",true)]
 
 <table class="canvas">
 <tr>
@@ -175,7 +173,7 @@ function rapSnippets(lang: UILang): RapSnippetGroup[] {
       snippets: [
         { label: t('snippetIfAnswered', lang), code: `[if(EXIST(KOD)){"${sample}"}]` },
         { label: t('snippetIfScore', lang), code: `[if(A(KOD)=1){"${sample}"}]` },
-        { label: t('snippetIfFlag', lang), code: `[if(FLAG(KOD)){"${sample}"}]` },
+        { label: t('snippetIfCalc', lang), code: `[if(CALC(KOD)>=1){"${sample}"}]` },
         {
           label: t('snippetIfElse', lang),
           code: t('snippetIfElseCode', lang),
@@ -187,7 +185,12 @@ function rapSnippets(lang: UILang): RapSnippetGroup[] {
       snippets: [
         { label: t('snippetShowAnswer', lang), code: 'L(KOD)' },
         { label: t('snippetShowScore', lang), code: 'A(KOD)' },
-        { label: t('snippetShowCalc', lang), code: 'CALC(KOD)' },
+        { label: t('snippetShowCalc', lang), code: '[CALC(KOD)]' },
+        { label: t('snippetEchoCalc', lang), code: '[$VERDI = eval("CALC(KOD)")]\n[ECHO($VERDI,1)]' },
+        {
+          label: t('snippetGraph', lang),
+          code: '[$g1= graph_init()]\n[graph_customize($g1,1,0,10,"KOD",true,,,true,false,700,280,10,10,80,30,true)]\n[$KOD-G = eval("CALC(KOD)")]\n[$ser1= series(($KOD-G),("KOD"))]\n[graph_plot($g1,2,$ser1,,,,true,true,true,false)]\n[graph_render($g1)]',
+        },
         { label: t('snippetShowName', lang), code: '$PATIENT_NAME' },
       ],
     },
@@ -283,11 +286,11 @@ function makePlaceholder(questionnaire: Questionnaire): string {
   const ui: UILang = questionnaire.defaultLanguage === 'EN' ? 'EN' : 'NO';
   return `${rapHeaders(questionnaire)}
 
-[CALL main()]
+[CALL standard_rapport()]
 [DIE]
 
-[function main()]
-[group("${t('reportGroup', ui)}", true)]
+[function standard_rapport()]
+[group("${t('reportGroup', ui)}",true)]
 
 <h1>$SURVEY_NAME</h1>
 

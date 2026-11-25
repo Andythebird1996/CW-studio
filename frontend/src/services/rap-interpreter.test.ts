@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { interpretRap } from './rap-interpreter';
+import { interpretRap, lintRap, phpRound } from './rap-interpreter';
 import type { SimContext, SimAnswer } from './rap-interpreter';
 import type { Questionnaire } from '../types/questionnaire';
 
@@ -745,12 +745,12 @@ describe('RAP interpreter — wrapHtml', () => {
     expect(engine).not.toContain('Open Sans');
     expect(engine).not.toContain('#006393');
 
-    const graphed = interpretRap('[GRAPH_PLOT(g,bar,serie)][GRAPH_RENDER(g)]', makeCtx());
+    const graphed = interpretRap('[$v = eval("3")][serie = series(($v),("x"))][GRAPH_PLOT(g,bar,serie)][GRAPH_RENDER(g)]', makeCtx());
     expect(graphed).toContain('#25b8ec');
     expect(graphed).toContain('font-family="Calibri,Arial,sans-serif"');
     expect(graphed).not.toContain('Open Sans');
 
-    const portal = interpretRap('[GRAPH_PLOT(g,bar,serie)][GRAPH_RENDER(g)]', makeCtx({ reportStyle: 'portal' }));
+    const portal = interpretRap('[$v = eval("3")][serie = series(($v),("x"))][GRAPH_PLOT(g,bar,serie)][GRAPH_RENDER(g)]', makeCtx({ reportStyle: 'portal' }));
     expect(portal).toContain('Open Sans');
     expect(portal).toContain('#006393');
     expect(portal).not.toContain('Calibri');
@@ -862,5 +862,76 @@ FLAG: FLAG(LOW_SCORE)
     expect(result).toContain('<td>2</td>');
     expect(result).toContain('Hvor trøtt er du om dagen?');
     expect(result).toContain('<td>1</td>');
+  });
+});
+
+// ─── Som rapportmotoren i Checkware (report.class.php) ──────────────────────
+
+describe('RAP interpreter — samme oppførsel som rapportmotoren', () => {
+  const answers = new Map<string, SimAnswer>([['Q1', { score: 2, text: 'Ja' }], ['Q2', { score: 3, text: 'Nei' }]]);
+  const framed = (body: string) => `[CALL standard_rapport()]\n[DIE]\n[function standard_rapport()]\n[group("Rapport",true)]\n${body}\n[group_end]\n[function_end]`;
+  const body = (html: string) => html.replace(/[\s\S]*<body>/, '').replace(/<\/body>[\s\S]*/, '');
+
+  it('[CALC(kode)] skrives med 2 desimaler som standard, ellers som angitt', () => {
+    const out = body(interpretRap(framed('T=[CALC(TOTAL)] T1=[CALC(TOTAL,1)] T0=[CALC(TOTAL,0)]'), makeCtx({ answers })));
+    expect(out).toContain('T=5.00 T1=5.0 T0=5');
+  });
+
+  it('[if(…){"tekst"}] skriver teksten uten anførselstegn, og resten av linja forsvinner', () => {
+    const out = body(interpretRap(framed('FØR [if(CALC(TOTAL)>=5) {"HIGH"}] ETTER\n[if(CALC(TOTAL)<5) {"LOW"}]'), makeCtx({ answers })));
+    expect(out).toContain('HIGH');
+    expect(out).not.toContain('"HIGH"');
+    expect(out).not.toContain('FØR');
+    expect(out).not.toContain('ETTER');
+    expect(out).not.toContain('LOW');
+  });
+
+  it('eval("CALC(kode)") gir beregningsverdien', () => {
+    const out = body(interpretRap(framed('[$T = eval("CALC(TOTAL)")]\nE=[ECHO($T,1)]'), makeCtx({ answers })));
+    expect(out).toContain('E=5');
+    expect(out).not.toContain('E=5.0');
+  });
+
+  it('ECHO avrunder som PHP round() uten utfylling', () => {
+    expect(phpRound(8, 1)).toBe('8');
+    expect(phpRound(7.25, 1)).toBe('7.3');
+    expect(phpRound(2.5, 0)).toBe('3');
+    expect(phpRound(-1.5, 0)).toBe('-2');
+    expect(phpRound(1.005, 2)).toBe('1.01');
+  });
+
+  it('graf tegnes bare fra series(); GRAPH_PLOT med beregningskode gir ingen graf', () => {
+    const ok = interpretRap(framed('[$g1= graph_init()]\n[$T = eval("CALC(TOTAL)")]\n[$s1= series(($T),("T"))]\n[graph_plot($g1,2,$s1,,,,true,true,true,false)]\n[graph_render($g1)]'), makeCtx({ answers }));
+    expect(ok).toContain('<svg');
+    const none = interpretRap(framed('[$g = GRAPH_INIT(TOTAL)]\n[GRAPH_PLOT($g,bar,TOTAL)]\n[GRAPH_RENDER($g)]'), makeCtx({ answers }));
+    expect(none).not.toContain('<svg');
+  });
+});
+
+describe('lintRap', () => {
+  const frame = (b: string) => `/* $code r */\n[CALL standard_rapport()]\n[DIE]\n[function standard_rapport()]\n[group("Rapport",true)]\n${b}\n[group_end]\n[function_end]`;
+  const codes = (rap: string) => lintRap(rap).map((i) => i.code);
+
+  it('godtar en rapport med ramme og ekte syntaks', () => {
+    expect(lintRap(frame('T=[CALC(TOTAL)]\n[if(CALC(TOTAL)>=7) {"HIGH"}]\n[if(EXIST(Q1)) {CALL vis()}]\n[$g1= graph_init()]\n[$v = eval("CALC(TOTAL)")]\n[$s1= series(($v),("T"))]\n[graph_plot($g1,2,$s1,,,,true,true,true,false)]\n[graph_render($g1)]'))).toEqual([]);
+  });
+
+  it('flagger manglende ramme', () => {
+    expect(codes('T=[CALC(TOTAL)]')).toEqual(['NO_FRAME']);
+  });
+
+  it('flagger FLAG(), [else]/[endif], LOOKUP og tekst rundt [if]', () => {
+    const issues = lintRap(frame('[if(FLAG(X)) {"a"}]\n[if(CALC(T)>1)]a[else]b[endif]\nP=[LOOKUP(5,D,N)]\nX [if(CALC(T)>1) {"a"}]'));
+    expect(issues).toEqual([
+      { code: 'FLAG', line: 6 },
+      { code: 'ELSE_ENDIF', line: 7 },
+      { code: 'IF_BODY', line: 7 },
+      { code: 'LOOKUP', line: 8 },
+      { code: 'IF_LINE_TEXT', line: 9 },
+    ]);
+  });
+
+  it('flagger graf som ikke bruker series() og graph_init med argument', () => {
+    expect(codes(frame('[$g = GRAPH_INIT(TOTAL)]\n[GRAPH_PLOT($g,bar,TOTAL)]'))).toEqual(['GRAPH_INIT_ARG', 'GRAPH_SERIES']);
   });
 });

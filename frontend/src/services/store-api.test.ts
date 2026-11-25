@@ -11,17 +11,26 @@
  * Only read-only operations are tested (no validate or publish).
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { loadEnv } from 'vite';
+import { resolve } from 'path';
 import type { PackageSummary, PackageDetail } from './store-api';
 
 const BASE_URL = 'http://localhost:3001';
 
+// Pålogging leses fra STORE_* i rot-.env eller miljøet – aldri hardkodet i repoet.
+const env = { ...loadEnv('test', resolve(process.cwd(), '..'), 'STORE_'), ...process.env };
+const HAS_CREDS = Boolean(env.STORE_WSDL_URL && env.STORE_USER && env.STORE_PASSWORD);
+
 const AUTH_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
-  'X-Store-Url': 'https://cia.checkwareonline.com/v2/store/api/store-api.wsdl',
-  'X-Store-User': 'support-ahus',
-  'X-Store-Password': 'jpT%pRW3kZ3^4Ag',
+  'X-Store-Url': env.STORE_WSDL_URL ?? '',
+  'X-Store-User': env.STORE_USER ?? '',
+  'X-Store-Password': env.STORE_PASSWORD ?? '',
 };
+
+// SOAP-kall mot Checkware kan ta lang tid
+vi.setConfig({ testTimeout: 180_000, hookTimeout: 180_000 });
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,7 +61,7 @@ describe('GET /health', () => {
   });
 });
 
-describe('GET /api/store/packages', () => {
+describe.skipIf(!HAS_CREDS)('GET /api/store/packages', () => {
   beforeAll(async () => {
     const result = await get<PackageSummary[]>('/api/store/packages');
     expect(result.status, `Expected 200, got ${result.status}. Body: ${JSON.stringify(result.body)}`).toBe(200);
@@ -97,7 +106,7 @@ describe('GET /api/store/packages', () => {
   });
 });
 
-describe('GET /api/store/packages/:uid', () => {
+describe.skipIf(!HAS_CREDS)('GET /api/store/packages/:uid', () => {
   let detail: PackageDetail;
 
   beforeAll(async () => {
@@ -172,7 +181,7 @@ describe('GET /api/store/packages/:uid', () => {
   });
 });
 
-describe('GET /api/store/packages/:uid — unknown uid', () => {
+describe.skipIf(!HAS_CREDS)('GET /api/store/packages/:uid — unknown uid', () => {
   it('returns 500 with an error field for a non-existent uid', async () => {
     const result = await get<any>('/api/store/packages/999999999');
     // The backend catches SOAP errors and returns { error: "..." } with status 500

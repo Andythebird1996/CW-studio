@@ -105,15 +105,25 @@ interface GraphDef {
 }
 
 let _graphs = new Map<string, GraphDef>();
+/** Verdier fra [$x = series(($a,$b),("…"))] — rapportmotoren tegner bare serier definert slik */
+let _series = new Map<string, number[]>();
 
 function defaultGraph(): GraphDef {
   return { graphType: 1, min: 0, max: 27, header: '', width: 580, height: 220, bands: [], lines: [], plots: [] };
 }
 
+/** PHP round($v, $dec) skrevet ut som PHP gjør: halv opp bort fra null, uten etterfølgende nuller. */
+export function phpRound(value: number, dec: number): string {
+  const f = 10 ** dec;
+  const r = Math.sign(value) * Math.round(Math.abs(value) * f + 1e-9) / f;
+  return String(Object.is(r, -0) ? 0 : r);
+}
+
 export function interpretRap(rapContent: string, ctx: SimContext): string {
   _graphs = new Map();
+  _series = new Map();
   try {
-    const preprocessed = preprocessDefines(rapContent, ctx);
+    const preprocessed = normalizeIfLines(preprocessDefines(rapContent, ctx));
     const functions = parseFunctions(preprocessed);
     const topLevel = stripFunctionDefs(stripCommentMeta(preprocessed));
     const tokens = tokenize(topLevel);
@@ -251,7 +261,8 @@ function executeTokens(
           if (trimmed.startsWith('CALL ') || trimmed.startsWith('CALL\t')) {
             output += handleCall(trimmed.slice(5).trim(), funcs, ctx, args);
           } else {
-            const bodyTokens = tokenize(trimmed);
+            const quoted = trimmed.match(/^"([\s\S]*)"$/);
+            const bodyTokens = tokenize(quoted ? quoted[1].replace(/\\"/g, '"') : trimmed);
             const bodyPos = { i: 0 };
             const res = executeTokens(bodyTokens, bodyPos, funcs, ctx, args);
             output += res.output;
@@ -302,10 +313,10 @@ function executeTokens(
       pos.i++;
     } else if (/^([\w$][\w$-]*)\s*=\s*eval\(/i.test(dir)) {
       // [$var = eval("expression")] — evaluate and store in args
-      const mEval = dir.match(/^([\w$][\w$-]*)\s*=\s*eval\(\s*"?([^")\n]*)"?\s*\)/i);
+      const mEval = dir.match(/^([\w$][\w$-]*)\s*=\s*eval\(([\s\S]*)\)\s*$/i);
       if (mEval) {
         const varName = mEval[1].trim();
-        const expr = mEval[2].trim();
+        const expr = mEval[2].trim().replace(/^"([\s\S]*)"$/, '$1').trim();
         const resolved = substituteText(expr, ctx, args);
         const numVal = resolveNumericExpr(resolved, ctx, args);
         args = { ...args, [varName]: String(numVal) };
@@ -318,13 +329,19 @@ function executeTokens(
         const val = resolve(mEcho[1].trim(), args);
         const dec = mEcho[2] !== undefined ? parseInt(mEcho[2]) : undefined;
         const num = parseFloat(val);
-        output += dec !== undefined && !isNaN(num) ? num.toFixed(dec) : val;
+        // Rapportmotoren bruker PHP round($v, $dec): ingen utfylling med nuller (8 → "8", 7.25 → "7.3")
+        output += dec !== undefined && !isNaN(num) ? phpRound(num, dec) : val;
       }
       pos.i++;
     } else if (/^([\w$][\w$-]*)\s*=\s*series\(/i.test(dir)) {
       // [$ser = series((v1,v2),("n1","n2"))] — store series key in args, silently
-      const mSer = dir.match(/^([\w$][\w$-]*)\s*=\s*series\(/i);
-      if (mSer) args = { ...args, [mSer[1].trim()]: mSer[1].trim() };
+      const mSer = dir.match(/^([\w$][\w$-]*)\s*=\s*series\(\s*\(([^)]*)\)/i);
+      if (mSer) {
+        const name = mSer[1].trim();
+        const values = mSer[2].split(',').map((v) => parseFloat(resolve(v.trim(), args))).map((v) => (isNaN(v) ? 0 : v));
+        _series.set(name, values);
+        args = { ...args, [name]: name };
+      }
       pos.i++;
     } else if (
       dir.startsWith('SET_SURVEY(') || dir.startsWith('SET_SCOPE(') ||
@@ -427,6 +444,12 @@ function executeTokens(
       output += isPortalReport(ctx)
         ? `<div class="report-placeholder">[${diagramType}]</div>`
         : `<div style="border:1px dashed #aaa;background:#f8f8f8;padding:16px;margin:8px 0;color:#888;font-size:9pt;text-align:center;">[${diagramType}]</div>`;
+      pos.i++;
+    } else if (/^CALC\(\s*[\w-]+\s*(?:,\s*\d*\s*)?(?:,[^)]*)?\)$/i.test(dir)) {
+      // [CALC(kode[,desimaler])] — rapportmotoren skriver 2 desimaler som standard (FLOAT_DECIMALS)
+      const m = dir.match(/^CALC\(\s*([\w-]+)\s*(?:,\s*(\d*)\s*)?/i)!;
+      const dec = m[2] ? parseInt(m[2], 10) : 2;
+      output += computeCalc(resolve(m[1], args), ctx).toFixed(dec);
       pos.i++;
     } else {
       // Attempt inline substitution — handles [CALC()], [A()], [L()], [SUM()], etc.
@@ -1149,9 +1172,10 @@ function renderGraphSvg(g: GraphDef, ctx: SimContext): string {
   const range = (g.max - g.min) || 1;
 
   // Collect values: one per session (current only in simulator)
-  let value = 0;
-  const calcCode = g.analysisCode || g.plots[0]?.seriesName || '';
-  if (calcCode) value = computeCalc(calcCode, ctx);
+  // Som rapportmotoren: kun serier laget med series() tegnes — ellers ingen graf
+  const seriesValues = g.plots.map((p) => _series.get(p.seriesName)).find((v) => v && v.length);
+  if (!seriesValues) return '';
+  let value = seriesValues[0];
   value = Math.max(g.min, Math.min(g.max, value));
 
   const now = new Date();
@@ -1441,4 +1465,67 @@ td.footer { padding-top:12px; }
 ${body}
 </body>
 </html>`;
+}
+
+// ─── Rapportmotorens linjeregel for IF ───────────────────────────────────────
+
+/**
+ * Rapportmotoren (report.class.php parseScript) skriver bare teksten i første {"…"} på en linje med
+ * [if(…){"…"}] — resten av linja forsvinner. Gjør det samme her så simulatoren viser det serveren viser.
+ */
+function normalizeIfLines(rap: string): string {
+  return rap.split('\n').map((line) => {
+    if (/<h[123]>/i.test(line) || /\{\s*CALL\s/i.test(line)) return line;
+    const start = line.search(/\[if\(/i);
+    if (start < 0) return line;
+    const brace = line.indexOf('{', start);
+    const text = line.slice(brace).match(/^\{"([\s\S]*?)"\}/);
+    if (brace < 0 || !text) return line;
+    return `[${line.slice(start + 1, brace).trim()}{"${text[1]}"}]`;
+  }).join('\n');
+}
+
+// ─── Lint: konstruksjoner rapportmotoren i Checkware ikke støtter ───────────
+
+export type RapLintCode =
+  | 'NO_FRAME' | 'FLAG' | 'ELSE_ENDIF' | 'IF_BODY' | 'IF_LINE_TEXT' | 'LOOKUP' | 'GRAPH_INIT_ARG' | 'GRAPH_SERIES';
+
+export interface RapLintIssue {
+  code: RapLintCode;
+  /** 1-basert linjenummer (0 = hele rapporten) */
+  line: number;
+}
+
+/** Sjekk mot rapportmotoren (report.class.php): det som her flagges, blir tomt eller feiler på serveren. */
+export function lintRap(content: string): RapLintIssue[] {
+  const issues: RapLintIssue[] = [];
+  const code = content.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  if (!/\[\s*function\s+\w+\s*\(/i.test(code) || !/\[\s*group\s*\(\s*"/i.test(code) || !/\[\s*CALL\s+\w+\s*\(/i.test(code)) {
+    issues.push({ code: 'NO_FRAME', line: 0 });
+  }
+  const seriesVars = new Set(Array.from(code.matchAll(/\[\s*([\w$][\w$-]*)\s*=\s*series\(/gi), (m) => m[1]));
+  code.split('\n').forEach((raw, i) => {
+    const line = i + 1;
+    if (/\bFLAG\s*\(/i.test(raw)) issues.push({ code: 'FLAG', line });
+    if (/\[\s*(else|endif)\s*\]/i.test(raw)) issues.push({ code: 'ELSE_ENDIF', line });
+    if (/\b(LOOKUP|DIM_T)\s*\(/i.test(raw)) issues.push({ code: 'LOOKUP', line });
+    const ifStart = raw.search(/\[if\(/i);
+    if (ifStart >= 0 && !/<h[123]>/i.test(raw)) {
+      const brace = raw.indexOf('{', ifStart);
+      const body = brace >= 0 ? raw.slice(brace) : '';
+      if (!/^\{"[\s\S]*?"\}/.test(body) && !/^\{\s*CALL\s/i.test(body)) issues.push({ code: 'IF_BODY', line });
+      else {
+        const end = body.startsWith('{"') ? brace + (body.match(/^\{"[\s\S]*?"\}\s*\]/)?.[0].length ?? body.length) : raw.length;
+        if (raw.slice(0, ifStart).trim() || raw.slice(end).trim()) issues.push({ code: 'IF_LINE_TEXT', line });
+      }
+    }
+    const init = raw.match(/GRAPH_INIT\(([^)]*)\)/i);
+    if (init && init[1].trim()) issues.push({ code: 'GRAPH_INIT_ARG', line });
+    const plot = raw.match(/GRAPH_PLOT\(([^)]*)\)/i);
+    if (plot) {
+      const series = (plot[1].split(',')[2] ?? '').trim();
+      if (!seriesVars.has(series)) issues.push({ code: 'GRAPH_SERIES', line });
+    }
+  });
+  return issues;
 }

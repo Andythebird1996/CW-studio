@@ -567,8 +567,8 @@ function QuestionBlock({
           min={question.min}
           max={question.max}
           step={question.step}
-          minLabel={question.minLabel?.[lang]}
-          maxLabel={question.maxLabel?.[lang]}
+          showEndLabels={question.showEndLabels ?? true}
+          displayValue={question.displayValue ?? false}
           value={typeof raw === 'string' ? raw : undefined}
           onAnswer={(v) => commit(v)}
         />
@@ -585,14 +585,13 @@ function QuestionBlock({
             placeholder={question.min !== undefined && question.max !== undefined ? `${question.min}–${question.max}` : '0'}
             onChange={(e) => commit(e.target.value)}
           />
-          {question.unit ? <span className="cw-resp-opt-label">{question.unit}</span> : null}
         </span>
       )}
       {question.type === 'stringInput' && (
-        question.multiline ? (
+        question.multiline || question.size === 'LARGE' || question.size === 'XLARGE' ? (
           <textarea
             className="cw-resp-field"
-            rows={3}
+            rows={question.size === 'XLARGE' ? 8 : 3}
             value={typeof raw === 'string' ? raw : ''}
             placeholder={t('enterText', ui)}
             onChange={(e) => commit(e.target.value)}
@@ -605,7 +604,7 @@ function QuestionBlock({
             placeholder={t('enterShort', ui)}
             onChange={(e) => commit(e.target.value)}
             style={{
-              width: question.size === 'SMALL' ? 140 : question.size === 'MEDIUM' ? 240 : question.size === 'LARGE' ? 360 : 'calc(100% - 26px)',
+              width: 240,
             }}
           />
         )
@@ -644,16 +643,16 @@ function SliderField({
   min,
   max,
   step = 1,
-  minLabel,
-  maxLabel,
+  showEndLabels,
+  displayValue,
   value,
   onAnswer,
 }: {
   min: number;
   max: number;
   step?: number;
-  minLabel?: string;
-  maxLabel?: string;
+  showEndLabels: boolean;
+  displayValue: boolean;
   value?: string;
   onAnswer?: (v: string) => void;
 }) {
@@ -662,7 +661,7 @@ function SliderField({
   return (
     <div className="cw-resp-slider">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span className="cw-resp-opt-label">{min}</span>
+        {showEndLabels && <span className="cw-resp-opt-label">{min}</span>}
         <input
           type="range"
           min={min}
@@ -671,15 +670,11 @@ function SliderField({
           value={current}
           onChange={(e) => onAnswer?.(e.target.value)}
         />
-        <span className="cw-resp-opt-label">{max}</span>
-        <span className="cw-resp-btn cw-resp-btn-primary" style={{ minHeight: 26, padding: '0 8px', cursor: 'default' }}>{current}</span>
+        {showEndLabels && <span className="cw-resp-opt-label">{max}</span>}
+        {displayValue && (
+          <span className="cw-resp-btn cw-resp-btn-primary" style={{ minHeight: 26, padding: '0 8px', cursor: 'default' }}>{current}</span>
+        )}
       </div>
-      {(minLabel || maxLabel) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-          <span className="cw-resp-help">{minLabel}</span>
-          <span className="cw-resp-help">{maxLabel}</span>
-        </div>
-      )}
     </div>
   );
 }

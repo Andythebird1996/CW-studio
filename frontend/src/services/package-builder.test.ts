@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { buildPackageZip } from './package-builder';
+import { buildPackageZip, findCalcsMissingQuestionnaireRef, ensureRapHeaders, findRapsMissingHeaders, ensureRapFrame, findRapsMissingFrame, findUnsupportedMedia, isAllowedMediaFile } from './package-builder';
 import type { Questionnaire, Calculation, Norm, Flag, MediaFile } from '../types/questionnaire';
 
 // ─── Minimal questionnaire factory ────────────────────────────────────────
@@ -196,6 +196,48 @@ describe('buildPackageZip()', () => {
     const calcContent = await zip.files['calculations/CALC1.calculation'].async('string');
     expect(calcContent).toContain('code="CALC1"');
     expect(calcContent).toContain('name="Total score"');
+    expect(calcContent).toContain(`<questionnaire href="../quiz/${q.code}.questionnaire#${q.code}"/>`);
+    expect(calcContent).toContain('<application id="Studio" version="1" fileVersion="1"/>');
+    expect(result.calcsMissingQuestionnaireRef).toEqual([]);
+  });
+
+  it('.project bruker Checkware Studio sin project nature', async () => {
+    const result = await buildPackageZip(makeMinimalQuestionnaire());
+    const zip = await unzip(result.base64);
+    const project = await zip.files['.project'].async('string');
+    expect(project).toContain('<nature>com.checkware.studio.editor.projectNature</nature>');
+  });
+
+  it('rapport uten $language/$version får dem lagt inn etter eksisterende headere', async () => {
+    const rap = '/* $questionnaire */\n/* $code */\n/* $name */\nSUM=[CALC(TOTAL)]';
+    const result = await buildPackageZip(makeMinimalQuestionnaire(), { rapport: rap });
+    const zip = await unzip(result.base64);
+    const content = await zip.files['reports/rapport.rap'].async('string');
+    expect(content).toBe('/* $questionnaire TEST_Q */\n/* $code rapport */\n/* $name Test questionnaire */\n/* $version 1.0 */\n/* $language nb */\n/* $clinicianOnly false */\n[CALL standard_rapport()]\n[DIE]\n[function standard_rapport()]\n[group("Rapport",true)]\nSUM=[CALC(TOTAL)]\n[group_end]\n[function_end]\n');
+    expect(result.rapsMissingHeaders).toEqual([]);
+    expect(result.rapsMissingFrame).toEqual([]);
+  });
+
+  it('engelsk kartlegging gir $language en', async () => {
+    const result = await buildPackageZip(makeMinimalQuestionnaire({ defaultLanguage: 'EN', supportedLanguages: ['EN'] }), { r: 'X' });
+    const zip = await unzip(result.base64);
+    expect(await zip.files['reports/r.rap'].async('string')).toContain('/* $language en */');
+  });
+
+  it('ensureRapHeaders beholder eksisterende verdier og fyller tomme', () => {
+    expect(ensureRapHeaders('/* $version 2.0 */\n/* $language sv */\n/* $clinicianOnly true */\nX', 'nb')).toBe('/* $version 2.0 */\n/* $language sv */\n/* $clinicianOnly true */\nX');
+    expect(ensureRapHeaders('/* $version */\n/* $language */\n/* $clinicianOnly */\nX', 'nb')).toBe('/* $version 1.0 */\n/* $language nb */\n/* $clinicianOnly false */\nX');
+    expect(ensureRapHeaders('X', 'en')).toBe('/* $version 1.0 */\n/* $language en */\n/* $clinicianOnly false */\nX');
+  });
+
+  it('findRapsMissingHeaders finner rapporter uten $language eller $version', () => {
+    expect(findRapsMissingHeaders({ ok: '/* $version 1.0 */\n/* $language nb */', bad: '/* $version 1.0 */\nX' })).toEqual(['bad']);
+  });
+
+  it('findCalcsMissingQuestionnaireRef finner beregninger uten kartleggingsreferanse', () => {
+    const ok = '<questionnaire:Calculation code="A"><questionnaire href="../quiz/Q.questionnaire#Q"/></questionnaire:Calculation>';
+    const bad = '<questionnaire:Calculation code="B"></questionnaire:Calculation>';
+    expect(findCalcsMissingQuestionnaireRef({ A: ok, B: bad }, 'Q')).toEqual(['B']);
   });
 
   it('package with norms generates .norm files in ZIP', async () => {
@@ -219,6 +261,7 @@ describe('buildPackageZip()', () => {
     expect(Object.keys(zip.files)).toContain('norms/NORM1.norm');
     const normContent = await zip.files['norms/NORM1.norm'].async('string');
     expect(normContent).toContain('code="NORM1"');
+    expect(normContent).toContain('<application id="Studio" version="1" fileVersion="1"/>');
   });
 
   it('package with flags generates .flag files in ZIP', async () => {
@@ -406,5 +449,35 @@ describe('buildPackageZip()', () => {
     expect(projectFile).toBeDefined();
     const content = await projectFile.async('string');
     expect(content).toContain(`<name>${q.code}</name>`);
+  });
+});
+
+describe('rapportramme og mediefiltyper (Checkware FP6)', () => {
+  it('ensureRapFrame pakker inn rapport uten ramme etter headerne', () => {
+    expect(ensureRapFrame('/* $code r */\nX\n')).toBe('/* $code r */\n[CALL standard_rapport()]\n[DIE]\n[function standard_rapport()]\n[group("Rapport",true)]\nX\n[group_end]\n[function_end]\n');
+  });
+
+  it('ensureRapFrame lar rapporter med ramme eller funksjoner være', () => {
+    const framed = '[CALL main()]\n[DIE]\n[function main()]\n[group("G",true)]\nX\n[group_end]\n[function_end]';
+    expect(ensureRapFrame(framed)).toBe(framed);
+    expect(ensureRapFrame('[function f()]\nX\n[function_end]')).toBe('[function f()]\nX\n[function_end]');
+  });
+
+  it('findRapsMissingFrame finner ufullstendige rammer', () => {
+    expect(findRapsMissingFrame({ ok: '[CALL f()]\n[function f()]\n[group("G",true)]\n[group_end]\n[function_end]', bad: '[function f()]\nX\n[function_end]' })).toEqual(['bad']);
+  });
+
+  it('bare PNG, JPEG, MP3, PDF og DOCX er tillatt som media', () => {
+    const m = (fileName: string) => ({ fileName, extension: fileName.split('.').pop()!, mimeType: '', dataUrl: '', sizeKb: 0 });
+    expect(findUnsupportedMedia([m('a.png'), m('b.JPG'), m('c.jpeg'), m('d.mp3'), m('e.pdf'), m('f.docx'), m('g.wav'), m('h.gif'), m('i.mp4')])).toEqual(['g.wav', 'h.gif', 'i.mp4']);
+    expect(isAllowedMediaFile('lyd.mp3')).toBe(true);
+    expect(isAllowedMediaFile('lyd.wav')).toBe(false);
+  });
+
+  it('pakken rapporterer ustøttede medier og lint per rapport', async () => {
+    const wav = { fileName: 'tone.wav', extension: 'wav', mimeType: 'audio/wav', dataUrl: 'data:audio/wav;base64,AAAA', sizeKb: 1 };
+    const result = await buildPackageZip(makeMinimalQuestionnaire(), { r: '[if(FLAG(X)) {"a"}]' }, [wav]);
+    expect(result.unsupportedMedia).toEqual(['tone.wav']);
+    expect(result.rapLint.r.map((i) => i.code)).toEqual(['FLAG']);
   });
 });

@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { PlusCircle, Trash2, X } from 'lucide-react';
 import type { MediaFile } from '../../types/questionnaire';
-import {t,  useUILang } from '../../i18n';
+import {t, tf, useUILang } from '../../i18n';
+import { isAllowedMediaFile, ALLOWED_MEDIA_TYPES } from '../../services/package-builder';
 
 interface Props {
   mediaFiles: MediaFile[];
@@ -21,9 +22,14 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
   const uiLang = useUILang();
   const [lightbox, setLightbox] = useState<MediaFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rejected, setRejected] = useState<string[]>([]);
 
   function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
+    const all = Array.from(e.target.files ?? []);
+    // Checkware FP6 leverer bare PNG, JPEG, MP3, PDF og DOCX (andre typer gir HTTP 500)
+    setRejected(all.filter((f) => !isAllowedMediaFile(f.name)).map((f) => f.name));
+    const files = all.filter((f) => isAllowedMediaFile(f.name));
+    if (files.length === 0) e.target.value = '';
     if (files.length === 0 || !onChange) return;
     const readers = files.map(
       (file) =>
@@ -31,11 +37,11 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
           const reader = new FileReader();
           reader.onload = () => {
             const dataUrl = reader.result as string;
-            const ext = MIME_EXT[file.type] ?? file.name.split('.').pop()?.toLowerCase() ?? '';
+            const ext = file.name.split('.').pop()?.toLowerCase() ?? MIME_EXT[file.type] ?? '';
             resolve({
               fileName: file.name,
               extension: ext,
-              mimeType: file.type,
+              mimeType: ALLOWED_MEDIA_TYPES[ext] ?? file.type,
               dataUrl,
               sizeKb: Math.round(file.size / 1024),
             });
@@ -80,13 +86,19 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,application/pdf,audio/*,video/mp4"
+              accept=".png,.jpg,.jpeg,.mp3,.pdf,.docx"
               className="hidden"
               onChange={handleFilesSelected}
             />
           </>
         )}
       </div>
+
+      {rejected.length > 0 && (
+        <div className="bg-cw-orange-soft border-b border-cw-orange/40 px-4 py-2 text-xs text-cw-orange shrink-0">
+          {tf('mediaTypeRejected', uiLang, { files: rejected.join(', ') })}
+        </div>
+      )}
 
       {mediaFiles.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 text-cw-gray-text gap-3">

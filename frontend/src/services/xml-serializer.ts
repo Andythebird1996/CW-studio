@@ -19,11 +19,13 @@ import type {
   Flag,
   FlagCondition,
   Norm,
+  TextOption,
+  StringInputSize,
 } from '../types/questionnaire';
 
 // ─── XML escape ────────────────────────────────────────────────────────────
 
-function esc(s: string | undefined | null): string {
+export function esc(s: string | undefined | null): string {
   return (s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -90,6 +92,24 @@ const WIDGET_TYPE_MAP: Partial<Record<Question['type'], string>> = {
   country: 'CountryWidget',
 };
 
+/** Flyttall slik EMF skriver dem: 0 → "0.0", 0.5 → "0.5". */
+export function emfFloat(n: number): string {
+  return Number.isInteger(n) ? n.toFixed(1) : String(n);
+}
+
+/** Antall desimaler → NumericInput step (0 → 1, 1 → 0.1, 2 → 0.01). */
+export function stepFromDecimals(decimals: number | undefined): number {
+  const d = Math.max(0, Math.min(6, Math.floor(decimals ?? 0)));
+  return d === 0 ? 1 : Number((10 ** -d).toFixed(d));
+}
+
+/** Studio-størrelse → StringInputSize i Checkware-modellen (line | multiline | story). */
+export function stringInputSizeAttr(size: StringInputSize | undefined, multiline?: boolean): 'line' | 'multiline' | 'story' {
+  if (size === 'XLARGE') return 'story';
+  if (size === 'LARGE' || multiline) return 'multiline';
+  return 'line';
+}
+
 function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): string {
   const allQs = flattenAllQuestions(q.sections);
   const templates = q.responseTemplates?.templates ?? [];
@@ -140,31 +160,35 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
   for (const qq of allQs) {
     if (qq.type === 'stringInput' || qq.type === 'numericInput' || qq.type === 'dateInput' || qq.type === 'slider') {
       const wp: Record<string, string> = {};
+      // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
+      // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
+      // som flyttall ("0.0"), DateInput addDate/addTime, NumericSlider med full attributtliste.
       if (qq.type === 'stringInput') {
-        wp.size = qq.size ?? 'MEDIUM';
-        if (qq.multiline) wp.multiline = 'true';
+        wp.size = stringInputSizeAttr(qq.size, qq.multiline);
       } else if (qq.type === 'numericInput') {
-        if (qq.min !== undefined) wp.min = String(qq.min);
-        if (qq.max !== undefined) wp.max = String(qq.max);
-        if (qq.decimals !== undefined) wp.decimals = String(qq.decimals);
-        if (qq.unit) wp.unit = qq.unit;
+        if (qq.min !== undefined) wp.minValue = emfFloat(qq.min);
+        if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
+        wp.step = emfFloat(stepFromDecimals(qq.decimals));
       } else if (qq.type === 'dateInput') {
-        if (qq.includeTime) wp.includeTime = 'true';
+        wp.addTime = String(qq.includeTime === true);
+        wp.addDate = 'true';
       } else if (qq.type === 'slider') {
-        if (qq.min !== undefined) wp.min = String(qq.min);
-        if (qq.max !== undefined) wp.max = String(qq.max);
-        if (qq.step !== undefined) wp.step = String(qq.step);
-        if (qq.minLabel?.[lang]) wp.labelMin = qq.minLabel[lang];
-        if (qq.maxLabel?.[lang]) wp.labelMax = qq.maxLabel[lang];
-        if (qq.showTicks !== undefined) wp.showTicks = String(qq.showTicks);
-        if (qq.showEndLabels !== undefined) wp.showEndLabels = String(qq.showEndLabels);
-        if (qq.showScaleLabels !== undefined) wp.showScaleLabels = String(qq.showScaleLabels);
-        if (qq.showDigitalPoints !== undefined) wp.showDigitalPoints = String(qq.showDigitalPoints);
-        if (qq.showClear !== undefined) wp.showClear = String(qq.showClear);
-        if (qq.displayValue !== undefined) wp.displayValue = String(qq.displayValue);
-        if (qq.direction) wp.direction = qq.direction;
+        const step = qq.step ?? 1;
+        wp.minValue = emfFloat(qq.min);
+        wp.maxValue = emfFloat(qq.max);
+        wp.step = emfFloat(step);
+        wp.labelStep = emfFloat(qq.labelStep ?? step);
+        wp.showEndLabels = String(qq.showEndLabels ?? true);
+        wp.showScaleLabels = String(qq.showScaleLabels ?? true);
+        wp.valuePosition = 'after';
+        wp.labelPosition = 'after';
+        wp.direction = qq.direction ?? 'horizontal';
         if (qq.sliderLength) wp.length = qq.sliderLength;
-        if (qq.hairline !== undefined) wp.hairline = String(qq.hairline);
+        wp.displayValue = String(qq.displayValue ?? false);
+        wp.showTicks = String(qq.showTicks ?? false);
+        wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
+        wp.showClear = String(qq.showClear ?? true);
+        wp.hairline = String(qq.hairline ?? false);
       }
       templateMap.set(qq.code, {
         code: qq.code,
@@ -234,9 +258,9 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   }
 
   const templateCode = 'responseTemplateCode' in q ? (q.responseTemplateCode ?? q.code) : q.code;
-  const voluntary = q.voluntary ? ' voluntary="true"' : '';
-  const readOnly = q.readonly ? ' readOnly="true"' : '';
-  const reversed = q.reversedScore ? ' reversedScore="true"' : '';
+  const voluntary = ` voluntary="${q.voluntary === true}"`;
+  const readOnly = ` readonly="${q.readonly === true}"`;
+  const reversed = ` reversedScore="${q.reversedScore === true}"`;
   const helpText = q.helpTexts?.[lang] ? ` helpText="${esc(q.helpTexts[lang])}"` : '';
   const maxRankAttr = (q.type === 'rank' && q.maxRank !== undefined) ? ` maxRank="${q.maxRank}"` : '';
 
@@ -268,14 +292,18 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const sectionType = section.type ?? 'NORMAL';
   const sectionTypeAttr = sectionType !== 'NORMAL' ? ` sectionType="${sectionType}"` : '';
   const repeatCodeAttr = section.repeatCode ? ` repeatCode="${esc(section.repeatCode)}"` : '';
-  const requiresNewPageAttr = section.requiresNewPage ? ` requiresNewPage="true"` : '';
+  const requiresNewPageAttr = ` requiresNewPage="${section.requiresNewPage === true}"`;
+  const backgroundAttr = section.backgroundImage
+    ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
+    : '';
   const titleText = section.titles[lang] ?? '';
 
   const tag = depth === 0 ? 'section' : 'contains xsi:type="questionnaire:Section"';
   const closeTag = depth === 0 ? 'section' : 'contains';
 
-  // Desktop Studio EMF uses 'title' attribute; parser accepts 'title' || 'description' for round-trip compat
-  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${titleText ? ` title="${esc(titleText)}"` : ''}>
+  // Section-modellen har ikke 'title' – overskriften ligger i 'description' (som i ekte pakker og
+  // i oversettelsene). Parseren godtar fortsatt 'title' fra eldre Studio-eksporter.
+  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
 ${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
 ${indent}</${closeTag}>`;
 }
@@ -397,6 +425,14 @@ function serializeInnerCalcExpression(
     </calculationExpression>`;
 }
 
+/**
+ * Referansen til kartleggingen som Checkware-serveren leser skjemakoden fra ved installasjon.
+ * Mangler den, feiler installasjonen med «Assessment  not found» (tom kode).
+ */
+export function calculationQuestionnaireRef(questionnaireCode: string): string {
+  return `<questionnaire href="../quiz/${esc(questionnaireCode)}.questionnaire#${esc(questionnaireCode)}"/>`;
+}
+
 export function serializeCalculation(calc: Calculation, questionnaireCode: string): string {
   // Prefer the preserved raw expression for lossless round-trip.
   // Fall back to rebuilding from innerCalculations (e.g. newly created calculations).
@@ -405,6 +441,8 @@ export function serializeCalculation(calc: Calculation, questionnaireCode: strin
   return `<?xml version="1.0" encoding="UTF-8"?>
 <questionnaire:Calculation ${NS} code="${esc(calc.code)}" name="${esc(calc.name)}"${normAttr}>
     ${expr}
+  ${calculationQuestionnaireRef(questionnaireCode)}
+  <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Calculation>`;
 }
 
@@ -415,37 +453,34 @@ const FLAG_OP: Record<FlagCondition['operator'], string> = {
   GT: 'greater', GTE: 'greaterOrEqual',
 };
 
-function serializeFlagExpression(flag: Flag, questionnaireCode: string): string {
+/** Én sammenligning slik ekte store-pakker skriver den: Operator(type) med CalculationType name + NumberBasicType */
+function serializeFlagCondition(cond: FlagCondition, tag: 'flagExpression' | 'elements'): string {
+  return `<${tag} xsi:type="questionnaire:Operator" type="${FLAG_OP[cond.operator] ?? 'greaterOrEqual'}">
+      <elements xsi:type="questionnaire:CalculationType" name="${esc(cond.calculationCode)}"/>
+      <elements xsi:type="questionnaire:NumberBasicType" value="${cond.threshold}"/>
+    </${tag}>`;
+}
+
+function serializeFlagExpression(flag: Flag): string {
   if (flag.conditions.length === 0) {
     return '<flagExpression xsi:type="questionnaire:BooleanBasicType" value="false"/>';
   }
-
-  const condEl = (cond: FlagCondition) =>
-    `<elements xsi:type="questionnaire:SimpleStatement" type="${FLAG_OP[cond.operator] ?? 'greaterOrEqual'}">
-      <elements xsi:type="questionnaire:CalculationType">
-        <calculation href="../calculations/${esc(cond.calculationCode)}.calculation"/>
-      </elements>
-      <elements xsi:type="questionnaire:NumberBasicType" value="${cond.threshold}"/>
-    </elements>`;
-
-  if (flag.conditions.length === 1) {
-    return `<flagExpression xsi:type="questionnaire:SimpleStatement" type="${FLAG_OP[flag.conditions[0].operator] ?? 'greaterOrEqual'}">
-      <elements xsi:type="questionnaire:CalculationType">
-        <calculation href="../calculations/${esc(flag.conditions[0].calculationCode)}.calculation"/>
-      </elements>
-      <elements xsi:type="questionnaire:NumberBasicType" value="${flag.conditions[0].threshold}"/>
-    </flagExpression>`;
-  }
-
+  if (flag.conditions.length === 1) return serializeFlagCondition(flag.conditions[0], 'flagExpression');
   return `<flagExpression xsi:type="questionnaire:Operator" type="${flag.logic.toLowerCase()}">
-    ${flag.conditions.map(condEl).join('\n    ')}
+    ${flag.conditions.map((c) => serializeFlagCondition(c, 'elements')).join('\n    ')}
   </flagExpression>`;
 }
 
+/**
+ * Flagg i samme form som ekte store-pakker: kartleggingen som barnenode med «#kode».
+ * Uten «#kode» feiler installasjonen med «flag without quest found!».
+ */
 export function serializeFlag(flag: Flag, questionnaireCode: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Flag ${NS} code="${esc(flag.code)}" name="${esc(flag.name)}" questionnaire="../quiz/${esc(questionnaireCode)}.questionnaire">
-  ${serializeFlagExpression(flag, questionnaireCode)}
+<questionnaire:Flag ${NS} code="${esc(flag.code)}" name="${esc(flag.name)}">
+  ${calculationQuestionnaireRef(questionnaireCode)}
+  <application id="Studio" version="1" fileVersion="1"/>
+  ${serializeFlagExpression(flag)}
 </questionnaire:Flag>`;
 }
 
@@ -461,6 +496,7 @@ export function serializeNorm(norm: Norm): string {
     const sd = norm.data[0]?.normValue ?? 0;
     return `${header}
   <normContent xsi:type="questionnaire:Mean" value="${mean}" stdDev="${sd}"/>
+  <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Norm>`;
   }
 
@@ -474,6 +510,7 @@ export function serializeNorm(norm: Norm): string {
   <normContent xsi:type="questionnaire:LookupTable">
 ${lookups}
   </normContent>
+  <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Norm>`;
 }
 
@@ -526,26 +563,23 @@ export function serializeTranslation(
     if (helpText) {
       lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="helpText" translatedText="${esc(helpText)}"/>`);
     }
-    // Slider min/max labels
-    if (q2.type === 'slider') {
-      const minLabel = q2.minLabel?.[lang];
-      if (minLabel) lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="labelMin" translatedText="${esc(minLabel)}"/>`);
-      const maxLabel = q2.maxLabel?.[lang];
-      if (maxLabel) lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="labelMax" translatedText="${esc(maxLabel)}"/>`);
-    }
   }
 
-  // Response template options
-  for (const tmpl of q.responseTemplates?.templates ?? []) {
-    for (const opt of tmpl.options) {
-      if (opt.texts[lang]) {
-        lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label" translatedText="${esc(opt.texts[lang])}"/>`);
-      }
-    }
+  // Svaralternativer: både delte svarmaler og alternativer lagt direkte på spørsmålet
+  const seenOptions = new Set<string>();
+  const pushOption = (opt: TextOption) => {
+    if (!opt.texts?.[lang] || seenOptions.has(opt.code)) return;
+    seenOptions.add(opt.code);
+    lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label" translatedText="${esc(opt.texts[lang])}"/>`);
+  };
+  for (const tmpl of q.responseTemplates?.templates ?? []) tmpl.options.forEach(pushOption);
+  for (const q2 of flattenAllQuestions(q.sections)) {
+    if ('options' in q2 && q2.options) q2.options.forEach(pushOption);
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <questionnaire:Translations ${NS} language="${langStr}" questionnaireName="${esc(questionnaireCode)}">
+  <application id="Studio" version="1" fileVersion="1"/>
 ${lines.join('\n')}
 </questionnaire:Translations>`;
 }

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run --watch src/server.ts",
-    "start": "bun run src/server.ts"
+    "dev": "bun --env-file=../.env run --watch src/server.ts",
+    "start": "bun --env-file=../.env run src/server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",

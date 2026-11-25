@@ -146,6 +146,9 @@ export interface SliderQuestion extends BaseQuestion {
   min: number;
   max: number;
   step?: number;
+  /** NumericSlider.labelStep – avstand mellom skalaetiketter (standard = step) */
+  labelStep?: number;
+  /** Kun for import av eldre Studio-filer – Checkware-modellen har ingen endeetiketter på slider */
   minLabel?: Record<LanguageType, string>;
   maxLabel?: Record<LanguageType, string>;
   showTicks?: boolean;
@@ -212,6 +215,10 @@ export interface Section {
   continueIfExpressions?: ContinueIfExpression[];
   repeatCode?: string;       // for REPEATED sections
   requiresNewPage?: boolean; // force page-break before this section (EMF Container.requiresNewPage)
+  /** Bildefil i media/ som vises i seksjonen (EMF Container.backgroundImage) */
+  backgroundImage?: string;
+  backgroundRepeat?: string;
+  backgroundPosition?: string;
 }
 
 // ─── Calculations ─────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle, Upload, XCircle } from 'lucide-react';
 import type { Questionnaire, MediaFile, PackageMetadata } from '../../types/questionnaire';
 import { buildPackageZip } from '../../services/package-builder';
 import { storeApi, type PackageSummary } from '../../services/store-api';
+import type { RapLintIssue } from '../../services/rap-interpreter';
 import { useSettingsStore } from '../../stores/settings-store';
 import { t, tf, useUILang } from '../../i18n';
 
@@ -27,15 +28,25 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const [isPublic, setIsPublic] = useState(false);
   const [step, setStep] = useState<Step>('form');
   const [denials, setDenials] = useState<string[]>([]);
+  const [calcWarnings, setCalcWarnings] = useState<string[]>([]);
+  const [rapWarnings, setRapWarnings] = useState<string[]>([]);
+  const [frameWarnings, setFrameWarnings] = useState<string[]>([]);
+  const [mediaErrors, setMediaErrors] = useState<string[]>([]);
+  const [rapLint, setRapLint] = useState<Record<string, RapLintIssue[]>>({});
   const [error, setError] = useState('');
   const [existingPackages, setExistingPackages] = useState<PackageSummary[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
+  // Samme kode og synlighet i SOAP-identifier og manifest
+  const pkgCode = packageMetadata?.code || questionnaire.code;
+  const pkgMeta = { ...packageMetadata, code: pkgCode, isPublic };
 
   useEffect(() => {
     if (!open) return;
     setRelease(questionnaire.release ?? '0');
     setStep('form');
     setDenials([]);
+    setCalcWarnings([]);
+    setRapWarnings([]);
     setError('');
     setLoadingPackages(true);
     storeApi.listPackages(settings)
@@ -46,7 +57,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
 
   const overlap = existingPackages.find(
     (p) =>
-      p.code === questionnaire.code &&
+      p.code === pkgCode &&
       String(p.version) === String(questionnaire.version) &&
       String(p.release) === String(release),
   );
@@ -56,9 +67,19 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setDenials([]);
     try {
       const q = { ...questionnaire, release };
-      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, packageMetadata);
+      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
+      setCalcWarnings(pkg.calcsMissingQuestionnaireRef);
+      setRapWarnings(pkg.rapsMissingHeaders);
+      setFrameWarnings(pkg.rapsMissingFrame);
+      setMediaErrors(pkg.unsupportedMedia);
+      setRapLint(pkg.rapLint);
+      if (pkg.unsupportedMedia.length > 0) {
+        // Stopp før validering: Checkware installerer filene, men kan ikke levere dem
+        setStep('form');
+        return;
+      }
       const result = await storeApi.validate(settings, {
-        code: q.code,
+        code: pkgCode,
         name: q.name[lang] ?? q.code,
         version: q.version,
         release,
@@ -84,9 +105,14 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setStep('publishing');
     try {
       const q = { ...questionnaire, release };
-      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, packageMetadata);
+      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
+      if (pkg.unsupportedMedia.length > 0) {
+        setMediaErrors(pkg.unsupportedMedia);
+        setStep('form');
+        return;
+      }
       const result = await storeApi.publish(settings, {
-        code: q.code,
+        code: pkgCode,
         name: q.name[lang] ?? q.code,
         version: q.version,
         release,
@@ -164,6 +190,56 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
                   <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
                   <p className="text-xs text-cw-orange">
                     {tf('versionExists', uiLang, { version: `${questionnaire.version}.${release}`, code: questionnaire.code })}
+                  </p>
+                </div>
+              )}
+
+              {calcWarnings.length > 0 && (
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-orange">
+                    {tf('calcMissingQuestionnaireRef', uiLang, { codes: calcWarnings.join(', ') })}
+                  </p>
+                </div>
+              )}
+
+              {rapWarnings.length > 0 && (
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-orange">
+                    {tf('rapMissingHeaders', uiLang, { codes: rapWarnings.join(', ') })}
+                  </p>
+                </div>
+              )}
+
+              {frameWarnings.length > 0 && (
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-orange">
+                    {tf('rapMissingFrame', uiLang, { codes: frameWarnings.join(', ') })}
+                  </p>
+                </div>
+              )}
+
+              {Object.keys(rapLint).length > 0 && (
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <div className="text-xs text-cw-orange">
+                    <p className="font-medium">{t('rapLintTitle', uiLang)}</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {Object.entries(rapLint).flatMap(([code, issues]) => issues.map((iss, i) => (
+                        <li key={`${code}-${i}`}>• {code}{iss.line > 0 ? ` (${tf('rapLintLine', uiLang, { line: iss.line })})` : ''}: {t(`rapLint_${iss.code}`, uiLang)}</li>
+                      )))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {mediaErrors.length > 0 && (
+                <div className="bg-cw-negative-soft border border-cw-negative/30 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-negative mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-negative">
+                    {tf('unsupportedMedia', uiLang, { files: mediaErrors.join(', ') })}
                   </p>
                 </div>
               )}

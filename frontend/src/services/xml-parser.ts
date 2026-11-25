@@ -6,6 +6,7 @@
  */
 
 import type {
+  StringInputSize,
   Questionnaire,
   QuestionnaireType,
   Section,
@@ -54,6 +55,21 @@ function mapLang(raw: string): LanguageType {
 
 function attr(el: Element, name: string): string {
   return el.getAttribute(name) ?? '';
+}
+
+/** Tallattributt ("0.0", "10") → number, tom/ugyldig → undefined. */
+function numAttr(v: string | undefined): number | undefined {
+  if (v === undefined || v.trim() === '') return undefined;
+  const n = parseFloat(v);
+  return Number.isNaN(n) ? undefined : n;
+}
+
+/** NumericInput step ("1.0", "0.1", "0.01") → antall desimaler. */
+function decimalsFromStep(step: string | undefined): number | undefined {
+  const n = numAttr(step);
+  if (n === undefined || n <= 0) return undefined;
+  if (n >= 1) return 0;
+  return Math.min(6, Math.round(-Math.log10(n)));
 }
 
 function children(el: Element, tagLocalName: string): Element[] {
@@ -207,7 +223,7 @@ function parseContains(
 
   // Optional flags on every question/text element
   const voluntary = attr(el, 'voluntary') === 'true' ? true : undefined;
-  const readonly = attr(el, 'readOnly') === 'true' ? true : undefined;
+  const readonly = (attr(el, 'readonly') || attr(el, 'readOnly')) === 'true' ? true : undefined;
   const reversedScore = attr(el, 'reversedScore') === 'true' ? true : undefined;
 
   // Help text
@@ -310,35 +326,40 @@ function parseContains(
       case 'combobox':
         return { ...base, type: 'combobox', options: template?.options ?? [], responseTemplateCode: templateCode || undefined };
       case 'stringInput': {
+        // Checkware: line | multiline | story. Eldre Studio-eksport: SMALL…XLARGE (+ multiline="true").
+        const realSizes: Record<string, StringInputSize> = { line: 'MEDIUM', multiline: 'LARGE', story: 'XLARGE' };
         const validSizes = ['SMALL', 'MEDIUM', 'LARGE', 'XLARGE'] as const;
-        const rawSize = (wp.size ?? 'MEDIUM').toUpperCase();
-        const size = validSizes.includes(rawSize as typeof validSizes[number]) ? rawSize as typeof validSizes[number] : 'MEDIUM';
+        const rawSize = wp.size ?? 'line';
+        const upper = rawSize.toUpperCase();
+        const size: StringInputSize = realSizes[rawSize]
+          ?? (validSizes.includes(upper as typeof validSizes[number]) ? upper as StringInputSize : 'MEDIUM');
         return {
           ...base,
           type: 'stringInput',
           size,
-          multiline: wp.multiline === 'true' ? true : undefined,
+          multiline: wp.multiline === 'true' || rawSize === 'multiline' ? true : undefined,
         };
       }
       case 'numericInput':
         return {
           ...base,
           type: 'numericInput',
-          min: wp.min !== undefined ? parseFloat(wp.min) : undefined,
-          max: wp.max !== undefined ? parseFloat(wp.max) : undefined,
-          decimals: wp.decimals !== undefined ? parseInt(wp.decimals, 10) : undefined,
+          min: numAttr(wp.minValue ?? wp.min),
+          max: numAttr(wp.maxValue ?? wp.max),
+          decimals: wp.decimals !== undefined ? parseInt(wp.decimals, 10) : decimalsFromStep(wp.step),
           unit: wp.unit || undefined,
         };
       case 'dateInput':
         return {
           ...base,
           type: 'dateInput',
-          includeTime: wp.includeTime === 'true' ? true : undefined,
+          includeTime: (wp.addTime ?? wp.includeTime) === 'true' ? true : undefined,
         };
       case 'slider': {
-        const min = wp.min !== undefined ? parseFloat(wp.min) : 0;
-        const max = wp.max !== undefined ? parseFloat(wp.max) : 10;
-        const step = wp.step !== undefined ? parseFloat(wp.step) : undefined;
+        const min = numAttr(wp.minValue ?? wp.min) ?? 0;
+        const max = numAttr(wp.maxValue ?? wp.max) ?? 10;
+        const step = numAttr(wp.step);
+        const labelStep = numAttr(wp.labelStep);
         const minLabel = wp.labelMin ? { [lang]: wp.labelMin } as Record<LanguageType, string> : undefined;
         const maxLabel = wp.labelMax ? { [lang]: wp.labelMax } as Record<LanguageType, string> : undefined;
         const showTicks = wp.showTicks !== undefined ? wp.showTicks === 'true' : undefined;
@@ -353,6 +374,7 @@ function parseContains(
         return {
           ...base, type: 'slider', min, max,
           ...(step !== undefined && { step }),
+          ...(labelStep !== undefined && { labelStep }),
           ...(minLabel && { minLabel }),
           ...(maxLabel && { maxLabel }),
           ...(showTicks !== undefined && { showTicks }),
@@ -415,6 +437,7 @@ function parseSection(
 
   const repeatCode = attr(secEl, 'repeatCode') || undefined;
   const requiresNewPage = attr(secEl, 'requiresNewPage') === 'true' ? true : undefined;
+  const backgroundImage = attr(secEl, 'backgroundImage') || undefined;
 
   const showEl = firstChild(secEl, 'show');
   const showExpression = showEl ? parseShowExpression(showEl) : undefined;
@@ -457,6 +480,11 @@ function parseSection(
     continueIfExpressions: continueIfExpression ? [continueIfExpression] : undefined,
     repeatCode,
     requiresNewPage,
+    ...(backgroundImage ? {
+      backgroundImage,
+      backgroundRepeat: attr(secEl, 'backgroundRepeat') || undefined,
+      backgroundPosition: attr(secEl, 'backgroundPosition') || undefined,
+    } : {}),
   };
 }
 
@@ -695,6 +723,15 @@ function resolveExpression(el: Element, questionnaire: Questionnaire): ExprResul
   if (type.includes('Operator')) {
     const opType = attr(el, 'type'); // 'plus', 'minus', 'multiply', 'divide', 'and', 'or', etc.
     const childEls = Array.from(el.children).filter((c) => c.localName === 'elements');
+    // Studio Web skriver MEAN som (sum av spørsmål) / antall spørsmål — les det tilbake som MEAN
+    if (opType === 'divide' && childEls.length === 2 && xsiType(childEls[1]).includes('NumberBasicType')) {
+      const divisor = parseFloat(attr(childEls[1], 'value'));
+      const first = resolveExpression(childEls[0], questionnaire);
+      const n = first.innerCalculations.length;
+      if (n > 0 && divisor === n && (first.calcType === 'SUM' || n === 1)) {
+        return { calcType: 'MEAN', innerCalculations: first.innerCalculations };
+      }
+    }
     const allInner: InnerCalculation[] = [];
     for (const child of childEls) {
       const { innerCalculations } = resolveExpression(child, questionnaire);
@@ -1052,52 +1089,46 @@ export function parseFlagFile(xmlText: string, questionnaire: Questionnaire): Fl
   }
 }
 
+const FLAG_COMPARE: Record<string, FlagCondition['operator']> = {
+  equal: 'EQ', notEqual: 'NEQ', less: 'LT', lessOrEqual: 'LTE',
+  greater: 'GT', greaterOrEqual: 'GTE',
+};
+
 function extractFlagConditions(
   el: Element,
   questionnaire: Questionnaire,
 ): { conditions: FlagCondition[]; logic: 'AND' | 'OR' } {
   const type = xsiType(el);
+  const opType = attr(el, 'type');
 
-  // Operator node — wraps multiple SimpleStatements
-  if (type.includes('Operator')) {
-    const opType = attr(el, 'type').toLowerCase(); // 'and', 'or'
-    const logic: 'AND' | 'OR' = opType === 'or' ? 'OR' : 'AND';
-    const conditions: FlagCondition[] = [];
-    for (const child of Array.from(el.children).filter((c) => c.localName === 'elements')) {
-      const { conditions: inner } = extractFlagConditions(child, questionnaire);
-      conditions.push(...inner);
-    }
-    return { conditions, logic };
-  }
-
-  // SimpleStatement — a single comparison
-  if (type.includes('SimpleStatement')) {
-    const operatorMap: Record<string, FlagCondition['operator']> = {
-      equal: 'EQ', notEqual: 'NEQ', less: 'LT', lessOrEqual: 'LTE',
-      greater: 'GT', greaterOrEqual: 'GTE',
-    };
-    const opType = attr(el, 'type');
-
+  // Sammenligning: SimpleStatement (eldre Studio Web) eller Operator med sammenligningstype (ekte store-pakker)
+  if (type.includes('SimpleStatement') || (type.includes('Operator') && opType in FLAG_COMPARE)) {
     let calcCode = '';
     let threshold = 0;
-
     for (const e of Array.from(el.children)) {
       if (e.localName !== 'elements') continue;
       const t = xsiType(e);
       if (t.includes('CalculationType') || t.includes('InnerCalculation')) {
-        const ref = attr(e, 'calculation') || attr(e, 'href') || '';
+        const hrefChild = Array.from(e.children).find((c) => c.localName === 'calculation');
+        const ref = attr(e, 'name') || attr(e, 'calculation') || attr(e, 'href') || (hrefChild ? attr(hrefChild, 'href') : '');
         calcCode = resolveCalcCode(ref, questionnaire);
-      } else if (t.includes('NumericValue') || t.includes('Numeric')) {
+      } else if (t.includes('NumberBasicType') || t.includes('Numeric')) {
         threshold = parseFloat(attr(e, 'value') || '0');
       }
     }
+    return calcCode
+      ? { conditions: [{ calculationCode: calcCode, operator: FLAG_COMPARE[opType] ?? 'GTE', threshold }], logic: 'AND' }
+      : { conditions: [], logic: 'AND' };
+  }
 
-    if (calcCode) {
-      return {
-        conditions: [{ calculationCode: calcCode, operator: operatorMap[opType] ?? 'GTE', threshold }],
-        logic: 'AND',
-      };
+  // Logisk Operator (and/or) som samler flere sammenligninger
+  if (type.includes('Operator')) {
+    const logic: 'AND' | 'OR' = opType.toLowerCase() === 'or' ? 'OR' : 'AND';
+    const conditions: FlagCondition[] = [];
+    for (const child of Array.from(el.children).filter((c) => c.localName === 'elements')) {
+      conditions.push(...extractFlagConditions(child, questionnaire).conditions);
     }
+    return { conditions, logic };
   }
 
   return { conditions: [], logic: 'AND' };

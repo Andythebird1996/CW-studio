@@ -11,8 +11,34 @@ export interface SoapConfig {
   password: string;
 }
 
-/** Derive service endpoint from WSDL URL by fetching and parsing it */
-let cachedEndpoint: string | null = null;
+/** Derive service endpoint from WSDL URL by fetching and parsing it.
+ *  Cachet per WSDL-URL, slik at ulike brukere/servere ikke deler endepunkt. */
+const cachedEndpoints = new Map<string, string>();
+
+/** Escape tekst som settes inn i SOAP-XML (navn, filnavn osv.) */
+export function escapeXml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/** fetch med tydelig norsk feilmelding når serveren ikke kan nås (VPN/brannmur) */
+async function fetchStore(url: string, init: RequestInit): Promise<Response> {
+  try {
+    // Uten svar etter 180 s gir vi opp i stedet for å henge i flere minutter
+    return await fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(180_000) });
+  } catch (err) {
+    let host = url;
+    try { host = new URL(url).host; } catch { /* behold url */ }
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Får ikke kontakt med ${host} (${reason}). Sjekk nettverk/VPN – Checkware-serveren kan kreve VPN eller godkjent IP.`,
+    );
+  }
+}
 
 /** True if the URL looks like a store WSDL rather than a REST endpoint */
 export function looksLikeWsdlUrl(url: string): boolean {
@@ -28,14 +54,15 @@ const WSDL_HINT =
   'https://cia.checkwareonline.com/v2/store/api/store-api.wsdl';
 
 export async function getEndpoint(config: SoapConfig): Promise<string> {
-  if (cachedEndpoint) return cachedEndpoint;
+  const cached = cachedEndpoints.get(config.wsdlUrl);
+  if (cached) return cached;
 
   if (!looksLikeWsdlUrl(config.wsdlUrl)) {
     throw new Error(`Ugyldig Server-URL: "${config.wsdlUrl}". ${WSDL_HINT}`);
   }
 
   const auth = btoa(`${config.user}:${config.password}`);
-  const res = await fetch(config.wsdlUrl, {
+  const res = await fetchStore(config.wsdlUrl, {
     headers: { Authorization: `Basic ${auth}` },
   });
 
@@ -55,12 +82,12 @@ export async function getEndpoint(config: SoapConfig): Promise<string> {
     );
   }
 
-  cachedEndpoint = match[1];
-  return cachedEndpoint;
+  cachedEndpoints.set(config.wsdlUrl, match[1]);
+  return match[1];
 }
 
 export function clearEndpointCache() {
-  cachedEndpoint = null;
+  cachedEndpoints.clear();
 }
 
 /** Build SOAP envelope */
@@ -76,7 +103,7 @@ async function call(config: SoapConfig, action: string, body: string): Promise<s
   const endpoint = await getEndpoint(config);
   const auth = btoa(`${config.user}:${config.password}`);
 
-  const res = await fetch(endpoint, {
+  const res = await fetchStore(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'text/xml; charset=utf-8',
@@ -87,7 +114,13 @@ async function call(config: SoapConfig, action: string, body: string): Promise<s
   });
 
   const text = await res.text();
-  if (!res.ok) throw new Error(`SOAP error ${res.status}: ${text}`);
+  if (!res.ok) {
+    // SOAP 1.1-faults kommer som HTTP 500 – vis faultstring i stedet for rå XML
+    const fault = extract(text, 'faultstring');
+    throw new Error(
+      fault ? `Checkware svarte med feil (HTTP ${res.status}): ${fault}` : `SOAP error ${res.status}: ${text.slice(0, 500)}`,
+    );
+  }
   return text;
 }
 
@@ -213,11 +246,11 @@ export interface PackagePayload {
 
 function identifierXml(payload: PackagePayload): string {
   return `<identifier>
-        <code>${payload.code}</code>
-        <version>${payload.version}</version>
-        <release>${payload.release}</release>
-        <name>${payload.name}</name>
-        <public>${payload.isPublic}</public>
+        <code>${escapeXml(payload.code)}</code>
+        <version>${escapeXml(payload.version)}</version>
+        <release>${escapeXml(payload.release)}</release>
+        <name>${escapeXml(payload.name)}</name>
+        <public>${payload.isPublic === true}</public>
       </identifier>`;
 }
 
@@ -225,10 +258,10 @@ function fileListXml(files: ManifestFileEntry[]): string {
   return files
     .map(
       (f) => `<file>
-        <fileName>${f.fileName}</fileName>
-        <path>${f.path}</path>
-        <extension>${f.extension}</extension>
-        <code>${f.code}</code>
+        <fileName>${escapeXml(f.fileName)}</fileName>
+        <path>${escapeXml(f.path)}</path>
+        <extension>${escapeXml(f.extension)}</extension>
+        <code>${escapeXml(f.code)}</code>
       </file>`,
     )
     .join('\n      ');
@@ -267,7 +300,7 @@ export async function publishPackage(
         ${files}
       </content>
       <binaryFile>
-        <fileName>${payload.fileName}</fileName>
+        <fileName>${escapeXml(payload.fileName)}</fileName>
         <fileSize>${payload.sizeBytes}</fileSize>
         <fileData>${payload.base64Zip}</fileData>
       </binaryFile>
@@ -275,7 +308,10 @@ export async function publishPackage(
   </tns:PublishPackage>`;
 
   const xml = await call(config, 'PublishPackage', body);
-  if (xml.includes('Fault')) return false;
+  if (/<(?:[^:>]+:)?Fault[\s>]/.test(xml)) {
+    const reason = extract(xml, 'faultstring') || 'ukjent årsak';
+    throw new Error(`Checkware avviste publiseringen: ${reason}`);
+  }
   const status = extract(xml, 'publishStatus');
   return status === 'ok';
 }

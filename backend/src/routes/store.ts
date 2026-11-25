@@ -33,6 +33,7 @@ store.get('/packages', async (c) => {
 store.get('/packages/:uid', async (c) => {
   try {
     const uid = parseInt(c.req.param('uid'), 10);
+    if (Number.isNaN(uid)) return c.json({ error: 'Ugyldig pakke-uid' }, 400);
     const pkg = await retreivePackage(getConfig(c), uid);
     return c.json(pkg);
   } catch (err: any) {
