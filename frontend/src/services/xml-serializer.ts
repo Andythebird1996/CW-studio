@@ -19,6 +19,7 @@ import type {
   Flag,
   FlagCondition,
   Norm,
+  TextOption,
 } from '../types/questionnaire';
 
 // ─── XML escape ────────────────────────────────────────────────────────────
@@ -269,13 +270,16 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const sectionTypeAttr = sectionType !== 'NORMAL' ? ` sectionType="${sectionType}"` : '';
   const repeatCodeAttr = section.repeatCode ? ` repeatCode="${esc(section.repeatCode)}"` : '';
   const requiresNewPageAttr = section.requiresNewPage ? ` requiresNewPage="true"` : '';
+  const backgroundAttr = section.backgroundImage
+    ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
+    : '';
   const titleText = section.titles[lang] ?? '';
 
   const tag = depth === 0 ? 'section' : 'contains xsi:type="questionnaire:Section"';
   const closeTag = depth === 0 ? 'section' : 'contains';
 
   // Desktop Studio EMF uses 'title' attribute; parser accepts 'title' || 'description' for round-trip compat
-  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${titleText ? ` title="${esc(titleText)}"` : ''}>
+  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` title="${esc(titleText)}"` : ''}>
 ${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
 ${indent}</${closeTag}>`;
 }
@@ -425,37 +429,34 @@ const FLAG_OP: Record<FlagCondition['operator'], string> = {
   GT: 'greater', GTE: 'greaterOrEqual',
 };
 
-function serializeFlagExpression(flag: Flag, questionnaireCode: string): string {
+/** Én sammenligning slik ekte store-pakker skriver den: Operator(type) med CalculationType name + NumberBasicType */
+function serializeFlagCondition(cond: FlagCondition, tag: 'flagExpression' | 'elements'): string {
+  return `<${tag} xsi:type="questionnaire:Operator" type="${FLAG_OP[cond.operator] ?? 'greaterOrEqual'}">
+      <elements xsi:type="questionnaire:CalculationType" name="${esc(cond.calculationCode)}"/>
+      <elements xsi:type="questionnaire:NumberBasicType" value="${cond.threshold}"/>
+    </${tag}>`;
+}
+
+function serializeFlagExpression(flag: Flag): string {
   if (flag.conditions.length === 0) {
     return '<flagExpression xsi:type="questionnaire:BooleanBasicType" value="false"/>';
   }
-
-  const condEl = (cond: FlagCondition) =>
-    `<elements xsi:type="questionnaire:SimpleStatement" type="${FLAG_OP[cond.operator] ?? 'greaterOrEqual'}">
-      <elements xsi:type="questionnaire:CalculationType">
-        <calculation href="../calculations/${esc(cond.calculationCode)}.calculation"/>
-      </elements>
-      <elements xsi:type="questionnaire:NumberBasicType" value="${cond.threshold}"/>
-    </elements>`;
-
-  if (flag.conditions.length === 1) {
-    return `<flagExpression xsi:type="questionnaire:SimpleStatement" type="${FLAG_OP[flag.conditions[0].operator] ?? 'greaterOrEqual'}">
-      <elements xsi:type="questionnaire:CalculationType">
-        <calculation href="../calculations/${esc(flag.conditions[0].calculationCode)}.calculation"/>
-      </elements>
-      <elements xsi:type="questionnaire:NumberBasicType" value="${flag.conditions[0].threshold}"/>
-    </flagExpression>`;
-  }
-
+  if (flag.conditions.length === 1) return serializeFlagCondition(flag.conditions[0], 'flagExpression');
   return `<flagExpression xsi:type="questionnaire:Operator" type="${flag.logic.toLowerCase()}">
-    ${flag.conditions.map(condEl).join('\n    ')}
+    ${flag.conditions.map((c) => serializeFlagCondition(c, 'elements')).join('\n    ')}
   </flagExpression>`;
 }
 
+/**
+ * Flagg i samme form som ekte store-pakker: kartleggingen som barnenode med «#kode».
+ * Uten «#kode» feiler installasjonen med «flag without quest found!».
+ */
 export function serializeFlag(flag: Flag, questionnaireCode: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Flag ${NS} code="${esc(flag.code)}" name="${esc(flag.name)}" questionnaire="../quiz/${esc(questionnaireCode)}.questionnaire">
-  ${serializeFlagExpression(flag, questionnaireCode)}
+<questionnaire:Flag ${NS} code="${esc(flag.code)}" name="${esc(flag.name)}">
+  ${calculationQuestionnaireRef(questionnaireCode)}
+  <application id="Studio" version="1" fileVersion="1"/>
+  ${serializeFlagExpression(flag)}
 </questionnaire:Flag>`;
 }
 
@@ -547,17 +548,21 @@ export function serializeTranslation(
     }
   }
 
-  // Response template options
-  for (const tmpl of q.responseTemplates?.templates ?? []) {
-    for (const opt of tmpl.options) {
-      if (opt.texts[lang]) {
-        lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label" translatedText="${esc(opt.texts[lang])}"/>`);
-      }
-    }
+  // Svaralternativer: både delte svarmaler og alternativer lagt direkte på spørsmålet
+  const seenOptions = new Set<string>();
+  const pushOption = (opt: TextOption) => {
+    if (!opt.texts?.[lang] || seenOptions.has(opt.code)) return;
+    seenOptions.add(opt.code);
+    lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label" translatedText="${esc(opt.texts[lang])}"/>`);
+  };
+  for (const tmpl of q.responseTemplates?.templates ?? []) tmpl.options.forEach(pushOption);
+  for (const q2 of flattenAllQuestions(q.sections)) {
+    if ('options' in q2 && q2.options) q2.options.forEach(pushOption);
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <questionnaire:Translations ${NS} language="${langStr}" questionnaireName="${esc(questionnaireCode)}">
+  <application id="Studio" version="1" fileVersion="1"/>
 ${lines.join('\n')}
 </questionnaire:Translations>`;
 }

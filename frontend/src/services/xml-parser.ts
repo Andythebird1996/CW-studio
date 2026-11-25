@@ -415,6 +415,7 @@ function parseSection(
 
   const repeatCode = attr(secEl, 'repeatCode') || undefined;
   const requiresNewPage = attr(secEl, 'requiresNewPage') === 'true' ? true : undefined;
+  const backgroundImage = attr(secEl, 'backgroundImage') || undefined;
 
   const showEl = firstChild(secEl, 'show');
   const showExpression = showEl ? parseShowExpression(showEl) : undefined;
@@ -457,6 +458,11 @@ function parseSection(
     continueIfExpressions: continueIfExpression ? [continueIfExpression] : undefined,
     repeatCode,
     requiresNewPage,
+    ...(backgroundImage ? {
+      backgroundImage,
+      backgroundRepeat: attr(secEl, 'backgroundRepeat') || undefined,
+      backgroundPosition: attr(secEl, 'backgroundPosition') || undefined,
+    } : {}),
   };
 }
 
@@ -695,6 +701,15 @@ function resolveExpression(el: Element, questionnaire: Questionnaire): ExprResul
   if (type.includes('Operator')) {
     const opType = attr(el, 'type'); // 'plus', 'minus', 'multiply', 'divide', 'and', 'or', etc.
     const childEls = Array.from(el.children).filter((c) => c.localName === 'elements');
+    // Studio Web skriver MEAN som (sum av spørsmål) / antall spørsmål — les det tilbake som MEAN
+    if (opType === 'divide' && childEls.length === 2 && xsiType(childEls[1]).includes('NumberBasicType')) {
+      const divisor = parseFloat(attr(childEls[1], 'value'));
+      const first = resolveExpression(childEls[0], questionnaire);
+      const n = first.innerCalculations.length;
+      if (n > 0 && divisor === n && (first.calcType === 'SUM' || n === 1)) {
+        return { calcType: 'MEAN', innerCalculations: first.innerCalculations };
+      }
+    }
     const allInner: InnerCalculation[] = [];
     for (const child of childEls) {
       const { innerCalculations } = resolveExpression(child, questionnaire);
@@ -1052,52 +1067,46 @@ export function parseFlagFile(xmlText: string, questionnaire: Questionnaire): Fl
   }
 }
 
+const FLAG_COMPARE: Record<string, FlagCondition['operator']> = {
+  equal: 'EQ', notEqual: 'NEQ', less: 'LT', lessOrEqual: 'LTE',
+  greater: 'GT', greaterOrEqual: 'GTE',
+};
+
 function extractFlagConditions(
   el: Element,
   questionnaire: Questionnaire,
 ): { conditions: FlagCondition[]; logic: 'AND' | 'OR' } {
   const type = xsiType(el);
+  const opType = attr(el, 'type');
 
-  // Operator node — wraps multiple SimpleStatements
-  if (type.includes('Operator')) {
-    const opType = attr(el, 'type').toLowerCase(); // 'and', 'or'
-    const logic: 'AND' | 'OR' = opType === 'or' ? 'OR' : 'AND';
-    const conditions: FlagCondition[] = [];
-    for (const child of Array.from(el.children).filter((c) => c.localName === 'elements')) {
-      const { conditions: inner } = extractFlagConditions(child, questionnaire);
-      conditions.push(...inner);
-    }
-    return { conditions, logic };
-  }
-
-  // SimpleStatement — a single comparison
-  if (type.includes('SimpleStatement')) {
-    const operatorMap: Record<string, FlagCondition['operator']> = {
-      equal: 'EQ', notEqual: 'NEQ', less: 'LT', lessOrEqual: 'LTE',
-      greater: 'GT', greaterOrEqual: 'GTE',
-    };
-    const opType = attr(el, 'type');
-
+  // Sammenligning: SimpleStatement (eldre Studio Web) eller Operator med sammenligningstype (ekte store-pakker)
+  if (type.includes('SimpleStatement') || (type.includes('Operator') && opType in FLAG_COMPARE)) {
     let calcCode = '';
     let threshold = 0;
-
     for (const e of Array.from(el.children)) {
       if (e.localName !== 'elements') continue;
       const t = xsiType(e);
       if (t.includes('CalculationType') || t.includes('InnerCalculation')) {
-        const ref = attr(e, 'calculation') || attr(e, 'href') || '';
+        const hrefChild = Array.from(e.children).find((c) => c.localName === 'calculation');
+        const ref = attr(e, 'name') || attr(e, 'calculation') || attr(e, 'href') || (hrefChild ? attr(hrefChild, 'href') : '');
         calcCode = resolveCalcCode(ref, questionnaire);
-      } else if (t.includes('NumericValue') || t.includes('Numeric')) {
+      } else if (t.includes('NumberBasicType') || t.includes('Numeric')) {
         threshold = parseFloat(attr(e, 'value') || '0');
       }
     }
+    return calcCode
+      ? { conditions: [{ calculationCode: calcCode, operator: FLAG_COMPARE[opType] ?? 'GTE', threshold }], logic: 'AND' }
+      : { conditions: [], logic: 'AND' };
+  }
 
-    if (calcCode) {
-      return {
-        conditions: [{ calculationCode: calcCode, operator: operatorMap[opType] ?? 'GTE', threshold }],
-        logic: 'AND',
-      };
+  // Logisk Operator (and/or) som samler flere sammenligninger
+  if (type.includes('Operator')) {
+    const logic: 'AND' | 'OR' = opType.toLowerCase() === 'or' ? 'OR' : 'AND';
+    const conditions: FlagCondition[] = [];
+    for (const child of Array.from(el.children).filter((c) => c.localName === 'elements')) {
+      conditions.push(...extractFlagConditions(child, questionnaire).conditions);
     }
+    return { conditions, logic };
   }
 
   return { conditions: [], logic: 'AND' };

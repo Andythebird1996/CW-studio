@@ -212,6 +212,10 @@ export interface Section {
   continueIfExpressions?: ContinueIfExpression[];
   repeatCode?: string;       // for REPEATED sections
   requiresNewPage?: boolean; // force page-break before this section (EMF Container.requiresNewPage)
+  /** Bildefil i media/ som vises i seksjonen (EMF Container.backgroundImage) */
+  backgroundImage?: string;
+  backgroundRepeat?: string;
+  backgroundPosition?: string;
 }
 
 // ─── Calculations ─────────────────────────────────────────────────────────

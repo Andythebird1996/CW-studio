@@ -12,6 +12,7 @@ import {
   serializeFlag,
   serializeTranslation,
 } from './xml-serializer';
+import { parseFlagFile, parseQuestionnaire, parseCalculationFile } from './xml-parser';
 import type { Questionnaire, Section, Flag, Calculation } from '../types/questionnaire';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -337,5 +338,96 @@ describe('serializeTranslation', () => {
     // No translations → just the header/footer
     expect(xml).toContain('language="swedish"');
     expect(xml).not.toContain('translatedText=""'); // empty strings should not be emitted
+  });
+});
+
+// ─── Store-format: flagg, oversettelser og seksjonsbilde ─────────────────────
+
+describe('serializeFlag — samme form som ekte store-pakker', () => {
+  const flag: Flag = {
+    code: 'HOY_TOTAL', name: 'Høy total', type: 'WARNING',
+    conditions: [{ calculationCode: 'TOTAL', operator: 'GTE', threshold: 7 }], logic: 'AND',
+  };
+
+  it('har kartleggingen som barnenode med #kode og application, ikke questionnaire-attributt', () => {
+    const xml = serializeFlag(flag, 'TEST_Q');
+    expect(xml).toContain('<questionnaire href="../quiz/TEST_Q.questionnaire#TEST_Q"/>');
+    expect(xml).toContain('<application id="Studio" version="1" fileVersion="1"/>');
+    expect(xml).not.toMatch(/<questionnaire:Flag[^>]*\squestionnaire=/);
+  });
+
+  it('skriver sammenligningen som Operator med CalculationType name og NumberBasicType', () => {
+    const xml = serializeFlag(flag, 'TEST_Q');
+    expect(xml).toContain('<flagExpression xsi:type="questionnaire:Operator" type="greaterOrEqual">');
+    expect(xml).toContain('<elements xsi:type="questionnaire:CalculationType" name="TOTAL"/>');
+    expect(xml).toContain('<elements xsi:type="questionnaire:NumberBasicType" value="7"/>');
+    expect(xml).not.toContain('SimpleStatement');
+  });
+
+  it('rundtur gjennom parseFlagFile beholder betingelser og logikk', () => {
+    const multi: Flag = { ...flag, conditions: [
+      { calculationCode: 'TOTAL', operator: 'GTE', threshold: 7 },
+      { calculationCode: 'SUB_A', operator: 'LT', threshold: 2.5 },
+    ], logic: 'OR' };
+    const back = parseFlagFile(serializeFlag(multi, 'TEST_Q'), makeQuestionnaire());
+    expect(back?.conditions).toEqual(multi.conditions);
+    expect(back?.logic).toBe('OR');
+  });
+
+  it('leser eldre SimpleStatement-flagg med calculation href', () => {
+    const old = `<?xml version="1.0" encoding="UTF-8"?>
+<questionnaire:Flag xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:questionnaire="http://questionnaire/1.0" code="F" name="F">
+  <flagExpression xsi:type="questionnaire:SimpleStatement" type="greater">
+    <elements xsi:type="questionnaire:CalculationType"><calculation href="../calculations/TOTAL.calculation"/></elements>
+    <elements xsi:type="questionnaire:NumberBasicType" value="3"/>
+  </flagExpression>
+</questionnaire:Flag>`;
+    expect(parseFlagFile(old, makeQuestionnaire())?.conditions).toEqual([{ calculationCode: 'TOTAL', operator: 'GT', threshold: 3 }]);
+  });
+});
+
+describe('serializeTranslation — application', () => {
+  it('har application-element som ekte oversettelsesfiler', () => {
+    const q = makeQuestionnaire({ name: { NO: 'Navn', EN: 'Name', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' }, supportedLanguages: ['NO', 'EN'] });
+    expect(serializeTranslation(q, 'EN', 'TEST_Q')).toContain('<application id="Studio" version="1" fileVersion="1"/>');
+  });
+});
+
+describe('serializeSection — backgroundImage', () => {
+  it('skriver seksjonsbilde og leser det tilbake', () => {
+    const q = makeQuestionnaire({ sections: [makeSection({ backgroundImage: 'bilde.png' })] });
+    const xml = serializeQuestionnaire(q);
+    expect(xml).toContain('backgroundImage="bilde.png" backgroundRepeat="noRepeat" backgroundPosition="right"');
+    expect(parseQuestionnaire(xml).sections[0].backgroundImage).toBe('bilde.png');
+  });
+});
+
+describe('serializeCalculation — MEAN rundtur', () => {
+  it('MEAN over flere spørsmål leses tilbake som MEAN med samme spørsmål', () => {
+    const calc: Calculation = { code: 'M', name: 'Snitt', type: 'MEAN', innerCalculations: [{ questionCode: 'Q1' }, { questionCode: 'Q2' }, { questionCode: 'Q3' }] };
+    const back = parseCalculationFile(serializeCalculation(calc, 'TEST_Q'), makeQuestionnaire());
+    expect(back?.type).toBe('MEAN');
+    expect(back?.innerCalculations.map((ic) => ic.questionCode)).toEqual(['Q1', 'Q2', 'Q3']);
+  });
+
+  it('MEAN over ett spørsmål leses tilbake som MEAN', () => {
+    const calc: Calculation = { code: 'M1', name: 'Snitt', type: 'MEAN', innerCalculations: [{ questionCode: 'Q1' }] };
+    expect(parseCalculationFile(serializeCalculation(calc, 'TEST_Q'), makeQuestionnaire())?.type).toBe('MEAN');
+  });
+
+  it('deling på annet tall enn antall spørsmål forblir CUSTOM', () => {
+    const xml = serializeCalculation({ code: 'D', name: 'D', type: 'MEAN', innerCalculations: [{ questionCode: 'Q1' }, { questionCode: 'Q2' }] }, 'TEST_Q').replace('value="2"', 'value="5"');
+    expect(parseCalculationFile(xml, makeQuestionnaire())?.type).toBe('CUSTOM');
+  });
+});
+
+describe('serializeTranslation — svaralternativer på spørsmålet', () => {
+  it('oversetter alternativer som ligger direkte på spørsmålet', () => {
+    const q = makeQuestionnaire({ supportedLanguages: ['NO', 'EN'], sections: [makeSection({ questions: [{
+      id: 'q1', code: 'Q1', type: 'radiobutton', required: true,
+      texts: { NO: 'Spørsmål', EN: 'Question', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' },
+      options: [{ code: 'Q1_0', score: 0, texts: { NO: 'Nei', EN: 'No', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' } }],
+    }] })] });
+    expect(serializeTranslation(q, 'EN', 'TEST_Q')).toContain('<translation code="Q1_0" entity="TextOption" property="label" translatedText="No"/>');
   });
 });

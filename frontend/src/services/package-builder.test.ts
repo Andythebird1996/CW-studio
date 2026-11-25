@@ -213,7 +213,7 @@ describe('buildPackageZip()', () => {
     const result = await buildPackageZip(makeMinimalQuestionnaire(), { rapport: rap });
     const zip = await unzip(result.base64);
     const content = await zip.files['reports/rapport.rap'].async('string');
-    expect(content).toBe('/* $questionnaire TEST_Q */\n/* $code rapport */\n/* $name Test questionnaire */\n/* $version 1.0 */\n/* $language nb */\nSUM=[CALC(TOTAL)]');
+    expect(content).toBe('/* $questionnaire TEST_Q */\n/* $code rapport */\n/* $name Test questionnaire */\n/* $version 1.0 */\n/* $language nb */\n/* $clinicianOnly false */\nSUM=[CALC(TOTAL)]');
     expect(result.rapsMissingHeaders).toEqual([]);
   });
 
@@ -224,9 +224,9 @@ describe('buildPackageZip()', () => {
   });
 
   it('ensureRapHeaders beholder eksisterende verdier og fyller tomme', () => {
-    expect(ensureRapHeaders('/* $version 2.0 */\n/* $language sv */\nX', 'nb')).toBe('/* $version 2.0 */\n/* $language sv */\nX');
-    expect(ensureRapHeaders('/* $version */\n/* $language */\nX', 'nb')).toBe('/* $version 1.0 */\n/* $language nb */\nX');
-    expect(ensureRapHeaders('X', 'en')).toBe('/* $version 1.0 */\n/* $language en */\nX');
+    expect(ensureRapHeaders('/* $version 2.0 */\n/* $language sv */\n/* $clinicianOnly true */\nX', 'nb')).toBe('/* $version 2.0 */\n/* $language sv */\n/* $clinicianOnly true */\nX');
+    expect(ensureRapHeaders('/* $version */\n/* $language */\n/* $clinicianOnly */\nX', 'nb')).toBe('/* $version 1.0 */\n/* $language nb */\n/* $clinicianOnly false */\nX');
+    expect(ensureRapHeaders('X', 'en')).toBe('/* $version 1.0 */\n/* $language en */\n/* $clinicianOnly false */\nX');
   });
 
   it('findRapsMissingHeaders finner rapporter uten $language eller $version', () => {

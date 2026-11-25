@@ -105,10 +105,12 @@ function hasRapHeader(content: string, key: string): boolean {
 export function ensureRapHeaders(content: string, language: string, version = DEFAULT_RAP_VERSION): string {
   let out = content
     .replace(/\/\*\s*\$version\s*\*\//, `/* $version ${version} */`)
-    .replace(/\/\*\s*\$language\s*\*\//, `/* $language ${language} */`);
+    .replace(/\/\*\s*\$language\s*\*\//, `/* $language ${language} */`)
+    .replace(/\/\*\s*\$clinicianOnly\s*\*\//, '/* $clinicianOnly false */');
   const missing: string[] = [];
   if (!hasRapHeader(out, 'version')) missing.push(`/* $version ${version} */`);
   if (!hasRapHeader(out, 'language')) missing.push(`/* $language ${language} */`);
+  if (!hasRapHeader(out, 'clinicianOnly')) missing.push('/* $clinicianOnly false */');
   if (missing.length === 0) return out;
   let idx = 0;
   let m: RegExpExecArray | null;
