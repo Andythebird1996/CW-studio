@@ -112,6 +112,13 @@ function defaultGraph(): GraphDef {
   return { graphType: 1, min: 0, max: 27, header: '', width: 580, height: 220, bands: [], lines: [], plots: [] };
 }
 
+/** PHP round($v, $dec) skrevet ut som PHP gjør: halv opp bort fra null, uten etterfølgende nuller. */
+export function phpRound(value: number, dec: number): string {
+  const f = 10 ** dec;
+  const r = Math.sign(value) * Math.round(Math.abs(value) * f + 1e-9) / f;
+  return String(Object.is(r, -0) ? 0 : r);
+}
+
 export function interpretRap(rapContent: string, ctx: SimContext): string {
   _graphs = new Map();
   _series = new Map();
@@ -322,7 +329,8 @@ function executeTokens(
         const val = resolve(mEcho[1].trim(), args);
         const dec = mEcho[2] !== undefined ? parseInt(mEcho[2]) : undefined;
         const num = parseFloat(val);
-        output += dec !== undefined && !isNaN(num) ? num.toFixed(dec) : val;
+        // Rapportmotoren bruker PHP round($v, $dec): ingen utfylling med nuller (8 → "8", 7.25 → "7.3")
+        output += dec !== undefined && !isNaN(num) ? phpRound(num, dec) : val;
       }
       pos.i++;
     } else if (/^([\w$][\w$-]*)\s*=\s*series\(/i.test(dir)) {

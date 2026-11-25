@@ -146,6 +146,9 @@ export interface SliderQuestion extends BaseQuestion {
   min: number;
   max: number;
   step?: number;
+  /** NumericSlider.labelStep – avstand mellom skalaetiketter (standard = step) */
+  labelStep?: number;
+  /** Kun for import av eldre Studio-filer – Checkware-modellen har ingen endeetiketter på slider */
   minLabel?: Record<LanguageType, string>;
   maxLabel?: Record<LanguageType, string>;
   showTicks?: boolean;

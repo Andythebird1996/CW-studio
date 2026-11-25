@@ -20,6 +20,7 @@ import type {
   FlagCondition,
   Norm,
   TextOption,
+  StringInputSize,
 } from '../types/questionnaire';
 
 // ─── XML escape ────────────────────────────────────────────────────────────
@@ -91,6 +92,24 @@ const WIDGET_TYPE_MAP: Partial<Record<Question['type'], string>> = {
   country: 'CountryWidget',
 };
 
+/** Flyttall slik EMF skriver dem: 0 → "0.0", 0.5 → "0.5". */
+export function emfFloat(n: number): string {
+  return Number.isInteger(n) ? n.toFixed(1) : String(n);
+}
+
+/** Antall desimaler → NumericInput step (0 → 1, 1 → 0.1, 2 → 0.01). */
+export function stepFromDecimals(decimals: number | undefined): number {
+  const d = Math.max(0, Math.min(6, Math.floor(decimals ?? 0)));
+  return d === 0 ? 1 : Number((10 ** -d).toFixed(d));
+}
+
+/** Studio-størrelse → StringInputSize i Checkware-modellen (line | multiline | story). */
+export function stringInputSizeAttr(size: StringInputSize | undefined, multiline?: boolean): 'line' | 'multiline' | 'story' {
+  if (size === 'XLARGE') return 'story';
+  if (size === 'LARGE' || multiline) return 'multiline';
+  return 'line';
+}
+
 function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): string {
   const allQs = flattenAllQuestions(q.sections);
   const templates = q.responseTemplates?.templates ?? [];
@@ -141,31 +160,35 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
   for (const qq of allQs) {
     if (qq.type === 'stringInput' || qq.type === 'numericInput' || qq.type === 'dateInput' || qq.type === 'slider') {
       const wp: Record<string, string> = {};
+      // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
+      // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
+      // som flyttall ("0.0"), DateInput addDate/addTime, NumericSlider med full attributtliste.
       if (qq.type === 'stringInput') {
-        wp.size = qq.size ?? 'MEDIUM';
-        if (qq.multiline) wp.multiline = 'true';
+        wp.size = stringInputSizeAttr(qq.size, qq.multiline);
       } else if (qq.type === 'numericInput') {
-        if (qq.min !== undefined) wp.min = String(qq.min);
-        if (qq.max !== undefined) wp.max = String(qq.max);
-        if (qq.decimals !== undefined) wp.decimals = String(qq.decimals);
-        if (qq.unit) wp.unit = qq.unit;
+        if (qq.min !== undefined) wp.minValue = emfFloat(qq.min);
+        if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
+        wp.step = emfFloat(stepFromDecimals(qq.decimals));
       } else if (qq.type === 'dateInput') {
-        if (qq.includeTime) wp.includeTime = 'true';
+        wp.addTime = String(qq.includeTime === true);
+        wp.addDate = 'true';
       } else if (qq.type === 'slider') {
-        if (qq.min !== undefined) wp.min = String(qq.min);
-        if (qq.max !== undefined) wp.max = String(qq.max);
-        if (qq.step !== undefined) wp.step = String(qq.step);
-        if (qq.minLabel?.[lang]) wp.labelMin = qq.minLabel[lang];
-        if (qq.maxLabel?.[lang]) wp.labelMax = qq.maxLabel[lang];
-        if (qq.showTicks !== undefined) wp.showTicks = String(qq.showTicks);
-        if (qq.showEndLabels !== undefined) wp.showEndLabels = String(qq.showEndLabels);
-        if (qq.showScaleLabels !== undefined) wp.showScaleLabels = String(qq.showScaleLabels);
-        if (qq.showDigitalPoints !== undefined) wp.showDigitalPoints = String(qq.showDigitalPoints);
-        if (qq.showClear !== undefined) wp.showClear = String(qq.showClear);
-        if (qq.displayValue !== undefined) wp.displayValue = String(qq.displayValue);
-        if (qq.direction) wp.direction = qq.direction;
+        const step = qq.step ?? 1;
+        wp.minValue = emfFloat(qq.min);
+        wp.maxValue = emfFloat(qq.max);
+        wp.step = emfFloat(step);
+        wp.labelStep = emfFloat(qq.labelStep ?? step);
+        wp.showEndLabels = String(qq.showEndLabels ?? true);
+        wp.showScaleLabels = String(qq.showScaleLabels ?? true);
+        wp.valuePosition = 'after';
+        wp.labelPosition = 'after';
+        wp.direction = qq.direction ?? 'horizontal';
         if (qq.sliderLength) wp.length = qq.sliderLength;
-        if (qq.hairline !== undefined) wp.hairline = String(qq.hairline);
+        wp.displayValue = String(qq.displayValue ?? false);
+        wp.showTicks = String(qq.showTicks ?? false);
+        wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
+        wp.showClear = String(qq.showClear ?? true);
+        wp.hairline = String(qq.hairline ?? false);
       }
       templateMap.set(qq.code, {
         code: qq.code,
@@ -235,9 +258,9 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   }
 
   const templateCode = 'responseTemplateCode' in q ? (q.responseTemplateCode ?? q.code) : q.code;
-  const voluntary = q.voluntary ? ' voluntary="true"' : '';
-  const readOnly = q.readonly ? ' readOnly="true"' : '';
-  const reversed = q.reversedScore ? ' reversedScore="true"' : '';
+  const voluntary = ` voluntary="${q.voluntary === true}"`;
+  const readOnly = ` readonly="${q.readonly === true}"`;
+  const reversed = ` reversedScore="${q.reversedScore === true}"`;
   const helpText = q.helpTexts?.[lang] ? ` helpText="${esc(q.helpTexts[lang])}"` : '';
   const maxRankAttr = (q.type === 'rank' && q.maxRank !== undefined) ? ` maxRank="${q.maxRank}"` : '';
 
@@ -269,7 +292,7 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const sectionType = section.type ?? 'NORMAL';
   const sectionTypeAttr = sectionType !== 'NORMAL' ? ` sectionType="${sectionType}"` : '';
   const repeatCodeAttr = section.repeatCode ? ` repeatCode="${esc(section.repeatCode)}"` : '';
-  const requiresNewPageAttr = section.requiresNewPage ? ` requiresNewPage="true"` : '';
+  const requiresNewPageAttr = ` requiresNewPage="${section.requiresNewPage === true}"`;
   const backgroundAttr = section.backgroundImage
     ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
     : '';
@@ -278,8 +301,9 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const tag = depth === 0 ? 'section' : 'contains xsi:type="questionnaire:Section"';
   const closeTag = depth === 0 ? 'section' : 'contains';
 
-  // Desktop Studio EMF uses 'title' attribute; parser accepts 'title' || 'description' for round-trip compat
-  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` title="${esc(titleText)}"` : ''}>
+  // Section-modellen har ikke 'title' – overskriften ligger i 'description' (som i ekte pakker og
+  // i oversettelsene). Parseren godtar fortsatt 'title' fra eldre Studio-eksporter.
+  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
 ${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
 ${indent}</${closeTag}>`;
 }
@@ -538,13 +562,6 @@ export function serializeTranslation(
     const helpText = q2.helpTexts?.[lang];
     if (helpText) {
       lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="helpText" translatedText="${esc(helpText)}"/>`);
-    }
-    // Slider min/max labels
-    if (q2.type === 'slider') {
-      const minLabel = q2.minLabel?.[lang];
-      if (minLabel) lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="labelMin" translatedText="${esc(minLabel)}"/>`);
-      const maxLabel = q2.maxLabel?.[lang];
-      if (maxLabel) lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="labelMax" translatedText="${esc(maxLabel)}"/>`);
     }
   }
 

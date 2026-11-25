@@ -97,9 +97,9 @@ describe('serializeQuestionnaire — slider', () => {
     });
 
     const xml = serializeQuestionnaire(q);
-    expect(xml).toContain('min="0"');
-    expect(xml).toContain('max="100"');
-    expect(xml).toContain('step="5"');
+    expect(xml).toContain('minValue="0.0"');
+    expect(xml).toContain('maxValue="100.0"');
+    expect(xml).toContain('step="5.0"');
   });
 });
 
@@ -164,12 +164,12 @@ describe('serializeSection — requiresNewPage', () => {
     expect(xml).toContain('requiresNewPage="true"');
   });
 
-  it('does NOT emit requiresNewPage when false/undefined', () => {
+  it('skriver requiresNewPage="false" eksplisitt som ekte pakker når false/udefinert', () => {
     const q = makeQuestionnaire({
-      sections: [makeSection({ requiresNewPage: false })],
+      sections: [makeSection({ requiresNewPage: false }), makeSection({ id: 's2', code: 'SEC2' })],
     });
     const xml = serializeQuestionnaire(q);
-    expect(xml).not.toContain('requiresNewPage');
+    expect(xml.match(/requiresNewPage="false"/g)?.length).toBe(2);
   });
 });
 
@@ -429,5 +429,73 @@ describe('serializeTranslation — svaralternativer på spørsmålet', () => {
       options: [{ code: 'Q1_0', score: 0, texts: { NO: 'Nei', EN: 'No', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' } }],
     }] })] });
     expect(serializeTranslation(q, 'EN', 'TEST_Q')).toContain('<translation code="Q1_0" entity="TextOption" property="label" translatedText="No"/>');
+  });
+});
+
+// ─── Svarmaler i ekte Checkware-format (questionnaire.ecore + store-pakker) ─────
+
+describe('svarmaler — samme attributter som ekte store-pakker', () => {
+  const t = (NO: string) => ({ NO, EN: '', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' });
+  function build(questions: Section['questions']): string {
+    return serializeQuestionnaire(makeQuestionnaire({ sections: [makeSection({ questions })] }));
+  }
+  const widget = (xml: string, type: string) => xml.match(new RegExp(`<widget xsi:type="questionnaire:${type}"[^>]*/>`))?.[0] ?? '';
+
+  it('StringInput: size line/multiline/story, aldri MEDIUM', () => {
+    const xml = build([
+      { id: 'a', code: 'T1', type: 'stringInput', required: false, texts: t('a'), size: 'MEDIUM' },
+      { id: 'b', code: 'T2', type: 'stringInput', required: false, texts: t('b'), size: 'SMALL', multiline: true },
+      { id: 'c', code: 'T3', type: 'stringInput', required: false, texts: t('c'), size: 'XLARGE' },
+    ]);
+    expect(xml).toContain('<widget xsi:type="questionnaire:StringInput" size="line"/>');
+    expect(xml).toContain('<widget xsi:type="questionnaire:StringInput" size="multiline"/>');
+    expect(xml).toContain('<widget xsi:type="questionnaire:StringInput" size="story"/>');
+    expect(xml).not.toContain('MEDIUM');
+    const qs = parseQuestionnaire(xml).sections[0].questions;
+    expect(qs.map((q) => (q.type === 'stringInput' ? q.size : ''))).toEqual(['MEDIUM', 'LARGE', 'XLARGE']);
+  });
+
+  it('NumericSlider: full attributtliste og rekkefølge som ekte pakker', () => {
+    const xml = build([{ id: 's', code: 'SL1', type: 'slider', required: false, texts: t('s'), min: 0, max: 10, minLabel: t('Lav') }]);
+    expect(widget(xml, 'NumericSlider')).toBe(
+      '<widget xsi:type="questionnaire:NumericSlider" minValue="0.0" maxValue="10.0" step="1.0" labelStep="1.0" showEndLabels="true" showScaleLabels="true" valuePosition="after" labelPosition="after" direction="horizontal" displayValue="false" showTicks="false" showDigitalPoints="false" showClear="true" hairline="false"/>',
+    );
+    expect(xml).not.toContain('labelMin');
+    const q = parseQuestionnaire(xml).sections[0].questions[0];
+    expect(q.type === 'slider' && [q.min, q.max, q.step, q.showClear]).toEqual([0, 10, 1, true]);
+  });
+
+  it('NumericInput: minValue/maxValue/step som flyttall; desimaler ↔ step', () => {
+    const xml = build([{ id: 'n', code: 'N1', type: 'numericInput', required: false, texts: t('n'), min: 0, max: 100, decimals: 1 }]);
+    expect(widget(xml, 'NumericInput')).toBe('<widget xsi:type="questionnaire:NumericInput" minValue="0.0" maxValue="100.0" step="0.1"/>');
+    const q = parseQuestionnaire(xml).sections[0].questions[0];
+    expect(q.type === 'numericInput' && [q.min, q.max, q.decimals]).toEqual([0, 100, 1]);
+  });
+
+  it('DateInput: addTime/addDate', () => {
+    const xml = build([{ id: 'd', code: 'D1', type: 'dateInput', required: false, texts: t('d') }]);
+    expect(widget(xml, 'DateInput')).toBe('<widget xsi:type="questionnaire:DateInput" addTime="false" addDate="true"/>');
+  });
+
+  it('Question: voluntary/readonly/reversedScore alltid med, readonly med liten o', () => {
+    const xml = build([{ id: 'q', code: 'Q1', type: 'combobox', required: true, texts: t('q'), readonly: true, options: [{ code: 'Q1_1', score: 1, texts: t('x') }] }]);
+    expect(xml).toMatch(/template="Q1" voluntary="false" readonly="true" reversedScore="false"/);
+    expect(xml).not.toContain('readOnly');
+    expect(parseQuestionnaire(xml).sections[0].questions[0].readonly).toBe(true);
+  });
+
+  it('Seksjonsoverskrift skrives som description (Section har ikke title i modellen)', () => {
+    const xml = build([]);
+    expect(xml).toMatch(/<section code="SEC1" requiresNewPage="false" description="Seksjon 1">/);
+    expect(parseQuestionnaire(xml).sections[0].titles.NO).toBe('Seksjon 1');
+  });
+
+  it('leser eldre Studio-format (min/max/labelMin, size=MEDIUM) fortsatt inn', () => {
+    const old = build([]).replace(
+      '<responseTemplates/>',
+      '<responseTemplates><responseTemplate questions="X1" code="X1"><widget xsi:type="questionnaire:NumericSlider" min="2" max="8" labelMin="Lav"/></responseTemplate></responseTemplates>',
+    ).replace('</section>', '<contains xsi:type="questionnaire:Question" code="X1" question="x" mandatory="false" template="X1"/></section>');
+    const q = parseQuestionnaire(old).sections[0].questions[0];
+    expect(q.type === 'slider' && [q.min, q.max, q.minLabel?.NO]).toEqual([2, 8, 'Lav']);
   });
 });

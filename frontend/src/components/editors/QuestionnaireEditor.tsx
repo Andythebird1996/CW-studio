@@ -628,7 +628,7 @@ function QuestionRow({
           {/* NumericInput options */}
           {question.type === 'numericInput' && (
             <div className="space-y-2">
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-cw-gray-text mb-1">Min</label>
                   <input
@@ -662,50 +662,23 @@ function QuestionRow({
                     className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('unitLabel', uiLang)}</label>
-                  <input
-                    type="text"
-                    value={question.unit ?? ''}
-                    onChange={(e) =>
-                      onChange({ ...question, unit: e.target.value || undefined })
-                    }
-                    placeholder={t('exampleKg', uiLang)}
-                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
-                  />
-                </div>
               </div>
             </div>
           )}
 
-          {/* StringInput: size + multiline */}
+          {/* StringInput: størrelse som i Checkware-modellen (line | multiline | story) */}
           {question.type === 'stringInput' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('sizeLabel', uiLang)}</label>
-                <select
-                  value={question.size}
-                  onChange={(e) => onChange({ ...question, size: e.target.value as import('../../types/questionnaire').StringInputSize })}
-                  className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none"
-                >
-                  <option value="SMALL">{t('sizeSmall', uiLang)}</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LARGE">{t('sizeLarge', uiLang)}</option>
-                  <option value="XLARGE">{t('sizeXLarge', uiLang)}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('multiline', uiLang)}</label>
-                <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={question.multiline ?? false}
-                    onChange={(e) => onChange({ ...question, multiline: e.target.checked })}
-                    className="w-4 h-4 accent-cw-blue"
-                  />
-                  <span className="text-sm text-cw-gray-text">{t('textareaLabel', uiLang)}</span>
-                </label>
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('sizeLabel', uiLang)}</label>
+              <select
+                value={question.size === 'XLARGE' ? 'XLARGE' : question.size === 'LARGE' || question.multiline ? 'LARGE' : 'MEDIUM'}
+                onChange={(e) => onChange({ ...question, size: e.target.value as import('../../types/questionnaire').StringInputSize, multiline: undefined })}
+                className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none"
+              >
+                <option value="MEDIUM">{t('sizeLine', uiLang)}</option>
+                <option value="LARGE">{t('sizeMultiline', uiLang)}</option>
+                <option value="XLARGE">{t('sizeStory', uiLang)}</option>
+              </select>
             </div>
           )}
 
@@ -753,38 +726,6 @@ function QuestionRow({
                     value={question.step ?? 1}
                     onChange={(e) => onChange({ ...question, step: +e.target.value })}
                     className="w-full border border-cw-border rounded px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('minLabelField', uiLang)}</label>
-                  <input
-                    type="text"
-                    value={question.minLabel?.[lang] ?? ''}
-                    onChange={(e) =>
-                      onChange({
-                        ...question,
-                        minLabel: { ...(question.minLabel ?? {}), [lang]: e.target.value } as Record<LanguageType, string>,
-                      })
-                    }
-                    placeholder={t('low', uiLang)}
-                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('maxLabelField', uiLang)}</label>
-                  <input
-                    type="text"
-                    value={question.maxLabel?.[lang] ?? ''}
-                    onChange={(e) =>
-                      onChange({
-                        ...question,
-                        maxLabel: { ...(question.maxLabel ?? {}), [lang]: e.target.value } as Record<LanguageType, string>,
-                      })
-                    }
-                    placeholder={t('high', uiLang)}
-                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
                   />
                 </div>
               </div>

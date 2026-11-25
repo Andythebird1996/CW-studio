@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { interpretRap, lintRap } from './rap-interpreter';
+import { interpretRap, lintRap, phpRound } from './rap-interpreter';
 import type { SimContext, SimAnswer } from './rap-interpreter';
 import type { Questionnaire } from '../types/questionnaire';
 
@@ -888,7 +888,16 @@ describe('RAP interpreter — samme oppførsel som rapportmotoren', () => {
 
   it('eval("CALC(kode)") gir beregningsverdien', () => {
     const out = body(interpretRap(framed('[$T = eval("CALC(TOTAL)")]\nE=[ECHO($T,1)]'), makeCtx({ answers })));
-    expect(out).toContain('E=5.0');
+    expect(out).toContain('E=5');
+    expect(out).not.toContain('E=5.0');
+  });
+
+  it('ECHO avrunder som PHP round() uten utfylling', () => {
+    expect(phpRound(8, 1)).toBe('8');
+    expect(phpRound(7.25, 1)).toBe('7.3');
+    expect(phpRound(2.5, 0)).toBe('3');
+    expect(phpRound(-1.5, 0)).toBe('-2');
+    expect(phpRound(1.005, 2)).toBe('1.01');
   });
 
   it('graf tegnes bare fra series(); GRAPH_PLOT med beregningskode gir ingen graf', () => {
