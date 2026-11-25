@@ -3,6 +3,7 @@
  * Format mirrors what the Java client produces for PublishPackage.
  */
 import JSZip from 'jszip';
+import { lintRap, type RapLintIssue } from './rap-interpreter';
 import type { Questionnaire, MediaFile, PackageMetadata } from '../types/questionnaire';
 import {
   serializeQuestionnaire,
@@ -80,6 +81,70 @@ export interface BuiltPackage {
   calcsMissingQuestionnaireRef: string[];
   /** Koder for rapporter som mangler `$language`/`$version` (stopper installasjon i Checkware) */
   rapsMissingHeaders: string[];
+  /** Rapporter med funksjon/gruppe, men ufullstendig ramme (de uten ramme får den automatisk) */
+  rapsMissingFrame: string[];
+  /** Mediefiler med filtype Checkware FP6 ikke kan levere (gir HTTP 500 ved visning) */
+  unsupportedMedia: string[];
+  /** Konstruksjoner rapportmotoren ikke støtter, per rapportkode */
+  rapLint: Record<string, RapLintIssue[]>;
+}
+
+/**
+ * Filtyper Checkware FP6 kan levere (MediaMimeTypeEnum): pdf, docx, mp3, jpeg og png.
+ * Andre typer installeres, men gir HTTP 500 når mediet hentes.
+ */
+export const ALLOWED_MEDIA_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  mp3: 'audio/mpeg',
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+export function isAllowedMediaFile(fileName: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  return ext in ALLOWED_MEDIA_TYPES;
+}
+
+export function findUnsupportedMedia(mediaFiles: MediaFile[]): string[] {
+  return mediaFiles.filter((m) => !isAllowedMediaFile(m.fileName)).map((m) => m.fileName);
+}
+
+/** Navnet ekte maler bruker (829 av 843 rapporter i storen) */
+export const RAP_MAIN_FUNCTION = 'standard_rapport';
+
+const hasRapFunction = (c: string) => /\[\s*function\s+\w+\s*\(/i.test(c);
+const hasRapGroup = (c: string) => /\[\s*group\s*\(\s*"/i.test(c);
+const hasRapCall = (c: string) => /\[\s*CALL\s+\w+\s*\(/i.test(c);
+
+/**
+ * Rapportmotoren lagrer bare tekst som ligger i en gruppe inne i en funksjon. Uten rammen
+ * logges «Report generated successfully», men ingen rapport lagres.
+ * Rapporter uten funksjon, gruppe og CALL pakkes inn; rapporter som allerede har ramme, røres ikke.
+ */
+export function ensureRapFrame(content: string, groupLabel = 'Rapport'): string {
+  if (hasRapFunction(content) || hasRapGroup(content) || hasRapCall(content)) return content;
+  let idx = 0;
+  let m: RegExpExecArray | null;
+  while ((m = RAP_HEADER_LINE.exec(content.slice(idx))) !== null) idx += m[0].length;
+  const head = content.slice(0, idx);
+  const body = content.slice(idx).replace(/\s+$/, '');
+  return `${head}[CALL ${RAP_MAIN_FUNCTION}()]
+[DIE]
+[function ${RAP_MAIN_FUNCTION}()]
+[group("${groupLabel.replace(/"/g, '')}",true)]
+${body}
+[group_end]
+[function_end]
+`;
+}
+
+/** Rapporter som mangler deler av rammen (funksjon, gruppe eller CALL) */
+export function findRapsMissingFrame(rapFiles: Record<string, string>): string[] {
+  return Object.entries(rapFiles)
+    .filter(([, c]) => !(hasRapFunction(c) && hasRapGroup(c) && hasRapCall(c)))
+    .map(([code]) => code);
 }
 
 /** Kartleggingsspråk → språkkode i rapportens `$language`-header (som i ekte pakker: norwegian → nb) */
@@ -196,13 +261,13 @@ export async function buildPackageZip(
     // Ensure RAP headers are populated — empty headers cause server errors.
     const rapCode = fileName.replace(/\.rap$/, '');
     const rapName = q.name[q.defaultLanguage] || q.code;
-    const fixedContent = ensureRapHeaders(
+    const fixedContent = ensureRapFrame(ensureRapHeaders(
       content
         .replace(/\/\* \$questionnaire\s*\*\//, `/* $questionnaire ${q.code} */`)
         .replace(/\/\* \$code\s*\*\//, `/* $code ${rapCode} */`)
         .replace(/\/\* \$name\s*\*\//, `/* $name ${rapName} */`),
       rapLanguage,
-    );
+    ));
     rapOut[rapCode] = fixedContent;
     zip.file(`reports/${fileName}`, fixedContent);
     manifestFiles.push({ fileName, path: 'reports', extension: 'rap', code: fileName.replace(/\.rap$/, '') });
@@ -237,5 +302,8 @@ export async function buildPackageZip(
     files: manifestFiles,
     calcsMissingQuestionnaireRef: findCalcsMissingQuestionnaireRef(calcXml, q.code),
     rapsMissingHeaders: findRapsMissingHeaders(rapOut),
+    rapsMissingFrame: findRapsMissingFrame(rapOut),
+    unsupportedMedia: findUnsupportedMedia(mediaFiles ?? []),
+    rapLint: Object.fromEntries(Object.entries(rapOut).map(([c, content]) => [c, lintRap(content)]).filter(([, l]) => l.length > 0)),
   };
 }

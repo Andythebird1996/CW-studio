@@ -1,9 +1,9 @@
 import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
-import { Download } from 'lucide-react';
-import { interpretRap, type SimAnswer, type SimContext, type SimPatient } from '../../services/rap-interpreter';
+import { Download, AlertTriangle } from 'lucide-react';
+import { interpretRap, lintRap, type SimAnswer, type SimContext, type SimPatient } from '../../services/rap-interpreter';
 import type { Questionnaire, LanguageType } from '../../types/questionnaire';
 import { AssessmentPreview, type AnswerMap } from '../preview/AssessmentPreview';
-import {t,  useUILang } from '../../i18n';
+import {t, tf, useUILang } from '../../i18n';
 
 export type ReportSheetStyle = 'engine' | 'portal';
 
@@ -154,6 +154,8 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName, rep
     return interpretRap(rapContent, ctx);
   }, [questionnaire, rapContent, simAnswers, patient, reportName, reportFileName, reportStyle]);
 
+  const lintIssues = useMemo(() => lintRap(rapContent), [rapContent]);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const savedScrollY = useRef(0);
 
@@ -286,6 +288,16 @@ export function ReportSimulator({ questionnaire, rapContent, reportFileName, rep
             <Download className="w-3 h-3" /> {t('downloadPdf', uiLang)}
           </button>
         </div>
+        {lintIssues.length > 0 && (
+          <div className="bg-cw-orange-soft border-b border-cw-orange/40 px-4 py-2 shrink-0 text-xs text-cw-orange" data-testid="rap-lint">
+            <p className="font-medium flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {t('rapLintTitle', uiLang)}</p>
+            <ul className="mt-1 space-y-0.5">
+              {lintIssues.map((iss, i) => (
+                <li key={i}>• {iss.line > 0 ? `${tf('rapLintLine', uiLang, { line: iss.line })}: ` : ''}{t(`rapLint_${iss.code}`, uiLang)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="flex-1 overflow-hidden p-4">
           <iframe
             ref={iframeRef}
