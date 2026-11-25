@@ -459,6 +459,7 @@ const strings = {
   validationOkPublish: { EN: 'Validation passed — ready to publish', NO: 'Validering OK — klar til publisering' },
   validating:        { EN: 'Validating...',                   NO: 'Validerer...'                     },
   validate:          { EN: 'Validate',                        NO: 'Valider'                          },
+  calcMissingQuestionnaireRef: { EN: 'Calculation(s) {codes} do not reference the questionnaire. Checkware will fail to install the package ("Assessment not found").', NO: 'Beregning(er) {codes} peker ikke på kartleggingen. Checkware vil ikke klare å installere pakken («Assessment not found»).' },
   publishRejected:   { EN: 'The server rejected the publication', NO: 'Serveren avviste publiseringen' },
   connectSubtitle:   { EN: 'Connect to your Checkware server', NO: 'Koble til Checkware-serveren'    },
   serverWsdl:        { EN: 'Server WSDL URL',                 NO: 'Serverens WSDL-adresse'           },

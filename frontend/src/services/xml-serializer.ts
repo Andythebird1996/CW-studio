@@ -397,6 +397,14 @@ function serializeInnerCalcExpression(
     </calculationExpression>`;
 }
 
+/**
+ * Referansen til kartleggingen som Checkware-serveren leser skjemakoden fra ved installasjon.
+ * Mangler den, feiler installasjonen med «Assessment  not found» (tom kode).
+ */
+export function calculationQuestionnaireRef(questionnaireCode: string): string {
+  return `<questionnaire href="../quiz/${esc(questionnaireCode)}.questionnaire#${esc(questionnaireCode)}"/>`;
+}
+
 export function serializeCalculation(calc: Calculation, questionnaireCode: string): string {
   // Prefer the preserved raw expression for lossless round-trip.
   // Fall back to rebuilding from innerCalculations (e.g. newly created calculations).
@@ -405,6 +413,8 @@ export function serializeCalculation(calc: Calculation, questionnaireCode: strin
   return `<?xml version="1.0" encoding="UTF-8"?>
 <questionnaire:Calculation ${NS} code="${esc(calc.code)}" name="${esc(calc.name)}"${normAttr}>
     ${expr}
+  ${calculationQuestionnaireRef(questionnaireCode)}
+  <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Calculation>`;
 }
 
@@ -461,6 +471,7 @@ export function serializeNorm(norm: Norm): string {
     const sd = norm.data[0]?.normValue ?? 0;
     return `${header}
   <normContent xsi:type="questionnaire:Mean" value="${mean}" stdDev="${sd}"/>
+  <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Norm>`;
   }
 
@@ -474,6 +485,7 @@ export function serializeNorm(norm: Norm): string {
   <normContent xsi:type="questionnaire:LookupTable">
 ${lookups}
   </normContent>
+  <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Norm>`;
 }
 

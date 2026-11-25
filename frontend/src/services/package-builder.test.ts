@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { buildPackageZip } from './package-builder';
+import { buildPackageZip, findCalcsMissingQuestionnaireRef } from './package-builder';
 import type { Questionnaire, Calculation, Norm, Flag, MediaFile } from '../types/questionnaire';
 
 // ─── Minimal questionnaire factory ────────────────────────────────────────
@@ -196,6 +196,22 @@ describe('buildPackageZip()', () => {
     const calcContent = await zip.files['calculations/CALC1.calculation'].async('string');
     expect(calcContent).toContain('code="CALC1"');
     expect(calcContent).toContain('name="Total score"');
+    expect(calcContent).toContain(`<questionnaire href="../quiz/${q.code}.questionnaire#${q.code}"/>`);
+    expect(calcContent).toContain('<application id="Studio" version="1" fileVersion="1"/>');
+    expect(result.calcsMissingQuestionnaireRef).toEqual([]);
+  });
+
+  it('.project bruker Checkware Studio sin project nature', async () => {
+    const result = await buildPackageZip(makeMinimalQuestionnaire());
+    const zip = await unzip(result.base64);
+    const project = await zip.files['.project'].async('string');
+    expect(project).toContain('<nature>com.checkware.studio.editor.projectNature</nature>');
+  });
+
+  it('findCalcsMissingQuestionnaireRef finner beregninger uten kartleggingsreferanse', () => {
+    const ok = '<questionnaire:Calculation code="A"><questionnaire href="../quiz/Q.questionnaire#Q"/></questionnaire:Calculation>';
+    const bad = '<questionnaire:Calculation code="B"></questionnaire:Calculation>';
+    expect(findCalcsMissingQuestionnaireRef({ A: ok, B: bad }, 'Q')).toEqual(['B']);
   });
 
   it('package with norms generates .norm files in ZIP', async () => {
@@ -219,6 +235,7 @@ describe('buildPackageZip()', () => {
     expect(Object.keys(zip.files)).toContain('norms/NORM1.norm');
     const normContent = await zip.files['norms/NORM1.norm'].async('string');
     expect(normContent).toContain('code="NORM1"');
+    expect(normContent).toContain('<application id="Studio" version="1" fileVersion="1"/>');
   });
 
   it('package with flags generates .flag files in ZIP', async () => {

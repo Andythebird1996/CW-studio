@@ -198,6 +198,19 @@ describe('serializeSection — subsections', () => {
 
 // ─── Calculation with _rawExpression ─────────────────────────────────────────
 
+describe('serializeCalculation — kartleggingsreferanse', () => {
+  it('skriver <questionnaire href> og <application> som ekte pakker', () => {
+    const xml = serializeCalculation({ code: 'TOTAL', name: 'Total', type: 'SUM', innerCalculations: [{ questionCode: 'Q1' }] }, 'MIN_Q');
+    expect(xml).toContain('<questionnaire href="../quiz/MIN_Q.questionnaire#MIN_Q"/>');
+    expect(xml).toContain('<application id="Studio" version="1" fileVersion="1"/>');
+  });
+
+  it('skriver referansen også når _rawExpression brukes', () => {
+    const xml = serializeCalculation({ code: 'T', name: 'T', type: 'SUM', innerCalculations: [], _rawExpression: '<calculationExpression/>' }, 'Q2');
+    expect(xml).toContain('<questionnaire href="../quiz/Q2.questionnaire#Q2"/>');
+  });
+});
+
 describe('serializeCalculation — _rawExpression round-trip', () => {
   it('preserves _rawExpression verbatim (lossless round-trip)', () => {
     const calc: Calculation = {

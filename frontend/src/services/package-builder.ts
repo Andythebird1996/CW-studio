@@ -11,6 +11,7 @@ import {
   serializeNorm,
   serializeTranslation,
   esc,
+  calculationQuestionnaireRef,
 } from './xml-serializer';
 
 export interface ManifestFile {
@@ -65,7 +66,7 @@ function projectXml(q: Questionnaire): string {
   <projects></projects>
   <buildSpec></buildSpec>
   <natures>
-    <nature>projectNature</nature>
+    <nature>com.checkware.studio.editor.projectNature</nature>
   </natures>
 </projectDescription>`;
 }
@@ -75,6 +76,19 @@ export interface BuiltPackage {
   fileName: string;
   sizeBytes: number;
   files: ManifestFile[];
+  /** Koder for beregninger som mangler referanse til kartleggingen (stopper installasjon i Checkware) */
+  calcsMissingQuestionnaireRef: string[];
+}
+
+/** Finn beregningsfiler som ikke peker på kartleggingen med <questionnaire href="…#kode"/> */
+export function findCalcsMissingQuestionnaireRef(
+  calcFiles: Record<string, string>,
+  questionnaireCode: string,
+): string[] {
+  const ref = calculationQuestionnaireRef(questionnaireCode);
+  return Object.entries(calcFiles)
+    .filter(([, xml]) => !xml.includes(ref))
+    .map(([code]) => code);
 }
 
 export async function buildPackageZip(
@@ -85,6 +99,7 @@ export async function buildPackageZip(
 ): Promise<BuiltPackage> {
   const zip = new JSZip();
   const manifestFiles: ManifestFile[] = [];
+  const calcXml: Record<string, string> = {};
 
   // ── Questionnaire ──────────────────────────────────────────────────────────
   zip.file(`quiz/${q.code}.questionnaire`, serializeQuestionnaire(q));
@@ -98,7 +113,9 @@ export async function buildPackageZip(
   // ── Calculations ───────────────────────────────────────────────────────────
   for (const calc of q.calculations?.calculations ?? []) {
     const fileName = `${calc.code}.calculation`;
-    zip.file(`calculations/${fileName}`, serializeCalculation(calc, q.code));
+    const xml = serializeCalculation(calc, q.code);
+    calcXml[calc.code] = xml;
+    zip.file(`calculations/${fileName}`, xml);
     manifestFiles.push({ fileName, path: 'calculations', extension: 'calculation', code: calc.code });
   }
 
@@ -166,5 +183,6 @@ export async function buildPackageZip(
     fileName: `${q.code}_v${q.version}.${q.release ?? '0'}.zip`,
     sizeBytes: buf.length,
     files: manifestFiles,
+    calcsMissingQuestionnaireRef: findCalcsMissingQuestionnaireRef(calcXml, q.code),
   };
 }
