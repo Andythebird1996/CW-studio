@@ -200,7 +200,7 @@ function Rich({ text, className }: { text: string; className?: string }) {
 }
 
 function isNumbered(q: Question): boolean {
-  return q.type !== 'text' && q.type !== 'image';
+  return q.type !== 'text' && q.type !== 'image' && q.type !== 'audioVideo';
 }
 
 function isFilled(value: string | string[] | undefined): boolean {
@@ -230,6 +230,8 @@ function typeHint(q: Question, lang: UILang): string {
       return tf('printSlider', lang, { min: q.min, max: q.max });
     case 'image':
       return t('printImage', lang);
+    case 'audioVideo':
+      return t('printAudio', lang);
     case 'country':
       return t('printCountry', lang);
     default:
@@ -494,9 +496,21 @@ function QuestionBlock({
     return (
       <div className="cw-resp-q" data-qid={`${question.id}-${rep}`}>
         {question.imageSrc ? (
-          <img src={question.imageSrc} alt={question.altText?.[lang] || ''} style={{ maxWidth: '100%', borderRadius: 2 }} />
+          <img src={question.imageSrc} alt={question.imageSrc} style={{ maxWidth: '100%', borderRadius: 2 }} />
         ) : (
           <span className="cw-resp-muted">{expert ? t('printImage', ui) : t('noImageSpecified', ui)}</span>
+        )}
+      </div>
+    );
+  }
+
+  if (question.type === 'audioVideo') {
+    return (
+      <div className="cw-resp-q" data-qid={`${question.id}-${rep}`}>
+        {question.mediaFile ? (
+          <audio controls src={question.mediaFile} style={{ maxWidth: '100%' }} />
+        ) : (
+          <span className="cw-resp-muted">{t('printAudio', ui)}</span>
         )}
       </div>
     );

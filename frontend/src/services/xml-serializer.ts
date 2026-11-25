@@ -170,6 +170,12 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
         if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
         wp.step = emfFloat(stepFromDecimals(qq.decimals));
       } else if (qq.type === 'dateInput') {
+        // Uten årsgrenser gir portalen min/max="Invalid date" (parseInt(undefined)); ekte pakker skriver
+        // ingen grenser, så de skrives bare når de er satt.
+        if (qq.minAbsoluteYear !== undefined) wp.minAbsoluteYear = String(qq.minAbsoluteYear);
+        if (qq.maxAbsoluteYear !== undefined) wp.maxAbsoluteYear = String(qq.maxAbsoluteYear);
+        if (qq.minRelativeYear !== undefined) wp.minRelativeYear = String(qq.minRelativeYear);
+        if (qq.maxRelativeYear !== undefined) wp.maxRelativeYear = String(qq.maxRelativeYear);
         wp.addTime = String(qq.includeTime === true);
         wp.addDate = 'true';
       } else if (qq.type === 'slider') {
@@ -242,15 +248,23 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const alignAttr = q.align ? ` align="${q.align.toLowerCase()}"` : ' align="left"';
   const labelPosAttr = q.labelPosition ? ` labelPosition="${q.labelPosition}"` : '';
 
+  // Elementer (Text, ImageElement, AudioVideo) kan også ha vis/skjul-betingelser som barn.
+  const closeEl = (open: string) => (shows || hides ? `${open}>${shows}${hides}</contains>` : `${open}/>`);
+
   if (q.type === 'text') {
     const style = q.contentStyle ? ` contentStyle="${esc(q.contentStyle)}"` : ' contentStyle="normal"';
-    return `${indent}<contains xsi:type="questionnaire:Text" code="${esc(q.code)}" content="${esc(q.texts[lang] ?? '')}"${style}${alignAttr}${labelPosAttr}/>`;
+    return closeEl(`${indent}<contains xsi:type="questionnaire:Text" code="${esc(q.code)}" content="${esc(q.texts[lang] ?? '')}"${style}${alignAttr}${labelPosAttr}`);
   }
 
+  // Bilde og lyd som i questionnaire.ecore og ekte pakker: ImageElement@imageFile, AudioVideo@audioVideoFile
   if (q.type === 'image') {
-    const srcAttr = q.imageSrc ? ` imageSrc="${esc(q.imageSrc)}"` : '';
-    const altAttr = q.altText?.[lang] ? ` altText="${esc(q.altText[lang])}"` : '';
-    return `${indent}<contains xsi:type="widgets:ImageWidget" code="${esc(q.code)}"${srcAttr}${altAttr}${alignAttr}${labelPosAttr}/>`;
+    const fileAttr = q.imageSrc ? ` imageFile="${esc(q.imageSrc)}"` : '';
+    return closeEl(`${indent}<contains xsi:type="questionnaire:ImageElement" code="${esc(q.code)}"${fileAttr}`);
+  }
+
+  if (q.type === 'audioVideo') {
+    const fileAttr = q.mediaFile ? ` audioVideoFile="${esc(q.mediaFile)}"` : '';
+    return closeEl(`${indent}<contains xsi:type="questionnaire:AudioVideo" code="${esc(q.code)}"${fileAttr}`);
   }
 
   if (q.type === 'country') {
@@ -553,7 +567,8 @@ export function serializeTranslation(
 
   // All questions (flat)
   for (const q2 of flattenAllQuestions(q.sections)) {
-    if (q2.texts[lang]) {
+    // Bilde/lyd har ingen oversettbar tekst i modellen
+    if (q2.type !== 'image' && q2.type !== 'audioVideo' && q2.texts[lang]) {
       const entity = q2.type === 'text' ? 'Text' : 'Question';
       const prop = q2.type === 'text' ? 'content' : 'question';
       lines.push(`  <translation code="${esc(q2.code)}" entity="${entity}" property="${prop}" translatedText="${esc(q2.texts[lang])}"/>`);

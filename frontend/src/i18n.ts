@@ -92,6 +92,7 @@ const strings = {
   qtCombobox:        { EN: 'Dropdown',                        NO: 'Nedtrekksliste'                   },
   qtImage:           { EN: 'Image',                           NO: 'Bilde'                            },
   qtCountry:         { EN: 'Country selector',                NO: 'Landvelger'                       },
+  qtAudioVideo:      { EN: 'Audio/video',                     NO: 'Lyd/video'                        },
 
   // ── General field labels ─────────────────────────────────────────────────────
   typeLabel:         { EN: 'Type',                            NO: 'Type'                             },
@@ -154,6 +155,9 @@ const strings = {
   multiline:         { EN: 'Multi-line',                      NO: 'Flerlinjet'                       },
   textareaLabel:     { EN: 'Text area',                       NO: 'Tekstområde'                      },
   includeTime:       { EN: 'Include time',                    NO: 'Inkluder klokkeslett'             },
+  minYear:           { EN: 'Earliest year',                   NO: 'Tidligste år'                     },
+  maxYear:           { EN: 'Latest year',                     NO: 'Seneste år'                       },
+  yearBoundsHint:    { EN: 'Without year limits the portal writes min/max="Invalid date" on the date field (harmless).', NO: 'Uten årsgrenser skriver portalen min/max="Invalid date" på datofeltet (ufarlig).' },
   stepLabel:         { EN: 'Step',                            NO: 'Steg'                             },
   minLabelField:     { EN: 'Min label',                       NO: 'Min-etikett'                      },
   maxLabelField:     { EN: 'Max label',                       NO: 'Maks-etikett'                     },
@@ -811,6 +815,8 @@ const strings = {
   printDate:         { EN: '[date]',                          NO: '[dato]'                           },
   printSlider:       { EN: '[slider {min}–{max}]',            NO: '[glidebryter {min}–{max}]'        },
   printImage:        { EN: '[image]',                         NO: '[bilde]'                          },
+  printAudio:        { EN: '[audio]',                         NO: '[lyd]'                            },
+  audioDisplayHint:  { EN: 'Audio/video player — refers to an mp3 file in the package or a URL', NO: 'Lyd-/videospiller — viser til en mp3-fil i pakken eller en URL' },
   printCountry:      { EN: '[country]',                       NO: '[land]'                           },
 
   // ── Respondent view (preview, simulator, print) ───────────────────────────

@@ -266,9 +266,14 @@ function parseContains(
     ...(continueExprs && { continueIfExpressions: continueExprs }),
   };
 
-  // Stand-alone widget elements (not wrapped in questionnaire:Question)
+  // Stand-alone elements (not wrapped in questionnaire:Question)
+  if (type.includes('AudioVideo')) {
+    const mediaFile = attr(el, 'audioVideoFile') || undefined;
+    return { ...baseAttrs, type: 'audioVideo' as const, ...(mediaFile && { mediaFile }) };
+  }
+
   if (type.includes('Image') || type.includes('ImageWidget')) {
-    const imageSrc = attr(el, 'imageSrc') || attr(el, 'src') || undefined;
+    const imageSrc = attr(el, 'imageFile') || attr(el, 'imageSrc') || attr(el, 'src') || undefined;
     const altRaw = attr(el, 'altText') || undefined;
     const altText = altRaw ? { [lang]: altRaw } as Record<string, string> : undefined;
     return {
@@ -354,6 +359,10 @@ function parseContains(
           ...base,
           type: 'dateInput',
           includeTime: (wp.addTime ?? wp.includeTime) === 'true' ? true : undefined,
+          minAbsoluteYear: numAttr(wp.minAbsoluteYear),
+          maxAbsoluteYear: numAttr(wp.maxAbsoluteYear),
+          minRelativeYear: numAttr(wp.minRelativeYear),
+          maxRelativeYear: numAttr(wp.maxRelativeYear),
         };
       case 'slider': {
         const min = numAttr(wp.minValue ?? wp.min) ?? 0;
@@ -732,13 +741,28 @@ function resolveExpression(el: Element, questionnaire: Questionnaire): ExprResul
         return { calcType: 'MEAN', innerCalculations: first.innerCalculations };
       }
     }
+    // Studio Web skriver vekt som multiply(spørsmålsverdi, tall) — les det tilbake som multiplier
+    if (opType === 'multiply' && childEls.length === 2) {
+      const numIdx = childEls.findIndex((c) => xsiType(c).includes('NumberBasicType'));
+      if (numIdx >= 0) {
+        const factor = parseFloat(attr(childEls[numIdx], 'value'));
+        const other = resolveExpression(childEls[1 - numIdx], questionnaire);
+        if (!Number.isNaN(factor) && other.innerCalculations.length === 1 && other.innerCalculations[0].questionCode) {
+          return { calcType: 'SUM', innerCalculations: [{ ...other.innerCalculations[0], multiplier: factor }] };
+        }
+      }
+    }
     const allInner: InnerCalculation[] = [];
+    let onlyQuestionTerms = true;
     for (const child of childEls) {
-      const { innerCalculations } = resolveExpression(child, questionnaire);
+      const { calcType, innerCalculations } = resolveExpression(child, questionnaire);
+      const isQuestionValue = xsiType(child).includes('Function') && attr(child, 'name') === 'questionResponseValue';
+      if ((!isQuestionValue && calcType !== 'SUM') || innerCalculations.some((ic) => !ic.questionCode)) onlyQuestionTerms = false;
       allInner.push(...innerCalculations);
     }
-    const isSimpleSum = (opType === 'plus' || opType === 'add') && allInner.every((ic) => !ic.multiplier || ic.multiplier === 1);
-    return { calcType: isSimpleSum ? 'SUM' : 'CUSTOM', innerCalculations: allInner };
+    // Sum av (vektede) spørsmålsverdier = SUM med multiplier, slik serializeInnerCalcExpression skriver den
+    const isSum = (opType === 'plus' || opType === 'add') && onlyQuestionTerms;
+    return { calcType: isSum ? 'SUM' : 'CUSTOM', innerCalculations: allInner };
   }
 
   return { calcType: 'CUSTOM', innerCalculations: [] };

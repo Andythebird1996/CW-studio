@@ -189,7 +189,7 @@ function rapSnippets(lang: UILang): RapSnippetGroup[] {
         { label: t('snippetEchoCalc', lang), code: '[$VERDI = eval("CALC(KOD)")]\n[ECHO($VERDI,1)]' },
         {
           label: t('snippetGraph', lang),
-          code: '[$g1= graph_init()]\n[graph_customize($g1,1,0,10,"KOD",true,,,true,false,700,280,10,10,80,30,true)]\n[$KOD-G = eval("CALC(KOD)")]\n[$ser1= series(($KOD-G),("KOD"))]\n[graph_plot($g1,2,$ser1,,,,true,true,true,false)]\n[graph_render($g1)]',
+          code: '[$g1= graph_init()]\n[graph_customize($g1,1,0,10,"KOD",true,,,true,false,700,280,10,10,80,30,false)]\n[$KOD-G = eval("CALC(KOD)")]\n[$ser1= series(($KOD-G),("KOD"))]\n[graph_plot($g1,2,$ser1,,,,true,true,true,false)]\n[graph_render($g1)]',
         },
         { label: t('snippetShowName', lang), code: '$PATIENT_NAME' },
       ],

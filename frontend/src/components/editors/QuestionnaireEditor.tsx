@@ -58,10 +58,10 @@ import { useClipboardStore } from '../../stores/clipboard-store';
 // ── Question type catalogue ───────────────────────────────────────────────────
 
 const QUESTION_TYPE_VALUES: Question['type'][] = [
-  'radiobutton', 'checkbox', 'combobox', 'stringInput', 'numericInput', 'dateInput', 'slider', 'rank', 'text', 'image', 'country',
+  'radiobutton', 'checkbox', 'combobox', 'stringInput', 'numericInput', 'dateInput', 'slider', 'rank', 'text', 'image', 'audioVideo', 'country',
 ];
 
-type QTKey = 'qtRadiobutton' | 'qtCheckbox' | 'qtCombobox' | 'qtStringInput' | 'qtNumericInput' | 'qtDateInput' | 'qtSlider' | 'qtRank' | 'qtText' | 'qtImage' | 'qtCountry';
+type QTKey = 'qtRadiobutton' | 'qtCheckbox' | 'qtCombobox' | 'qtStringInput' | 'qtNumericInput' | 'qtDateInput' | 'qtSlider' | 'qtRank' | 'qtText' | 'qtImage' | 'qtAudioVideo' | 'qtCountry';
 
 const QT_I18N: Record<Question['type'], QTKey> = {
   radiobutton:  'qtRadiobutton',
@@ -74,6 +74,7 @@ const QT_I18N: Record<Question['type'], QTKey> = {
   rank:         'qtRank',
   text:         'qtText',
   image:        'qtImage',
+  audioVideo:   'qtAudioVideo',
   country:      'qtCountry',
 };
 
@@ -108,7 +109,8 @@ function newQuestion(type: Question['type']): Question {
     case 'dateInput':    return { ...base, type: 'dateInput' };
     case 'slider':       return { ...base, type: 'slider', min: 0, max: 10 };
     case 'rank':         return { ...base, type: 'rank', options: [] };
-    case 'image':        return { ...base, type: 'image', imageSrc: '', altText: {} as Record<string, string> };
+    case 'image':        return { ...base, type: 'image', imageSrc: '' };
+    case 'audioVideo':   return { ...base, type: 'audioVideo', mediaFile: '' };
     case 'country':      return { ...base, type: 'country' };
     default:             return { ...base, type: 'text', isQuestion: false };
   }
@@ -694,6 +696,26 @@ function QuestionRow({
                 />
                 <span className="text-sm text-cw-gray-text">{t('includeTime', uiLang)}</span>
               </label>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                {(
+                  [
+                    ['minAbsoluteYear', t('minYear', uiLang)],
+                    ['maxAbsoluteYear', t('maxYear', uiLang)],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key}>
+                    <label className="block text-xs font-medium text-cw-gray-text mb-1">{label}</label>
+                    <input
+                      type="number"
+                      value={question[key] ?? ''}
+                      onChange={(e) => onChange({ ...question, [key]: e.target.value ? +e.target.value : undefined })}
+                      placeholder={key === 'minAbsoluteYear' ? '1900' : '2100'}
+                      className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-cw-gray-text mt-1">{t('yearBoundsHint', uiLang)}</p>
             </div>
           )}
 
@@ -911,28 +933,43 @@ function QuestionRow({
                     />
                   )}
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-cw-gray-text mb-1">
-                    {tf('altText', uiLang, { lang })}
-                  </label>
-                  <input
-                    type="text"
-                    value={question.altText?.[lang] ?? ''}
-                    onChange={(e) =>
-                      onChange({
-                        ...question,
-                        altText: { ...(question.altText ?? {}), [lang]: e.target.value },
-                      })
-                    }
-                    placeholder={t('altTextPh', uiLang)}
-                    className="w-full border border-cw-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
-                  />
-                </div>
               </div>
             </div>
           )}
 
           {/* Country question editor */}
+          {question.type === 'audioVideo' && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2 bg-cw-blue-soft border border-cw-blue/30 rounded px-3 py-2 text-xs text-cw-blue">
+                <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>{t('audioDisplayHint', uiLang)}</span>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('fileNameOrCode', uiLang)}</label>
+                {mediaCodes.length > 0 ? (
+                  <select
+                    value={question.mediaFile ?? ''}
+                    onChange={(e) => onChange({ ...question, mediaFile: e.target.value || undefined })}
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
+                  >
+                    <option value="">{t('selectMediaFile', uiLang)}</option>
+                    {mediaCodes.map((code) => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={question.mediaFile ?? ''}
+                    onChange={(e) => onChange({ ...question, mediaFile: e.target.value || undefined })}
+                    placeholder="lyd.mp3"
+                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
           {question.type === 'country' && (
             <div className="space-y-3">
               <div className="flex items-start gap-2 bg-cw-gray border border-cw-border rounded px-3 py-2 text-xs text-cw-gray-text">

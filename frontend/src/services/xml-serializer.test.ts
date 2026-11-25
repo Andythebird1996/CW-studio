@@ -499,3 +499,59 @@ describe('svarmaler — samme attributter som ekte store-pakker', () => {
     expect(q.type === 'slider' && [q.min, q.max, q.minLabel?.NO]).toEqual([2, 8, 'Lav']);
   });
 });
+
+// ─── Bilde, lyd, datogrenser og vektet sum (modellen + ekte pakker) ────────────
+
+describe('elementer og beregninger som i questionnaire.ecore', () => {
+  const t = (NO: string) => ({ NO, EN: '', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' });
+  const build = (questions: Section['questions'], calcs: Calculation[] = []) =>
+    serializeQuestionnaire(makeQuestionnaire({ sections: [makeSection({ questions })], calculations: { calculations: calcs, norms: [] } }));
+
+  it('bilde skrives som ImageElement@imageFile og lyd som AudioVideo@audioVideoFile', () => {
+    const xml = build([
+      { id: 'i', code: 'IM1', type: 'image', required: false, texts: t(''), imageSrc: 'a.png' },
+      { id: 'a', code: 'AV1', type: 'audioVideo', required: false, texts: t(''), mediaFile: 'lyd.mp3' },
+    ]);
+    expect(xml).toContain('<contains xsi:type="questionnaire:ImageElement" code="IM1" imageFile="a.png"/>');
+    expect(xml).toContain('<contains xsi:type="questionnaire:AudioVideo" code="AV1" audioVideoFile="lyd.mp3"/>');
+    expect(xml).not.toContain('ImageWidget');
+    const qs = parseQuestionnaire(xml).sections[0].questions;
+    expect(qs[0].type === 'image' && qs[0].imageSrc).toBe('a.png');
+    expect(qs[1].type === 'audioVideo' && qs[1].mediaFile).toBe('lyd.mp3');
+  });
+
+  it('leser eldre widgets:ImageWidget imageSrc fortsatt inn', () => {
+    const xml = build([]).replace('</section>', '<contains xsi:type="widgets:ImageWidget" code="IMG" imageSrc="gammel.png"/></section>');
+    const q = parseQuestionnaire(xml).sections[0].questions[0];
+    expect(q.type === 'image' && q.imageSrc).toBe('gammel.png');
+  });
+
+  it('vis/skjul på tekstelement eksporteres som barn', () => {
+    const xml = build([{ id: 'x', code: 'TX1', type: 'text', isQuestion: false, required: false, texts: t('Hei'),
+      showExpressions: [{ logic: 'AND', statements: [{ questionCode: 'F1', operator: 'EQ', value: 'F1_1' }] }] }]);
+    expect(xml).toMatch(/<contains xsi:type="questionnaire:Text" code="TX1"[^>]*><show[^]*<\/contains>/);
+    expect(parseQuestionnaire(xml).sections[0].questions[0].showExpressions?.[0].statements[0]).toMatchObject({ questionCode: 'F1', value: 'F1_1' });
+  });
+
+  it('DateInput: årsgrenser skrives bare når de er satt, og leses tilbake', () => {
+    const xml = build([
+      { id: 'd', code: 'D1', type: 'dateInput', required: false, texts: t('d'), minAbsoluteYear: 1900, maxRelativeYear: 0 },
+      { id: 'e', code: 'D2', type: 'dateInput', required: false, texts: t('e') },
+    ]);
+    expect(xml).toContain('<widget xsi:type="questionnaire:DateInput" minAbsoluteYear="1900" maxRelativeYear="0" addTime="false" addDate="true"/>');
+    expect(xml).toContain('<widget xsi:type="questionnaire:DateInput" addTime="false" addDate="true"/>');
+    const q = parseQuestionnaire(xml).sections[0].questions[0];
+    expect(q.type === 'dateInput' && [q.minAbsoluteYear, q.maxRelativeYear, q.maxAbsoluteYear]).toEqual([1900, 0, undefined]);
+  });
+
+  it('vektet sum (multiplier) leses tilbake som SUM med samme vekt', () => {
+    const q = makeQuestionnaire({ sections: [makeSection({ questions: [
+      { id: 'a', code: 'A', type: 'radiobutton', required: true, texts: t('a'), options: [] },
+      { id: 'b', code: 'B', type: 'radiobutton', required: true, texts: t('b'), options: [] },
+    ] })] });
+    const calc: Calculation = { code: 'V', name: 'V', type: 'SUM', innerCalculations: [{ questionCode: 'A', multiplier: 2 }, { questionCode: 'B' }] };
+    const back = parseCalculationFile(serializeCalculation(calc, q.code), q);
+    expect(back?.type).toBe('SUM');
+    expect(back?.innerCalculations.map((ic) => [ic.questionCode, ic.multiplier])).toEqual([['A', 2], ['B', 1]]);
+  });
+});

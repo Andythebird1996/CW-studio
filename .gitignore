@@ -12,6 +12,7 @@ electron/dist/
 frontend/test-results/
 frontend/playwright-report/
 frontend/blob-report/
+frontend/test-packages-out/
 *.log
 .env.*
 !.env.example

@@ -912,6 +912,16 @@ function computeZscore(normCode: string, value: number, ctx: SimContext): number
   return Math.round(((value - mean) / sd) * 100) / 100;
 }
 
+/** Beregnet verdi slik simulatoren regner den (brukes av testpakke-generatoren). */
+export function simulateCalculation(code: string, ctx: SimContext): number {
+  return computeCalc(code, ctx);
+}
+
+/** Om et flagg slår ut i simulatoren (brukes av testpakke-generatoren). */
+export function simulateFlag(code: string, ctx: SimContext): boolean {
+  return evaluateFlag(code, ctx);
+}
+
 function evaluateFlag(code: string, ctx: SimContext): boolean {
   const flag = ctx.questionnaire.flags?.find((f) => f.code === code);
   if (!flag) return false;

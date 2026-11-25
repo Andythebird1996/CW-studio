@@ -139,6 +139,11 @@ export interface NumericInputQuestion extends BaseQuestion {
 export interface DateInputQuestion extends BaseQuestion {
   type: 'dateInput';
   includeTime?: boolean;
+  /** Årsgrenser (DateInput i questionnaire.ecore). Relativ = i forhold til inneværende år, f.eks. -120 / 0. */
+  minAbsoluteYear?: number;
+  maxAbsoluteYear?: number;
+  minRelativeYear?: number;
+  maxRelativeYear?: number;
 }
 
 export interface SliderQuestion extends BaseQuestion {
@@ -183,6 +188,13 @@ export interface ImageQuestion extends BaseQuestion {
   altText?: Record<string, string>;
 }
 
+/** Lyd/video-element (questionnaire:AudioVideo) – spiller av en mediefil (mp3) i pakken. */
+export interface AudioVideoQuestion extends BaseQuestion {
+  type: 'audioVideo';
+  /** Filnavn i media/ eller full URL */
+  mediaFile?: string;
+}
+
 export interface CountryQuestion extends BaseQuestion {
   type: 'country';
   multiSelect?: boolean;
@@ -198,6 +210,7 @@ export type Question =
   | SliderQuestion
   | RankQuestion
   | TextElement
+  | AudioVideoQuestion
   | ImageQuestion
   | CountryQuestion;
 
