@@ -28,6 +28,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const [step, setStep] = useState<Step>('form');
   const [denials, setDenials] = useState<string[]>([]);
   const [calcWarnings, setCalcWarnings] = useState<string[]>([]);
+  const [rapWarnings, setRapWarnings] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [existingPackages, setExistingPackages] = useState<PackageSummary[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
@@ -41,6 +42,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setStep('form');
     setDenials([]);
     setCalcWarnings([]);
+    setRapWarnings([]);
     setError('');
     setLoadingPackages(true);
     storeApi.listPackages(settings)
@@ -63,6 +65,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
       const q = { ...questionnaire, release };
       const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
       setCalcWarnings(pkg.calcsMissingQuestionnaireRef);
+      setRapWarnings(pkg.rapsMissingHeaders);
       const result = await storeApi.validate(settings, {
         code: pkgCode,
         name: q.name[lang] ?? q.code,
@@ -179,6 +182,15 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
                   <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
                   <p className="text-xs text-cw-orange">
                     {tf('calcMissingQuestionnaireRef', uiLang, { codes: calcWarnings.join(', ') })}
+                  </p>
+                </div>
+              )}
+
+              {rapWarnings.length > 0 && (
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-orange">
+                    {tf('rapMissingHeaders', uiLang, { codes: rapWarnings.join(', ') })}
                   </p>
                 </div>
               )}

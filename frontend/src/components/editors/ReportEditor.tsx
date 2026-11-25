@@ -3,6 +3,7 @@ import { Play, Wand2, CodeSquare } from 'lucide-react';
 import { ReportSimulator, ReportStyleSwitch, type ReportSheetStyle } from './ReportSimulator';
 import type { Questionnaire } from '../../types/questionnaire';
 import { t, type UILang, useUILang } from '../../i18n';
+import { LANG_TO_BCP47 } from '../../services/package-builder';
 
 // ── RAP syntax highlighter ────────────────────────────────────────────────────
 
@@ -63,9 +64,6 @@ function highlightRap(code: string): string {
     .join('\n');
 }
 
-const LANG_TO_BCP47: Record<string, string> = {
-  NO: 'nb', EN: 'en', SV: 'sv', DA: 'da', FI: 'fi', DE: 'de', FR: 'fr', PL: 'pl',
-};
 
 function rapHeaders(questionnaire: Questionnaire): string {
   const name = questionnaire.name[questionnaire.defaultLanguage] || questionnaire.code;

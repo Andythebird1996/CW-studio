@@ -78,6 +78,50 @@ export interface BuiltPackage {
   files: ManifestFile[];
   /** Koder for beregninger som mangler referanse til kartleggingen (stopper installasjon i Checkware) */
   calcsMissingQuestionnaireRef: string[];
+  /** Koder for rapporter som mangler `$language`/`$version` (stopper installasjon i Checkware) */
+  rapsMissingHeaders: string[];
+}
+
+/** Kartleggingsspråk → språkkode i rapportens `$language`-header (som i ekte pakker: norwegian → nb) */
+export const LANG_TO_BCP47: Record<string, string> = {
+  NO: 'nb', EN: 'en', SV: 'sv', DA: 'da', FI: 'fi', DE: 'de', FR: 'fr', PL: 'pl',
+};
+
+/** Standard `$version` for rapporter som mangler den (det vanligste i ekte pakker) */
+export const DEFAULT_RAP_VERSION = '1.0';
+
+const RAP_HEADER_LINE = /^[ \t]*\/\*\s*\$\w+[^*]*\*\/[ \t]*\r?\n/;
+
+function hasRapHeader(content: string, key: string): boolean {
+  return new RegExp(`/\\*\\s*\\$${key}\\s+[^*\\s][^*]*\\*/`).test(content);
+}
+
+/**
+ * Checkware leser `$language` og `$version` fra rapporten ved installasjon.
+ * Mangler de, feiler installasjonen med «Language  not found» (tomt felt).
+ * Fyller tomme headere og legger manglende inn etter de eksisterende headerne.
+ * Eksisterende verdier beholdes.
+ */
+export function ensureRapHeaders(content: string, language: string, version = DEFAULT_RAP_VERSION): string {
+  let out = content
+    .replace(/\/\*\s*\$version\s*\*\//, `/* $version ${version} */`)
+    .replace(/\/\*\s*\$language\s*\*\//, `/* $language ${language} */`);
+  const missing: string[] = [];
+  if (!hasRapHeader(out, 'version')) missing.push(`/* $version ${version} */`);
+  if (!hasRapHeader(out, 'language')) missing.push(`/* $language ${language} */`);
+  if (missing.length === 0) return out;
+  let idx = 0;
+  let m: RegExpExecArray | null;
+  while ((m = RAP_HEADER_LINE.exec(out.slice(idx))) !== null) idx += m[0].length;
+  out = out.slice(0, idx) + missing.join('\n') + '\n' + out.slice(idx);
+  return out;
+}
+
+/** Finn rapporter som mangler `$language` eller `$version` */
+export function findRapsMissingHeaders(rapFiles: Record<string, string>): string[] {
+  return Object.entries(rapFiles)
+    .filter(([, content]) => !hasRapHeader(content, 'language') || !hasRapHeader(content, 'version'))
+    .map(([code]) => code);
 }
 
 /** Finn beregningsfiler som ikke peker på kartleggingen med <questionnaire href="…#kode"/> */
@@ -100,6 +144,8 @@ export async function buildPackageZip(
   const zip = new JSZip();
   const manifestFiles: ManifestFile[] = [];
   const calcXml: Record<string, string> = {};
+  const rapOut: Record<string, string> = {};
+  const rapLanguage = LANG_TO_BCP47[q.defaultLanguage] ?? q.defaultLanguage.toLowerCase();
 
   // ── Questionnaire ──────────────────────────────────────────────────────────
   zip.file(`quiz/${q.code}.questionnaire`, serializeQuestionnaire(q));
@@ -148,10 +194,14 @@ export async function buildPackageZip(
     // Ensure RAP headers are populated — empty headers cause server errors.
     const rapCode = fileName.replace(/\.rap$/, '');
     const rapName = q.name[q.defaultLanguage] || q.code;
-    const fixedContent = content
-      .replace(/\/\* \$questionnaire\s*\*\//, `/* $questionnaire ${q.code} */`)
-      .replace(/\/\* \$code\s*\*\//, `/* $code ${rapCode} */`)
-      .replace(/\/\* \$name\s*\*\//, `/* $name ${rapName} */`);
+    const fixedContent = ensureRapHeaders(
+      content
+        .replace(/\/\* \$questionnaire\s*\*\//, `/* $questionnaire ${q.code} */`)
+        .replace(/\/\* \$code\s*\*\//, `/* $code ${rapCode} */`)
+        .replace(/\/\* \$name\s*\*\//, `/* $name ${rapName} */`),
+      rapLanguage,
+    );
+    rapOut[rapCode] = fixedContent;
     zip.file(`reports/${fileName}`, fixedContent);
     manifestFiles.push({ fileName, path: 'reports', extension: 'rap', code: fileName.replace(/\.rap$/, '') });
   }
@@ -184,5 +234,6 @@ export async function buildPackageZip(
     sizeBytes: buf.length,
     files: manifestFiles,
     calcsMissingQuestionnaireRef: findCalcsMissingQuestionnaireRef(calcXml, q.code),
+    rapsMissingHeaders: findRapsMissingHeaders(rapOut),
   };
 }

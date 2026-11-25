@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
-import { buildPackageZip, findCalcsMissingQuestionnaireRef } from './package-builder';
+import { buildPackageZip, findCalcsMissingQuestionnaireRef, ensureRapHeaders, findRapsMissingHeaders } from './package-builder';
 import type { Questionnaire, Calculation, Norm, Flag, MediaFile } from '../types/questionnaire';
 
 // ─── Minimal questionnaire factory ────────────────────────────────────────
@@ -206,6 +206,31 @@ describe('buildPackageZip()', () => {
     const zip = await unzip(result.base64);
     const project = await zip.files['.project'].async('string');
     expect(project).toContain('<nature>com.checkware.studio.editor.projectNature</nature>');
+  });
+
+  it('rapport uten $language/$version får dem lagt inn etter eksisterende headere', async () => {
+    const rap = '/* $questionnaire */\n/* $code */\n/* $name */\nSUM=[CALC(TOTAL)]';
+    const result = await buildPackageZip(makeMinimalQuestionnaire(), { rapport: rap });
+    const zip = await unzip(result.base64);
+    const content = await zip.files['reports/rapport.rap'].async('string');
+    expect(content).toBe('/* $questionnaire TEST_Q */\n/* $code rapport */\n/* $name Test questionnaire */\n/* $version 1.0 */\n/* $language nb */\nSUM=[CALC(TOTAL)]');
+    expect(result.rapsMissingHeaders).toEqual([]);
+  });
+
+  it('engelsk kartlegging gir $language en', async () => {
+    const result = await buildPackageZip(makeMinimalQuestionnaire({ defaultLanguage: 'EN', supportedLanguages: ['EN'] }), { r: 'X' });
+    const zip = await unzip(result.base64);
+    expect(await zip.files['reports/r.rap'].async('string')).toContain('/* $language en */');
+  });
+
+  it('ensureRapHeaders beholder eksisterende verdier og fyller tomme', () => {
+    expect(ensureRapHeaders('/* $version 2.0 */\n/* $language sv */\nX', 'nb')).toBe('/* $version 2.0 */\n/* $language sv */\nX');
+    expect(ensureRapHeaders('/* $version */\n/* $language */\nX', 'nb')).toBe('/* $version 1.0 */\n/* $language nb */\nX');
+    expect(ensureRapHeaders('X', 'en')).toBe('/* $version 1.0 */\n/* $language en */\nX');
+  });
+
+  it('findRapsMissingHeaders finner rapporter uten $language eller $version', () => {
+    expect(findRapsMissingHeaders({ ok: '/* $version 1.0 */\n/* $language nb */', bad: '/* $version 1.0 */\nX' })).toEqual(['bad']);
   });
 
   it('findCalcsMissingQuestionnaireRef finner beregninger uten kartleggingsreferanse', () => {

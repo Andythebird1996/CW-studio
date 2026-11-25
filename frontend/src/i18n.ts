@@ -460,6 +460,7 @@ const strings = {
   validating:        { EN: 'Validating...',                   NO: 'Validerer...'                     },
   validate:          { EN: 'Validate',                        NO: 'Valider'                          },
   calcMissingQuestionnaireRef: { EN: 'Calculation(s) {codes} do not reference the questionnaire. Checkware will fail to install the package ("Assessment not found").', NO: 'Beregning(er) {codes} peker ikke på kartleggingen. Checkware vil ikke klare å installere pakken («Assessment not found»).' },
+  rapMissingHeaders: { EN: 'Report(s) {codes} lack the $language or $version header. Checkware will fail to install the package ("Language not found").', NO: 'Rapport(er) {codes} mangler $language- eller $version-headeren. Checkware vil ikke klare å installere pakken («Language not found»).' },
   publishRejected:   { EN: 'The server rejected the publication', NO: 'Serveren avviste publiseringen' },
   connectSubtitle:   { EN: 'Connect to your Checkware server', NO: 'Koble til Checkware-serveren'    },
   serverWsdl:        { EN: 'Server WSDL URL',                 NO: 'Serverens WSDL-adresse'           },
