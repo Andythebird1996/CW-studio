@@ -23,7 +23,7 @@ import type {
 
 // ─── XML escape ────────────────────────────────────────────────────────────
 
-function esc(s: string | undefined | null): string {
+export function esc(s: string | undefined | null): string {
   return (s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

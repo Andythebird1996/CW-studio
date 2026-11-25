@@ -30,6 +30,9 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const [error, setError] = useState('');
   const [existingPackages, setExistingPackages] = useState<PackageSummary[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
+  // Samme kode og synlighet i SOAP-identifier og manifest
+  const pkgCode = packageMetadata?.code || questionnaire.code;
+  const pkgMeta = { ...packageMetadata, code: pkgCode, isPublic };
 
   useEffect(() => {
     if (!open) return;
@@ -46,7 +49,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
 
   const overlap = existingPackages.find(
     (p) =>
-      p.code === questionnaire.code &&
+      p.code === pkgCode &&
       String(p.version) === String(questionnaire.version) &&
       String(p.release) === String(release),
   );
@@ -56,9 +59,9 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setDenials([]);
     try {
       const q = { ...questionnaire, release };
-      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, packageMetadata);
+      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
       const result = await storeApi.validate(settings, {
-        code: q.code,
+        code: pkgCode,
         name: q.name[lang] ?? q.code,
         version: q.version,
         release,
@@ -84,9 +87,9 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setStep('publishing');
     try {
       const q = { ...questionnaire, release };
-      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, packageMetadata);
+      const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
       const result = await storeApi.publish(settings, {
-        code: q.code,
+        code: pkgCode,
         name: q.name[lang] ?? q.code,
         version: q.version,
         release,

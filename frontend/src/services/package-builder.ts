@@ -10,6 +10,7 @@ import {
   serializeFlag,
   serializeNorm,
   serializeTranslation,
+  esc,
 } from './xml-serializer';
 
 export interface ManifestFile {
@@ -42,14 +43,14 @@ function manifestXml(q: Questionnaire, files: ManifestFile[], pm?: PackageMetada
     const fileLines = folderFiles
       .map(
         (f) =>
-          `      <file fileName="${f.fileName}" path="${f.path}" extension="${f.extension}" code="${f.code}" id="${f.fileName}"/>`,
+          `      <file fileName="${esc(f.fileName)}" path="${esc(f.path)}" extension="${esc(f.extension)}" code="${esc(f.code)}" id="${esc(f.fileName)}"/>`,
       )
       .join('\n');
     return `    <folder name="${folder}">\n${fileLines}\n    </folder>`;
   });
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Manifest xmlns:questionnaire="http://questionnaire/1.0" code="${code}" description="${description}" public="${isPublic}" requiredSkills="${requiredSkills}" version="${q.version}" release="${q.release ?? '0'}" name="${name}">
+<questionnaire:Manifest xmlns:questionnaire="http://questionnaire/1.0" code="${esc(code)}" description="${esc(description)}" public="${isPublic}" requiredSkills="${esc(requiredSkills)}" version="${esc(q.version)}" release="${esc(q.release ?? '0')}" name="${esc(name)}">
   <content>
 ${folderXml.join('\n')}
   </content>
