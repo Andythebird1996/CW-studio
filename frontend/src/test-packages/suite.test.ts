@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { lintRap, engineEchoPerLine } from '../services/rap-interpreter';
 import { parseQuestionnaire } from '../services/xml-parser';
+import { matrixProblems } from '../services/matrix';
 import { buildSuite, simulateSet, unzipText, loadPackageFiles, TEST_AREAS, type BuiltTestPackage } from './suite';
 
 let suite: BuiltTestPackage[] = [];
@@ -110,6 +111,22 @@ describe('testpakkene i ekte Checkware-format', () => {
     expect(x).toMatch(/<contains xsi:type="questionnaire:Text" code="TX1"[^>]*><show/);
     expect(x).toMatch(/<section code="S3"[^>]*>\s*<show/);
     expect(x).toMatch(/code="F3"[^>]*>[^]*?<hide/);
+  });
+
+  it('matrise: to nestede matriser med hver sin delte svarmal, tekst først i den andre', () => {
+    const x = quiz('matrise');
+    expect(x.match(/matrix="true"/g)?.length).toBe(2);
+    expect(x).toMatch(/<responseTemplate questions="M1A M1B M1C M1D" code="M1" name="Hvor ofte">/);
+    expect(x).toMatch(/<responseTemplate questions="M2A M2B M2C" code="M2" name="Hvor mye">/);
+    expect(x.match(/<responseTemplate /g)?.length).toBe(2);
+    expect(x).toMatch(/code="M2"[^>]*matrix="true"[^>]*>\s*<contains xsi:type="questionnaire:Text" code="M2_INTRO"/);
+    expect(x).not.toContain('M1_TITLE');
+    expect(x).toMatch(/code="M1"[^>]*description="Matrise 1"/);
+    const back = parseQuestionnaire(x);
+    const [m1, m2] = back.sections[0].subSections ?? [];
+    expect([m1.matrix, m2.matrix]).toEqual([true, true]);
+    expect(matrixProblems(m1, back.defaultLanguage)).toEqual([]);
+    expect(matrixProblems(m2, back.defaultLanguage)).toEqual([]);
   });
 
   it('rapport: to grafer på norsk, én på engelsk i simulatoren', () => {
