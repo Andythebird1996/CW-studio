@@ -1,10 +1,11 @@
 /**
- * Editorer for glidebrytertekster (verdietiketter), vedlegg (Attachment) og lyd/video-kilde.
+ * Editorer for glidebrytertekster (verdietiketter), vedlegg (Attachment), lyd/video-kilde og
+ * skyveknapp-varianter (Slider/Range over alternativer, NumericRange).
  * Brukes i QuestionnaireEditor.
  */
 import { PlusCircle, Trash2, FileText } from 'lucide-react';
 import type {
-  AttachmentFileType, AttachmentQuestion, AudioVideoQuestion, LanguageType, SliderQuestion, ValueLabel,
+  AttachmentFileType, AttachmentQuestion, AudioVideoQuestion, ChoiceSliderWidget, LanguageType, RadiobuttonQuestion, SliderQuestion, ValueLabel,
 } from '../../types/questionnaire';
 import { t, tf, useUILang } from '../../i18n';
 
@@ -190,6 +191,74 @@ export function AudioSourceEditor({ question, mediaCodes, onChange }: { question
           {(audioFiles.length > 0 ? audioFiles : mediaCodes).map((code) => <option key={code} value={code}>{code}</option>)}
         </select>
       )}
+    </div>
+  );
+}
+
+/** Radioknapper, eller alternativene vist som skyveknapp (Slider) eller Range */
+export function ChoiceWidgetEditor({ question, onChange }: { question: RadiobuttonQuestion; onChange: (q: RadiobuttonQuestion) => void }) {
+  const uiLang = useUILang();
+  const set = (v: string) => {
+    if (v === 'Slider' || v === 'Range') onChange({ ...question, choiceWidget: v satisfies ChoiceSliderWidget });
+    else onChange({ ...question, choiceWidget: undefined, choiceDirection: undefined, choiceDisplayValue: undefined, choiceShowTicks: undefined });
+  };
+  return (
+    <div className="space-y-2" data-testid="choice-widget-editor">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('choiceWidget', uiLang)}</label>
+          <select value={question.choiceWidget ?? ''} onChange={(e) => set(e.target.value)} className={inputCls}>
+            <option value="">{t('choiceWidgetRadio', uiLang)}</option>
+            <option value="Slider">{t('choiceWidgetSlider', uiLang)}</option>
+            <option value="Range">{t('choiceWidgetRange', uiLang)}</option>
+          </select>
+        </div>
+        {question.choiceWidget && (
+          <div>
+            <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('choiceDirection', uiLang)}</label>
+            <select
+              value={question.choiceDirection ?? 'horizontal'}
+              onChange={(e) => onChange({ ...question, choiceDirection: e.target.value === 'vertical' ? 'vertical' : 'horizontal' })}
+              className={inputCls}
+            >
+              <option value="horizontal">{t('choiceHorizontal', uiLang)}</option>
+              <option value="vertical">{t('choiceVertical', uiLang)}</option>
+            </select>
+          </div>
+        )}
+      </div>
+      {question.choiceWidget && (
+        <div className="flex gap-4 text-xs text-cw-gray-text">
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={question.choiceDisplayValue ?? true} onChange={(e) => onChange({ ...question, choiceDisplayValue: e.target.checked })} />
+            {t('choiceShowValue', uiLang)}
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={question.choiceShowTicks ?? false} onChange={(e) => onChange({ ...question, choiceShowTicks: e.target.checked })} />
+            {t('choiceShowTicks', uiLang)}
+          </label>
+        </div>
+      )}
+      {question.choiceWidget && <p className="text-xs text-cw-gray-text">{t('choiceWidgetHint', uiLang)}</p>}
+    </div>
+  );
+}
+
+/** NumericSlider eller NumericRange (samme innstillinger, ulik visning i portalen) */
+export function SliderWidgetSelect({ question, onChange }: { question: SliderQuestion; onChange: (q: SliderQuestion) => void }) {
+  const uiLang = useUILang();
+  return (
+    <div>
+      <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('sliderWidget', uiLang)}</label>
+      <select
+        data-testid="slider-widget-select"
+        value={question.rangeWidget ? 'NumericRange' : 'NumericSlider'}
+        onChange={(e) => onChange({ ...question, rangeWidget: e.target.value === 'NumericRange' ? true : undefined })}
+        className={inputCls}
+      >
+        <option value="NumericSlider">{t('sliderWidgetSlider', uiLang)}</option>
+        <option value="NumericRange">{t('sliderWidgetRange', uiLang)}</option>
+      </select>
     </div>
   );
 }

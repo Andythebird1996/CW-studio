@@ -276,6 +276,10 @@ function widgetTypeFromTemplate(
   templateWidgets: Map<string, string>,
 ): Question['type'] {
   const widgetType = templateWidgets.get(templateCode) ?? '';
+  const short = widgetType.split(':').pop() ?? '';
+  // Slider/Range med svaralternativer er valgspørsmål vist som skyveknapp; NumericRange er en tallskyveknapp
+  if (short === 'Slider' || short === 'Range') return (templates.get(templateCode)?.options.length ?? 0) > 0 ? 'radiobutton' : 'slider';
+  if (short === 'NumericRange') return 'slider';
   if (widgetType.includes('Radiobutton')) return 'radiobutton';
   if (widgetType.includes('Checkbox')) return 'checkbox';
   if (widgetType.includes('Combobox')) return 'combobox';
@@ -412,10 +416,18 @@ function parseContains(
       case 'radiobutton': {
         const rbNumberOfColumns = wp.numberOfColumns !== undefined ? parseInt(wp.numberOfColumns, 10) : undefined;
         const rbIgnoreAnswerOptionCode = wp.ignoreAnswerOptionCode || undefined;
+        const cw = template?.widgetType === 'Slider' || template?.widgetType === 'Range' ? template.widgetType : undefined;
+        const dir = wp.direction === 'horizontal' || wp.direction === 'vertical' ? wp.direction : undefined;
         return {
           ...base, type: 'radiobutton', options: template?.options ?? [], responseTemplateCode: templateCode || undefined,
           ...(rbNumberOfColumns !== undefined && !isNaN(rbNumberOfColumns) && { numberOfColumns: rbNumberOfColumns }),
           ...(rbIgnoreAnswerOptionCode && { ignoreAnswerOptionCode: rbIgnoreAnswerOptionCode }),
+          ...(cw && {
+            choiceWidget: cw,
+            ...(dir && { choiceDirection: dir }),
+            ...(wp.displayValue !== undefined && { choiceDisplayValue: wp.displayValue === 'true' }),
+            ...(wp.showTicks !== undefined && { choiceShowTicks: wp.showTicks === 'true' }),
+          }),
         };
       }
       case 'checkbox': {
@@ -488,6 +500,8 @@ function parseContains(
         const hairline = wp.hairline !== undefined ? wp.hairline === 'true' : undefined;
         return {
           ...base, type: 'slider', min, max, responseTemplateCode: templateCode || undefined,
+          ...(template?.widgetType === 'NumericRange' && { rangeWidget: true }),
+          _widgetAttrs: Object.keys(wp),
           ...(step !== undefined && { step }),
           ...(labelStep !== undefined && { labelStep }),
           ...(valueLabels && { valueLabels }),
