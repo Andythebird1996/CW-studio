@@ -29,12 +29,12 @@ import { useWorkspaceStore } from './stores/workspace-store';
 import { useSettingsStore } from './stores/settings-store';
 import { t, tf, countPhrase, reportTabLabel, type UILang, UILangContext } from './i18n';
 import { storeApi } from './services/store-api';
-import { parseQuestionnaire, parseCalculationFile, parseFlagFile, parseNormFile, applyTranslationFile, parseManifestFile } from './services/xml-parser';
-import { importPackageFiles } from './services/package-import';
+import { parseQuestionnaire } from './services/xml-parser';
+import { importPackageFiles, MEDIA_MIME } from './services/package-import';
 import { serializeQuestionnaire } from './services/xml-serializer';
 import { buildPackageZip } from './services/package-builder';
 import JSZip from 'jszip';
-import type { Questionnaire, LanguageType, MediaFile, PackageMetadata } from './types/questionnaire';
+import type { Questionnaire, LanguageType } from './types/questionnaire';
 import type { EditorTab } from './stores/workspace-store';
 
 function newQuestionnaire(uiLang: UILang): Questionnaire {
@@ -348,13 +348,7 @@ export default function App() {
   }
 
   async function handleOpenZip(file: File) {
-    const BINARY_EXTS = new Set(['png','jpg','jpeg','gif','bmp','webp','svg','pdf','mp3','wav','ogg','mp4']);
-    const MIME: Record<string, string> = {
-      png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-      gif: 'image/gif', bmp: 'image/bmp', webp: 'image/webp',
-      svg: 'image/svg+xml', pdf: 'application/pdf',
-      mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', mp4: 'video/mp4',
-    };
+    const BINARY_EXTS = new Set(Object.keys(MEDIA_MIME));
 
     const buf = await file.arrayBuffer();
     const zip = await JSZip.loadAsync(buf);
@@ -373,56 +367,14 @@ export default function App() {
       entries.push({ path, fileName, extension, content, encoding: isBinary ? 'base64' : 'text' });
     }
 
-    const qFile = entries.find((e) => e.extension === 'questionnaire');
-    if (!qFile) { showToast(t('noQuestionnaireInZip', lang)); return; }
+    if (!entries.some((e) => e.extension === 'questionnaire')) { showToast(t('noQuestionnaireInZip', lang)); return; }
 
-    let questionnaire = parseQuestionnaire(qFile.content);
-
+    // Samme innlesing som «Importer fra store», rundtur-sjekken og versjonsvarselet
+    const { questionnaire, rapFiles, mediaFiles, packageMetadata } = importPackageFiles(entries);
     const calcFiles = entries.filter((e) => e.extension === 'calculation');
-    if (calcFiles.length > 0) {
-      const calculations = calcFiles.map((f) => parseCalculationFile(f.content, questionnaire)).filter(Boolean) as import('./types/questionnaire').Calculation[];
-      if (calculations.length > 0)
-        questionnaire = { ...questionnaire, calculations: { calculations, norms: questionnaire.calculations?.norms ?? [] } };
-    }
-
     const normFiles = entries.filter((e) => e.extension === 'norm');
-    if (normFiles.length > 0) {
-      const norms = normFiles.map((f) => parseNormFile(f.content)).filter(Boolean) as import('./types/questionnaire').Norm[];
-      if (norms.length > 0)
-        questionnaire = { ...questionnaire, calculations: { calculations: questionnaire.calculations?.calculations ?? [], norms: [...(questionnaire.calculations?.norms ?? []), ...norms] } };
-    }
-
     const flagFiles = entries.filter((e) => e.extension === 'flag');
-    if (flagFiles.length > 0) {
-      const flags = flagFiles.map((f) => parseFlagFile(f.content, questionnaire)).filter(Boolean) as import('./types/questionnaire').Flag[];
-      if (flags.length > 0) questionnaire = { ...questionnaire, flags };
-    }
-
-    for (const tf of entries.filter((e) => e.extension === 'translation')) {
-      questionnaire = applyTranslationFile(questionnaire, tf.content);
-    }
-
-    const manifestFile = entries.find((e) => e.extension === 'manifest');
-    const packageMetadata: PackageMetadata | undefined = manifestFile
-      ? (parseManifestFile(manifestFile.content) ?? undefined)
-      : undefined;
-
     const rapEntries = entries.filter((e) => e.extension === 'rap');
-    const rapFiles: Record<string, string> = {};
-    for (const re of rapEntries) rapFiles[re.fileName] = re.content;
-
-    const mediaFiles: MediaFile[] = entries
-      .filter((e) => BINARY_EXTS.has(e.extension) && e.encoding === 'base64')
-      .map((e) => {
-        const mime = MIME[e.extension] ?? 'application/octet-stream';
-        return {
-          fileName: e.fileName,
-          extension: e.extension,
-          mimeType: mime,
-          dataUrl: `data:${mime};base64,${e.content}`,
-          sizeKb: Math.round(e.content.length * 0.75 / 1024),
-        };
-      });
 
     const id = `zip-${file.name}`;
     const zipTitle = questionnaire.name[questionnaire.defaultLanguage] || questionnaire.code || file.name;

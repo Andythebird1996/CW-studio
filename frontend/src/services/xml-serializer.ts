@@ -6,6 +6,7 @@
  * serialize function so package-builder can create individual files.
  */
 
+import { expressionFingerprint } from './expression-raw';
 import type {
   Questionnaire,
   Section,
@@ -77,6 +78,10 @@ function serializeStatement(stmt: SimpleStatement): string {
 }
 
 function serializeExpression(expr: ShowExpression | HideExpression, tag: string): string {
+  // Uendret siden import: skriv uttrykket nøyaktig som det sto (også sammensatte uttrykk)
+  if (expr?._raw && expr._raw.xml.startsWith(`<${tag}`) && expressionFingerprint(expr) === expr._raw.fingerprint) {
+    return expr._raw.xml;
+  }
   if (!expr || expr.statements.length === 0) return '';
   const inner = expr.statements.length === 1
     ? serializeStatement(expr.statements[0])
@@ -290,6 +295,7 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
         options: existing?.options ?? [],
         widgetType: WIDGET_TYPE_MAP[qq.type] ?? qq.type,
         widgetParams: Object.keys(wp).length > 0 ? wp : undefined,
+        ...(existing?._extraXml && { _extraXml: existing._extraXml }),
       });
     }
   }
@@ -308,7 +314,7 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
       .join(' ');
 
     const opts = tmpl.options.map((o) =>
-      `      <option xsi:type="questionnaire:TextOption" code="${esc(o.code)}" value="${o.score ?? 0}" label="${esc(o.texts[lang] ?? '')}"/>`
+      `      <option xsi:type="questionnaire:TextOption" code="${esc(o.code)}" value="${o.score ?? 0}" label="${esc(o.texts[lang] ?? '')}"${o._extraXml ? `>${o._extraXml}</option>` : '/>'}`
     ).join('\n');
 
     // Determine widget xsi:type — prefer stored widgetType, else infer from options
@@ -321,7 +327,7 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
     const nameAttr = tmpl.name !== undefined && tmpl.name !== tmpl.code ? ` name="${esc(tmpl.name)}"` : '';
     return `    <responseTemplate ${questionsAttr}code="${esc(tmpl.code)}"${nameAttr}>
       <widget xsi:type="questionnaire:${widgetShortName}"${widgetAttrs}/>
-${opts}
+${opts}${tmpl._extraXml ? `\n      ${tmpl._extraXml}` : ''}
     </responseTemplate>`;
   }).join('\n');
 
@@ -345,10 +351,15 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const labelPosAttr = q.labelPosition ? ` labelPosition="${q.labelPosition}"` : '';
 
   const layoutData = serializeRawLayout('layoutData', q.layoutData);
+  // Attributter og barn fra fila som Studio ikke redigerer (textExpression, defaultOption …)
+  const extraAttrs = Object.entries(q._extraAttrs ?? {}).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
+  const extraXml = q._extraXml ?? '';
 
   // Elementer (Text, ImageElement, AudioVideo) kan også ha vis/skjul-betingelser og layoutData som barn.
   const closeEl = (open: string) =>
-    (shows || hides || layoutData ? `${open}>${shows}${hides}${layoutData}</contains>` : `${open}/>`);
+    (shows || hides || layoutData || extraXml
+      ? `${open}${extraAttrs}>${shows}${hides}${layoutData}${extraXml}</contains>`
+      : `${open}${extraAttrs}/>`);
 
   if (q.type === 'text') {
     const style = q.contentStyle ? ` contentStyle="${esc(q.contentStyle)}"` : ' contentStyle="normal"';
@@ -367,7 +378,7 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   }
 
   if (q.type === 'country') {
-    return `${indent}<contains xsi:type="widgets:CountryWidget" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}"${alignAttr}${labelPosAttr}/>`;
+    return closeEl(`${indent}<contains xsi:type="widgets:CountryWidget" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}"${alignAttr}${labelPosAttr}`);
   }
 
   const templateCode = 'responseTemplateCode' in q ? (q.responseTemplateCode ?? q.code) : q.code;
@@ -377,7 +388,7 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const helpText = q.helpTexts?.[lang] ? ` helpText="${esc(q.helpTexts[lang])}"` : '';
   const maxRankAttr = (q.type === 'rank' && q.maxRank !== undefined) ? ` maxRank="${q.maxRank}"` : '';
 
-  return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}>${shows}${hides}${continueIfs}${layoutData}</contains>`;
+  return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}${extraAttrs}>${shows}${hides}${continueIfs}${layoutData}${extraXml}</contains>`;
 }
 
 /**
@@ -445,7 +456,7 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const requiresNewPageAttr = ` requiresNewPage="${section.requiresNewPage === true}"`;
   const backgroundAttr = section.backgroundImage
     ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
-    : `${section.backgroundRepeat ? ` backgroundRepeat="${esc(section.backgroundRepeat)}"` : ''}${section.backgroundPosition ? ` backgroundPosition="${esc(section.backgroundPosition)}"` : ''}`;
+    : `${section.backgroundImage === '' ? ' backgroundImage=""' : ''}${section.backgroundRepeat ? ` backgroundRepeat="${esc(section.backgroundRepeat)}"` : ''}${section.backgroundPosition ? ` backgroundPosition="${esc(section.backgroundPosition)}"` : ''}`;
   // Seksjonsattributter fra modellen som Studio ikke redigerer ennå, men som skal overleve import/eksport
   const optBool = (name: string, v: boolean | undefined) => (v === undefined ? '' : ` ${name}="${v}"`);
   const layoutAttrs = optBool('noPageBreaks', section.noPageBreaks)
@@ -462,7 +473,7 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
 
   // Section-modellen har ikke 'title'. description beholdes for eldre lesere, men den synlige
   // overskriften er Text-elementet over (sectionTitleCode). Parseren godtar også 'title' fra eldre eksporter.
-  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${layoutAttrs}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
+  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${layoutAttrs}${backgroundAttr}${titleText || section.titleFromDescription ? ` description="${esc(titleText)}"` : ''}>
 ${showXml}${hideXml}${continueIfXml}${layoutDataXml}${childrenXml}${layoutXml}
 ${indent}</${closeTag}>`;
 }

@@ -31,6 +31,7 @@ import type {
   PackageMetadata,
 } from '../types/questionnaire';
 import { sectionTitleCode } from './xml-serializer';
+import { expressionFingerprint } from './expression-raw';
 
 // ─── Language mapping ──────────────────────────────────────────────────────
 
@@ -86,6 +87,36 @@ function firstChild(el: Element, tagLocalName: string): Element | null {
 
 function xsiType(el: Element): string {
   return el.getAttribute('xsi:type') ?? '';
+}
+
+function rawXmlOf(el: Element): string {
+  return new XMLSerializer().serializeToString(el).replace(/ xmlns(?::\w+)?="[^"]*"/g, '');
+}
+
+/** Barneelementer som ikke er i `known`, som rå XML (tom streng gir undefined). */
+function extraChildrenXml(el: Element, known: Set<string>): string | undefined {
+  const xml = Array.from(el.children).filter((c) => !known.has(c.localName)).map(rawXmlOf).join('');
+  return xml || undefined;
+}
+
+/** Attributtene Studio selv skriver for hvert element; alt annet bevares i _extraAttrs. */
+const KNOWN_CONTAINS_ATTRS: Record<string, string[]> = {
+  Text: ['code', 'content', 'contentStyle', 'align', 'labelPosition'],
+  ImageElement: ['code', 'imageFile'],
+  AudioVideo: ['code', 'audioVideoFile'],
+  CountryWidget: ['code', 'question', 'mandatory', 'align', 'labelPosition'],
+  Question: ['code', 'question', 'mandatory', 'template', 'voluntary', 'readonly', 'readOnly', 'reversedScore', 'helpText', 'maxRank', 'align', 'labelPosition'],
+};
+const KNOWN_CONTAINS_CHILDREN = new Set(['show', 'hide', 'continueIf', 'layoutData']);
+
+function extraContainsAttrs(el: Element): Record<string, string> | undefined {
+  const kind = xsiType(el).split(':').pop() ?? '';
+  const known = new Set(['xsi:type', ...(KNOWN_CONTAINS_ATTRS[kind] ?? KNOWN_CONTAINS_ATTRS.Question)]);
+  const out: Record<string, string> = {};
+  for (const a of Array.from(el.attributes)) {
+    if (!known.has(a.name) && !a.name.startsWith('xmlns')) out[a.name] = a.value;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function parseRawLayout(el: Element | null): RawLayout | undefined {
@@ -146,26 +177,27 @@ function parseSimpleStatement(el: Element): SimpleStatement | null {
 
 function parseShowExpression(showEl: Element): ShowExpression {
   const statements: SimpleStatement[] = [];
-  let logic: 'AND' | 'OR' = 'AND';
+  let logic: 'AND' | 'OR' | undefined;
 
-  const topChildren = Array.from(showEl.children);
-  for (const child of topChildren) {
-    const t = xsiType(child);
-    if (t.includes('Operator')) {
-      logic = attr(child, 'type').toLowerCase() === 'or' ? 'OR' : 'AND';
-      for (const nested of Array.from(child.children)) {
-        if (xsiType(nested).includes('SimpleStatement')) {
-          const stmt = parseSimpleStatement(nested);
-          if (stmt) statements.push(stmt);
-        }
+  // Nestede operatorer leses rekursivt, så editoren viser alle betingelsene. Logikken er den
+  // ytterste operatorens; selve uttrykket beholdes uendret i _raw så lenge det ikke endres.
+  const collect = (el: Element) => {
+    for (const child of Array.from(el.children)) {
+      const t = xsiType(child);
+      if (t.includes('Operator')) {
+        logic ??= attr(child, 'type').toLowerCase() === 'or' ? 'OR' : 'AND';
+        collect(child);
+      } else if (t.includes('SimpleStatement')) {
+        const stmt = parseSimpleStatement(child);
+        if (stmt) statements.push(stmt);
       }
-    } else if (t.includes('SimpleStatement')) {
-      const stmt = parseSimpleStatement(child);
-      if (stmt) statements.push(stmt);
     }
-  }
+  };
+  collect(showEl);
 
-  return { statements, logic };
+  const parsed = { statements, logic: logic ?? 'AND' };
+  const xml = new XMLSerializer().serializeToString(showEl).replace(/ xmlns(?::\w+)?="[^"]*"/g, '');
+  return { ...parsed, _raw: { xml, fingerprint: expressionFingerprint(parsed) } };
 }
 
 // ─── Response template parsing ─────────────────────────────────────────────
@@ -192,7 +224,9 @@ function parseResponseTemplate(el: Element, lang: LanguageType): ResponseTemplat
     code: attr(opt, 'code'),
     score: attr(opt, 'value') ? parseFloat(attr(opt, 'value')) : undefined,
     texts: { [lang]: attr(opt, 'label') } as Record<LanguageType, string>,
+    ...(opt.children.length > 0 && { _extraXml: Array.from(opt.children).map(rawXmlOf).join('') }),
   }));
+  const templateExtra = extraChildrenXml(el, new Set(['widget', 'option']));
 
   return {
     code,
@@ -200,6 +234,7 @@ function parseResponseTemplate(el: Element, lang: LanguageType): ResponseTemplat
     options,
     widgetType: widgetType || undefined,
     widgetParams: Object.keys(widgetParams).length > 0 ? widgetParams : undefined,
+    ...(templateExtra && { _extraXml: templateExtra }),
   };
 }
 
@@ -266,6 +301,8 @@ function parseContains(
   const continueExprs = qContinueEl ? [{ ...parseShowExpression(qContinueEl) } as ContinueIfExpression] : undefined;
 
   const layoutData = parseRawLayout(firstChild(el, 'layoutData'));
+  const _extraAttrs = extraContainsAttrs(el);
+  const _extraXml = extraChildrenXml(el, KNOWN_CONTAINS_CHILDREN);
   const baseAttrs = {
     id,
     code,
@@ -281,6 +318,8 @@ function parseContains(
     ...(hideExprs && { hideExpressions: hideExprs }),
     ...(continueExprs && { continueIfExpressions: continueExprs }),
     ...(layoutData && { layoutData }),
+    ...(_extraAttrs && { _extraAttrs }),
+    ...(_extraXml && { _extraXml }),
   };
 
   // Stand-alone elements (not wrapped in questionnaire:Question)
@@ -466,7 +505,8 @@ function parseSection(
 
   const repeatCode = attr(secEl, 'repeatCode') || undefined;
   const requiresNewPage = attr(secEl, 'requiresNewPage') === 'true' ? true : undefined;
-  const backgroundImage = attr(secEl, 'backgroundImage') || undefined;
+  // Tom backgroundImage="" finnes i ekte pakker og beholdes
+  const backgroundImage = secEl.getAttribute('backgroundImage') ?? undefined;
   const optBool = (name: string): boolean | undefined => {
     const v = secEl.getAttribute(name);
     return v === null ? undefined : v === 'true';
@@ -494,7 +534,7 @@ function parseSection(
     ? (() => {
         // reuse the same parsing logic as show expressions (same structure)
         const parsed = parseShowExpression(continueIfEl);
-        return { statements: parsed.statements, logic: parsed.logic };
+        return { statements: parsed.statements, logic: parsed.logic, _raw: parsed._raw };
       })()
     : undefined;
 
@@ -544,11 +584,11 @@ function parseSection(
     repeatCode,
     requiresNewPage,
     ...sectionLayout,
-    ...(!headingTitle && (attr(secEl, 'title') || attr(secEl, 'description')) ? { titleFromDescription: true } : {}),
+    ...(!headingTitle && (attr(secEl, 'title') || secEl.hasAttribute('description')) ? { titleFromDescription: true } : {}),
     ...(layout && { layout }),
     ...(layoutData && { layoutData }),
     ...(mixed && { childOrder }),
-    ...(backgroundImage ? { backgroundImage } : {}),
+    ...(backgroundImage !== undefined ? { backgroundImage } : {}),
     ...(attr(secEl, 'backgroundRepeat') ? { backgroundRepeat: attr(secEl, 'backgroundRepeat') } : {}),
     ...(attr(secEl, 'backgroundPosition') ? { backgroundPosition: attr(secEl, 'backgroundPosition') } : {}),
   };
@@ -1447,6 +1487,9 @@ export function parseManifestFile(xmlText: string): PackageMetadata | null {
       description: attr(root, 'description') || undefined,
       requiredSkills: attr(root, 'requiredSkills') || undefined,
       isPublic: attr(root, 'public') === 'true',
+      ...(root.getAttribute('name') !== null && { name: attr(root, 'name') }),
+      ...(attr(root, 'version') && { version: attr(root, 'version') }),
+      ...(attr(root, 'release') && { release: attr(root, 'release') }),
     };
   } catch {
     return null;

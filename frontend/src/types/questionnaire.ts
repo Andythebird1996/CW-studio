@@ -30,19 +30,28 @@ export interface SimpleStatement {
   boolValue?: boolean;
 }
 
+/** Uttrykket slik det sto i fila, og fingeravtrykk av det Studio leste ut av det (se expression-raw.ts) */
+export interface RawExpression {
+  xml: string;
+  fingerprint: string;
+}
+
 export interface HideExpression {
   statements: SimpleStatement[];
   logic: 'AND' | 'OR';
+  _raw?: RawExpression;
 }
 
 export interface ShowExpression {
   statements: SimpleStatement[];
   logic: 'AND' | 'OR';
+  _raw?: RawExpression;
 }
 
 export interface ContinueIfExpression {
   statements: SimpleStatement[];
   logic: 'AND' | 'OR';
+  _raw?: RawExpression;
 }
 
 // ─── Options / Answer alternatives ────────────────────────────────────────
@@ -52,6 +61,8 @@ export interface TextOption {
   score?: number;
   reverseValue?: boolean;
   texts: Record<LanguageType, string>; // language → text
+  /** Barneelementer fra fila (f.eks. show på alternativet), skrives tilbake uendret */
+  _extraXml?: string;
 }
 
 
@@ -74,6 +85,8 @@ export interface ResponseTemplate {
   widgetType?: string;
   /** Raw widget XML attributes for round-trip fidelity, e.g. { min: '0', max: '100', decimals: '0' } */
   widgetParams?: Record<string, string>;
+  /** Andre barneelementer i malen (f.eks. valueLabel), skrives tilbake uendret */
+  _extraXml?: string;
 }
 
 export interface ResponseTemplates {
@@ -101,6 +114,12 @@ interface BaseQuestion {
   labelPosition?: LabelPosition;
   /** Element.layoutData (f.eks. GridData med horizontalSpan) */
   layoutData?: RawLayout;
+  /**
+   * Attributter og barneelementer fra fila som Studio ikke redigerer (f.eks. defaultOption,
+   * defaultResponseValue, textExpression). Skrives tilbake uendret.
+   */
+  _extraAttrs?: Record<string, string>;
+  _extraXml?: string;
   /** Element alignment within the form layout */
   align?: ElementAlignment;
   /** Question answer is optional (not counted toward mandatory completion) */
@@ -415,6 +434,18 @@ export interface PackageMetadata {
   description?: string;
   requiredSkills?: string;
   isPublic: boolean;
+  /**
+   * Pakkens navn, versjon og utgivelse fra manifestet. Store bruker disse, og de kan være ulike
+   * kartleggingens egne (f.eks. pakke 3.2 med kartlegging versjon 1). Mangler de, brukes kartleggingens.
+   */
+  name?: string;
+  version?: string;
+  release?: string;
+  /**
+   * Andre kartlegginger i samme pakke (f.eks. statuslys-pakker med én kartlegging per farge).
+   * Studio redigerer bare den første; disse skrives tilbake uendret ved eksport og publisering.
+   */
+  extraQuestionnaires?: Array<{ fileName: string; content: string }>;
 }
 
 // ─── Media file ────────────────────────────────────────────────────────────

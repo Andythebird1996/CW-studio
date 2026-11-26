@@ -466,6 +466,8 @@ const strings = {
   packageCount:      { EN: '{shown} of {total} packages',     NO: '{shown} av {total} pakker'        },
   published:         { EN: 'Published',                       NO: 'Publisert'                        },
   visibility:        { EN: 'Visibility',                      NO: 'Synlighet'                        },
+  compoundExpressionNote: { EN: 'Compound condition from the file (nested AND/OR or functions such as sumDimension). It is kept unchanged as long as you do not edit it here; editing it saves it as a simple list.', NO: 'Sammensatt betingelse fra fila (nestet OG/ELLER eller funksjoner som sumDimension). Den beholdes uendret så lenge du ikke endrer den her; endrer du den, lagres den som en enkel liste.' },
+  extraQuestionnairesNote: { EN: 'The package contains {n} more questionnaire(s): {names}. They are published unchanged – Studio only edits the first one.', NO: 'Pakken har {n} kartlegging(er) til: {names}. De publiseres uendret – Studio redigerer bare den første.' },
   versionExists:     { EN: 'Version {version} already exists on the server for code {code}. Change the release number to avoid overwriting the existing package.', NO: 'Versjon {version} finnes allerede på serveren for kode {code}. Endre utgivelsesnummeret for å unngå å overskrive den eksisterende pakken.' },
   validationErrorsLabel: { EN: 'Validation errors:',          NO: 'Valideringsfeil:'                 },
   validationOkPublish: { EN: 'Validation passed — ready to publish', NO: 'Validering OK — klar til publisering' },
