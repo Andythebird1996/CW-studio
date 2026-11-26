@@ -911,22 +911,31 @@ function calcScore(questionCode: string, score: number, ctx: SimContext): number
   return score;
 }
 
-function computeCalc(code: string, ctx: SimContext): number {
+function computeCalc(code: string, ctx: SimContext, visiting: Set<string> = new Set()): number {
   const calc = ctx.questionnaire.calculations?.calculations.find((c) => c.code === code);
-  if (!calc) return 0;
+  if (!calc || visiting.has(code)) return 0;
+  visiting.add(code);
+  // Ledd: spørsmålsverdi, en annen beregning (nestet) eller en konstant; ubesvarte spørsmål teller ikke med
   const scores = calc.innerCalculations
     .map((ic) => {
+      const m = ic.multiplier ?? 1;
+      if (ic.constantValue !== undefined) return ic.constantValue * m;
+      if (ic.calculationCode) return computeCalc(ic.calculationCode, ctx, visiting) * m;
       const ans = ctx.answers.get(ic.questionCode ?? '');
       if (ans == null) return NaN;
-      return calcScore(ic.questionCode ?? '', ans.score, ctx) * (ic.multiplier ?? 1);
+      return calcScore(ic.questionCode ?? '', ans.score, ctx) * m;
     })
     .filter((s) => !isNaN(s));
+  visiting.delete(code);
+  let value: number;
   switch (calc.type) {
-    case 'SUM':   return scores.reduce((a, b) => a + b, 0);
-    case 'MEAN':  return scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-    case 'COUNT': return scores.length;
+    case 'SUM':   value = scores.reduce((a, b) => a + b, 0); break;
+    case 'MEAN':  value = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0; break;
+    case 'COUNT': value = scores.length; break;
     default:      return 0;
   }
+  // normLookup(norm, verdi): beregningen gir normverdien
+  return calc.normCode ? lookupNorm(calc.normCode, value, ctx) : value;
 }
 
 function lookupNorm(normCode: string, value: number, ctx: SimContext): number {

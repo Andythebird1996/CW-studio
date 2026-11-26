@@ -127,8 +127,8 @@ describe('Parser: ulike spørsmålstyper', () => {
     expect(sl.min).toBe(0);
     expect(sl.max).toBe(10);
     expect(sl.step).toBe(1);
-    expect(sl.minLabel?.['EN']).toBe('No pain');
-    expect(sl.maxLabel?.['EN']).toBe('Worst pain');
+    // labelMin/labelMax fra eldre Studio-filer blir verdietiketter ved min og maks
+    expect(sl.valueLabels?.map((v: { value: number; texts?: Record<string, string> }) => [v.value, v.texts?.['EN']])).toEqual([[0, 'No pain'], [10, 'Worst pain']]);
   });
 
   it('parses stringInput question with size', () => {

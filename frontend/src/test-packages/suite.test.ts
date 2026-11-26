@@ -113,6 +113,25 @@ describe('testpakkene i ekte Checkware-format', () => {
     expect(x).toMatch(/code="F3"[^>]*>[^]*?<hide/);
   });
 
+  it('elementer: endetekster, vedlegg, bildealternativer, lyd, dokumentlenke, dimensjon uten navn, telling, nestet og norm', () => {
+    const f = files.get('andreastest-elementer-20261125') ?? {};
+    const x = quiz('elementer');
+    expect(x).toContain('<valueLabel xsi:type="questionnaire:TextValueLabel" code="SL1-VL1" value="0" label="Ingen smerte"/>');
+    expect(x).toContain('<valueLabel xsi:type="questionnaire:TextValueLabel" code="SL1-VL3" value="10" label="Verst tenkelig"/>');
+    expect(x).toContain('<contains xsi:type="questionnaire:Attachment" code="VED1" text="Last opp ett bilde (valgfritt)" maxFiles="1" maxFileSize="5000" fileType="IMAGE"/>');
+    expect(x).toContain('<option xsi:type="questionnaire:ImageOption" code="BV1_0" value="0" imageFile="andreastest-valg-a.png"/>');
+    expect(x).toContain('audioVideoFile="https://www.youtube.com/watch?v=jNQXAC9IVRw"');
+    expect(x).toContain('<dimension code="DIM_C" name="" question="C1 C2 C3 C4"/>');
+    const manifest = f[Object.keys(f).find((k) => k.endsWith('.manifest')) ?? ''] ?? '';
+    expect(manifest).toMatch(/extension="questionnaire"[^>]*reference="andreastest-veiledning\.pdf"/);
+    const en = f[Object.keys(f).find((k) => k.endsWith('_EN.translation')) ?? ''] ?? '';
+    expect(en).toContain('code="SL1-VL1" entity="TextValueLabel" property="label" originalText="Ingen smerte" translatedText="[EN] No pain"');
+    expect(f['calculations/ANTALL.calculation']).toContain('name="answered"');
+    expect(f['calculations/NESTET.calculation']).toContain('<elements xsi:type="questionnaire:CalculationType" name="RAW"/>');
+    expect(f['calculations/T_SKAR.calculation']).toContain('name="normLookup"');
+    expect(Object.keys(f)).toContain('norms/NORM_T.norm');
+  });
+
   it('matrise: to nestede matriser med hver sin delte svarmal, tekst først i den andre', () => {
     const x = quiz('matrise');
     expect(x.match(/matrix="true"/g)?.length).toBe(2);

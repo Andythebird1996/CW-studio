@@ -200,7 +200,7 @@ function Rich({ text, className }: { text: string; className?: string }) {
 }
 
 function isNumbered(q: Question): boolean {
-  return q.type !== 'text' && q.type !== 'image' && q.type !== 'audioVideo';
+  return q.type !== 'text' && q.type !== 'image' && q.type !== 'audioVideo' && q.type !== 'attachment';
 }
 
 function isFilled(value: string | string[] | undefined): boolean {
@@ -232,6 +232,8 @@ function typeHint(q: Question, lang: UILang): string {
       return t('printImage', lang);
     case 'audioVideo':
       return t('printAudio', lang);
+    case 'attachment':
+      return t('printAttachment', lang);
     case 'country':
       return t('printCountry', lang);
     default:
@@ -515,13 +517,32 @@ function QuestionBlock({
   }
 
   if (question.type === 'audioVideo') {
+    // Lenke (f.eks. YouTube) vises som lenke; en mp3-fil i pakken som lydspiller
+    const isLink = !!question.mediaFile && /^https?:\/\//i.test(question.mediaFile);
     return (
-      <div className="cw-resp-q" data-qid={`${question.id}-${rep}`}>
-        {question.mediaFile ? (
-          <audio controls src={question.mediaFile} style={{ maxWidth: '100%' }} />
-        ) : (
+      <div className="cw-resp-q" data-qid={`${question.id}-${rep}`} data-testid="preview-audio">
+        {!question.mediaFile ? (
           <span className="cw-resp-muted">{t('printAudio', ui)}</span>
+        ) : isLink ? (
+          <a href={question.mediaFile} target="_blank" rel="noreferrer">{tf('audioVideoLink', ui, { url: question.mediaFile })}</a>
+        ) : (
+          <audio controls src={question.mediaFile} style={{ maxWidth: '100%' }} />
         )}
+      </div>
+    );
+  }
+
+  if (question.type === 'attachment') {
+    return (
+      <div className="cw-resp-q" data-qid={`${question.id}-${rep}`} data-testid="preview-attachment">
+        <span className="cw-resp-q-label">
+          {expert && question.code ? <span className="cw-resp-code">{question.code}</span> : null}
+          {text ? <Rich text={text} /> : <span className="cw-resp-muted">{t('printAttachment', ui)}</span>}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
+          <span className="cw-resp-btn cw-resp-btn-neutral" style={{ cursor: 'default' }}>{t('attachmentChoose', ui)}</span>
+          {question.maxFiles !== undefined && <span className="cw-resp-muted">{tf('attachmentLimits', ui, { n: question.maxFiles })}</span>}
+        </div>
       </div>
     );
   }
@@ -593,6 +614,7 @@ function QuestionBlock({
           step={question.step}
           showEndLabels={question.showEndLabels ?? true}
           displayValue={question.displayValue ?? false}
+          labels={(question.valueLabels ?? []).filter((v) => v.imageFile === undefined).map((v) => ({ value: v.value, text: v.texts?.[lang] ?? '' }))}
           value={typeof raw === 'string' ? raw : undefined}
           onAnswer={(v) => commit(v)}
         />
@@ -669,6 +691,7 @@ function SliderField({
   step = 1,
   showEndLabels,
   displayValue,
+  labels = [],
   value,
   onAnswer,
 }: {
@@ -677,6 +700,8 @@ function SliderField({
   step?: number;
   showEndLabels: boolean;
   displayValue: boolean;
+  /** Verdietiketter (TextValueLabel), f.eks. endetekstene ved min og maks */
+  labels?: { value: number; text: string }[];
   value?: string;
   onAnswer?: (v: string) => void;
 }) {
@@ -699,6 +724,19 @@ function SliderField({
           <span className="cw-resp-btn cw-resp-btn-primary" style={{ minHeight: 26, padding: '0 8px', cursor: 'default' }}>{current}</span>
         )}
       </div>
+      {labels.some((l) => l.text) && (
+        <div data-testid="slider-value-labels" style={{ position: 'relative', height: 32, margin: '2px 0 0' }}>
+          {labels.filter((l) => l.text).map((l) => {
+            const pct = max > min ? ((l.value - min) / (max - min)) * 100 : 0;
+            const align = pct <= 0 ? { left: 0 } : pct >= 100 ? { right: 0 } : { left: `${pct}%`, transform: 'translateX(-50%)' };
+            return (
+              <span key={`${l.value}-${l.text}`} className="cw-resp-opt-label" style={{ position: 'absolute', top: 0, maxWidth: '45%', fontSize: 12, ...align }}>
+                {l.text}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

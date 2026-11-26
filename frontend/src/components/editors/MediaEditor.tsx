@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { PlusCircle, Trash2, X } from 'lucide-react';
+import { PlusCircle, Pencil, X } from 'lucide-react';
 import type { MediaFile } from '../../types/questionnaire';
 import {t, tf, useUILang } from '../../i18n';
 import { isAllowedMediaFile, ALLOWED_MEDIA_TYPES } from '../../services/package-builder';
@@ -7,7 +7,23 @@ import { isAllowedMediaFile, ALLOWED_MEDIA_TYPES } from '../../services/package-
 interface Props {
   mediaFiles: MediaFile[];
   onChange?: (files: MediaFile[]) => void;
+  /** Antall steder som viser til fila (kartlegging, svarmaler, rapporter, manifest) */
+  referenceCount?: (fileName: string) => number;
+  /** Feilkode for et nytt navn, eller null når det kan brukes */
+  renameError?: (oldName: string, newName: string) => 'empty' | 'exists' | 'extension' | 'invalid' | null;
+  /** Gi fila nytt navn og oppdater referansene */
+  onRename?: (oldName: string, newName: string) => void;
+  /** Filer som vises som dokumentlenker i menyen (manifest: reference) */
+  documentLinks?: string[];
+  onToggleDocumentLink?: (fileName: string, on: boolean) => void;
 }
+
+const RENAME_ERROR_KEY = {
+  empty: 'mediaRenameEmpty', exists: 'mediaRenameExists', extension: 'mediaRenameExt', invalid: 'mediaRenameInvalid',
+} as const;
+
+/** Filtyper portalen kan vise som dokumentlenke i menyen (pdf, doc/docx og mp3 i ekte pakker) */
+const DOC_LINK_EXT = new Set(['pdf', 'docx', 'doc', 'mp3', 'png', 'jpg', 'jpeg']);
 
 const IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp', 'image/svg+xml']);
 
@@ -18,8 +34,20 @@ const MIME_EXT: Record<string, string> = {
   'audio/ogg': 'ogg', 'video/mp4': 'mp4',
 };
 
-export function MediaEditor({ mediaFiles, onChange }: Props) {
+export function MediaEditor({ mediaFiles, onChange, referenceCount, renameError, onRename, documentLinks = [], onToggleDocumentLink }: Props) {
   const uiLang = useUILang();
+  const [renaming, setRenaming] = useState<{ from: string; to: string } | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const renameErr = renaming && renameError ? renameError(renaming.from, renaming.to) : null;
+  function commitRename() {
+    if (!renaming || !onRename || renameErr) return;
+    const n = referenceCount?.(renaming.from) ?? 0;
+    if (renaming.to.trim() !== renaming.from) {
+      onRename(renaming.from, renaming.to.trim());
+      setNotice(tf('mediaRenamed', uiLang, { name: renaming.to.trim(), n }));
+    }
+    setRenaming(null);
+  }
   const [lightbox, setLightbox] = useState<MediaFile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rejected, setRejected] = useState<string[]>([]);
@@ -94,6 +122,13 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
         )}
       </div>
 
+      {notice && (
+        <div className="bg-cw-blue-soft border-b border-cw-blue/30 px-4 py-2 text-xs text-cw-blue shrink-0 flex justify-between" data-testid="media-notice">
+          <span>{notice}</span>
+          <button type="button" onClick={() => setNotice(null)}><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
+
       {rejected.length > 0 && (
         <div className="bg-cw-orange-soft border-b border-cw-orange/40 px-4 py-2 text-xs text-cw-orange shrink-0">
           {tf('mediaTypeRejected', uiLang, { files: rejected.join(', ') })}
@@ -144,12 +179,51 @@ export function MediaEditor({ mediaFiles, onChange }: Props) {
 
                 {/* Info */}
                 <div className="px-3 py-2 border-t border-cw-border">
-                  <p className="text-xs font-medium text-cw-ink truncate" title={f.fileName}>
-                    {f.fileName}
-                  </p>
+                  {renaming?.from === f.fileName ? (
+                    <div className="space-y-1">
+                      <input
+                        autoFocus
+                        aria-label={t('mediaRename', uiLang)}
+                        value={renaming.to}
+                        onChange={(e) => setRenaming({ from: f.fileName, to: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenaming(null); }}
+                        className="w-full border border-cw-border rounded px-1.5 py-0.5 text-xs font-mono"
+                      />
+                      {renameErr && <p className="text-[10px] text-cw-negative">{t(RENAME_ERROR_KEY[renameErr], uiLang)}</p>}
+                      <div className="flex gap-2">
+                        <button type="button" disabled={!!renameErr} onClick={commitRename} className="text-[10px] px-2 py-0.5 bg-cw-blue text-white rounded disabled:opacity-50">{t('mediaRenameSave', uiLang)}</button>
+                        <button type="button" onClick={() => setRenaming(null)} className="text-[10px] px-2 py-0.5 border border-cw-border rounded">{t('mediaRenameCancel', uiLang)}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs font-medium text-cw-ink truncate flex-1" title={f.fileName}>
+                        {f.fileName}
+                      </p>
+                      {onRename && (
+                        <button type="button" title={t('mediaRename', uiLang)} aria-label={`${t('mediaRename', uiLang)} ${f.fileName}`} onClick={() => setRenaming({ from: f.fileName, to: f.fileName })} className="text-cw-gray-text hover:text-cw-blue">
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <p className="text-[10px] text-cw-gray-text mt-0.5">
                     {f.sizeKb < 1024 ? `${f.sizeKb} B` : `${Math.round(f.sizeKb / 1024)} KB`} · {f.extension.toUpperCase()}
+                    {referenceCount && (
+                      <> · {referenceCount(f.fileName) > 0 ? tf('mediaUsedIn', uiLang, { n: referenceCount(f.fileName) }) : t('mediaUnused', uiLang)}</>
+                    )}
                   </p>
+                  {onToggleDocumentLink && DOC_LINK_EXT.has(f.extension.toLowerCase()) && (
+                    <label className="flex items-center gap-1 mt-1 cursor-pointer" title={t('mediaDocLinkHint', uiLang)}>
+                      <input
+                        type="checkbox"
+                        checked={documentLinks.includes(f.fileName)}
+                        onChange={(e) => onToggleDocumentLink(f.fileName, e.target.checked)}
+                        className="accent-cw-blue"
+                      />
+                      <span className="text-[10px] text-cw-gray-text">{t('mediaDocLink', uiLang)}</span>
+                    </label>
+                  )}
                 </div>
 
                 {/* Download */}

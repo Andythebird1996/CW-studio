@@ -7,16 +7,16 @@
  */
 import JSZip from 'jszip';
 import { buildPackageZip, type BuiltPackage } from '../services/package-builder';
-import { parseQuestionnaire, parseCalculationFile, parseFlagFile, applyTranslationFile } from '../services/xml-parser';
+import { parseQuestionnaire, parseCalculationFile, parseFlagFile, parseNormFile, applyTranslationFile } from '../services/xml-parser';
 import { interpretRap, simulateCalculation, simulateFlag, type SimAnswer, type SimContext } from '../services/rap-interpreter';
 import type {
-  Calculation, Flag, LanguageType, MediaFile, Question, Questionnaire, Section, ShowExpression, TextOption,
+  Calculation, Flag, LanguageType, MediaFile, PackageMetadata, Question, Questionnaire, Section, ShowExpression, TextOption,
 } from '../types/questionnaire';
 import { JPEG_BASE64, MP3_BASE64, makePdf, makePng, mediaFile, toBase64 } from './fixtures';
 
 // ── Typer ────────────────────────────────────────────────────────────────────
 
-export type TestArea = 'sporsmal' | 'beregning' | 'rapport' | 'media' | 'oversettelse' | 'flyt' | 'matrise';
+export type TestArea = 'sporsmal' | 'beregning' | 'rapport' | 'media' | 'oversettelse' | 'flyt' | 'matrise' | 'elementer';
 
 /** Svar på ett spørsmål: alternativkode(r) for valgspørsmål, ellers rå verdi (tekst/tall/dato). */
 export type TestAnswer = string | string[];
@@ -51,6 +51,8 @@ export interface TestPackageDef {
   browserChecks: string[];
   /** Kjente usikkerheter / ting Studio ikke kan teste */
   notes: string[];
+  /** Pakkedata som ikke ligger i kartleggingen, f.eks. dokumentlenker i menyen */
+  packageMetadata?: PackageMetadata;
 }
 
 export interface SuiteOptions {
@@ -610,11 +612,138 @@ ${ifPair('CALC(TOTAL)>=12', 'CALC(TOTAL)<12', 'HOY_TOTAL=JA', 'HOY_TOTAL=NEI')}`
   };
 }
 
+// ── 8. Elementer: endetekster, vedlegg, lyd, dokumentlenke, telling, nestede beregninger, norm ──
+
+function elementer(code: string): TestPackageDef {
+  const MP3 = 'andreastest-lyd.mp3';
+  const PDF = 'andreastest-veiledning.pdf';
+  const PNG_A = 'andreastest-valg-a.png';
+  const PNG_B = 'andreastest-valg-b.png';
+  const URL = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';
+  const c = (n: number): Question => ({
+    id: `c${n}`, code: `C${n}`, type: 'radiobutton', required: false,
+    texts: L(`Telling C${n} (frivillig)`, `[EN] Count C${n} (optional)`), options: opts(`C${n}`, 4, { en: true }),
+  }) as Question;
+  const q = baseQuestionnaire(code, 'andreastest elementer (syntetisk testpakke)', '[EN] andreastest elements (synthetic test package)', [
+    { id: 's1', code: 'S1', type: 'NORMAL', titles: L('Skyveknapp og vedlegg', '[EN] Slider and attachments'), questions: [
+      {
+        id: 'sl1', code: 'SL1', type: 'slider', min: 0, max: 10, step: 1, showEndLabels: true, displayValue: true, required: true,
+        texts: L('Hvor sterke smerter har du nå?', '[EN] How strong is your pain right now?'),
+        valueLabels: [
+          { code: 'SL1-VL1', value: 0, texts: L('Ingen smerte', '[EN] No pain') },
+          { code: 'SL1-VL2', value: 5, texts: L('Middels', '[EN] Moderate') },
+          { code: 'SL1-VL3', value: 10, texts: L('Verst tenkelig', '[EN] Worst imaginable') },
+        ],
+      },
+      { id: 'ved1', code: 'VED1', type: 'attachment', fileType: 'IMAGE', maxFiles: 1, maxFileSize: 5000, required: false, texts: L('Last opp ett bilde (valgfritt)', '[EN] Upload one image (optional)') },
+      { id: 'ved2', code: 'VED2', type: 'attachment', fileType: 'DOCUMENT', maxFiles: 5, required: false, texts: L('Last opp inntil 5 dokumenter (valgfritt)', '[EN] Upload up to 5 documents (optional)') },
+      {
+        id: 'bv1', code: 'BV1', type: 'radiobutton', required: true, texts: L('Velg et bilde', '[EN] Pick an image'),
+        options: [
+          { code: 'BV1_0', score: 0, imageFile: PNG_A, texts: L('Blått', '[EN] Blue') },
+          { code: 'BV1_1', score: 1, imageFile: PNG_B, texts: L('Oransje', '[EN] Orange') },
+        ],
+      },
+    ] },
+    { id: 's2', code: 'S2', type: 'NORMAL', requiresNewPage: true, titles: L('Lyd og video', '[EN] Audio and video'), questions: [
+      { id: 'av1', code: 'AV1', type: 'audioVideo', mediaFile: MP3, required: false, texts: L('') },
+      { id: 'av2', code: 'AV2', type: 'audioVideo', mediaFile: URL, required: false, texts: L('') },
+    ] },
+    { id: 's3', code: 'S3', type: 'NORMAL', requiresNewPage: true, titles: L('Telling', '[EN] Counting'), questions: [c(1), c(2), c(3), c(4)] },
+  ]);
+  const cs = ['C1', 'C2', 'C3', 'C4'];
+  q.dimensions = [
+    { code: 'DIM_C', name: '', questionCodes: cs },
+    { code: 'DIM_SL', name: 'Skyveknapp', questionCodes: ['SL1'] },
+  ];
+  const norm = { code: 'NORM_T', name: 'andreastest T-norm', type: 'NORM' as const, data: [
+    { score: 0, normValue: 30 }, { score: 3, normValue: 40 }, { score: 6, normValue: 50 }, { score: 9, normValue: 60 }, { score: 12, normValue: 70 },
+  ] };
+  q.calculations = { calculations: [
+    sumCalc('RAW', 'Råskår C1–C4', cs),
+    sumCalc('ANTALL', 'Antall besvart C1–C4', cs, 'COUNT'),
+    { code: 'NESTET', name: 'RAW×2 + ANTALL + 1', type: 'SUM', innerCalculations: [{ calculationCode: 'RAW', multiplier: 2 }, { calculationCode: 'ANTALL' }, { constantValue: 1 }] },
+    { code: 'T_SKAR', name: 'T-skår (norm av RAW)', type: 'SUM', normCode: 'NORM_T', innerCalculations: [{ calculationCode: 'RAW' }] },
+    sumCalc('SKYV', 'Skyveknapp', ['SL1']),
+    sumCalc('BILDE', 'Bildevalg', ['BV1']),
+  ], norms: [norm] };
+  q.flags = [
+    { code: 'T_HOY', name: 'T-skår ≥ 60', type: 'WARNING', logic: 'AND', conditions: [{ calculationCode: 'T_SKAR', operator: 'GTE', threshold: 60 }] },
+    { code: 'NESTET_HOY', name: 'NESTET ≥ 20', type: 'INFO', logic: 'AND', conditions: [{ calculationCode: 'NESTET', operator: 'GTE', threshold: 20 }] },
+  ] as Flag[];
+  const calcLine = '<p>RAW=[CALC(RAW)] ANTALL=[CALC(ANTALL)] NESTET=[CALC(NESTET)] T_SKAR=[CALC(T_SKAR)] SKYV=[CALC(SKYV)] BILDE=[CALC(BILDE)]</p>';
+  const no = `<h1>Elementer</h1>
+${calcLine}
+${ifPair('CALC(T_SKAR)>=60', 'CALC(T_SKAR)<60', 'T_HOY=JA', 'T_HOY=NEI')}
+${ifPair('CALC(NESTET)>=20', 'CALC(NESTET)<20', 'NESTET_HOY=JA', 'NESTET_HOY=NEI')}`;
+  const en = `<h1>Elements</h1>
+${calcLine}`;
+  const set = (name: string, sl: number, bv: number, cAns: (number | null)[], browser?: string[]): AnswerSet => {
+    const answered = cAns.filter((v): v is number => v !== null);
+    const raw = answered.reduce((a, b) => a + b, 0);
+    const antall = answered.length;
+    const nestet = raw * 2 + antall + 1;
+    const t = [...norm.data].reverse().find((r) => r.score <= raw)?.normValue ?? 30;
+    const f = (n: number) => n.toFixed(2);
+    const line = `<p>RAW=${f(raw)} ANTALL=${f(antall)} NESTET=${f(nestet)} T_SKAR=${f(t)} SKYV=${f(sl)} BILDE=${f(bv)}</p>`;
+    return {
+      name,
+      description: [`SL1=${sl}`, `BV1=${bv === 0 ? 'Blått' : 'Oransje'}`, ...cs.map((k, i) => `${k}=${cAns[i] === null ? 'ubesvart' : `Alternativ ${cAns[i]}`}`)].join(', '),
+      answers: {
+        SL1: String(sl), BV1: `BV1_${bv}`,
+        ...Object.fromEntries(cs.flatMap((k, i) => (cAns[i] === null ? [] : [[k, `${k}_${cAns[i]}`]]))),
+      },
+      calculations: { RAW: raw, ANTALL: antall, NESTET: nestet, T_SKAR: t, SKYV: sl, BILDE: bv },
+      flags: { T_HOY: t >= 60, NESTET_HOY: nestet >= 20 },
+      report: { NO: [line, `<p>T_HOY=${t >= 60 ? 'JA' : 'NEI'}</p>`, `<p>NESTET_HOY=${nestet >= 20 ? 'JA' : 'NEI'}</p>`], EN: [line] },
+      reportAbsent: { NO: [`T_HOY=${t >= 60 ? 'NEI' : 'JA'}`, `NESTET_HOY=${nestet >= 20 ? 'NEI' : 'JA'}`] },
+      ...(browser && { browser }),
+    };
+  };
+  const pngA = toBase64(makePng(40, 40, [37, 184, 236], [255, 255, 255]));
+  const pngB = toBase64(makePng(40, 40, [255, 165, 0], [255, 255, 255]));
+  const pdf = toBase64(makePdf('andreastest veiledning (syntetisk PDF)'));
+  return {
+    area: 'elementer', code, name: q.name.NO, questionnaire: q,
+    description: 'Skyveknapp med endetekster og midttekst (TextValueLabel, NO/EN), to vedleggsfelt (bilde, dokumenter), bildealternativer (ImageOption), lyd fra MP3 og fra URL, PDF som dokumentlenke i menyen, dimensjon uten navn, telling (COUNT), nestet beregning (beregning av beregninger + konstant) og norm (normLookup) med flagg.',
+    reports: { [`${code}-rapport`]: rap('NO', no), [`${code}-rapport-en`]: rap('EN', en) },
+    media: [
+      mediaFile(MP3, 'audio/mpeg', MP3_BASE64),
+      mediaFile(PDF, 'application/pdf', pdf),
+      mediaFile(PNG_A, 'image/png', pngA),
+      mediaFile(PNG_B, 'image/png', pngB),
+    ],
+    packageMetadata: { code, isPublic: false, documentLinks: [PDF] },
+    answerSets: [
+      set('alle_hoy', 8, 1, [3, 3, 2, 2], ['T_SKAR 60 (råskår 10 ligger i intervallet 9–11) gir T_HOY=JA; NESTET=25 gir NESTET_HOY=JA']),
+      set('to_besvart', 0, 0, [1, null, 2, null], ['Bare C1 og C3 besvart: ANTALL=2, RAW=3, T_SKAR=40']),
+      set('grense', 10, 0, [3, 3, 3, 0], ['RAW=9 er nøyaktig nedre grense for T=60 → T_HOY=JA; NESTET=23']),
+      set('ingen_telling', 5, 1, [null, null, null, null], ['Ingen av C1–C4 besvart: ANTALL=0, RAW=0, NESTET=1, T_SKAR=30']),
+    ],
+    browserChecks: [
+      'SL1: endetekstene «Ingen smerte» (ved 0) og «Verst tenkelig» (ved 10) vises ved endene av skyveknappen, «Middels» ved 5; på engelsk «No pain» / «Worst imaginable» / «Moderate»',
+      'VED1: opplastingsfelt som bare godtar bilder, maks 1 fil; VED2: godtar dokumenter, maks 5 filer. Opplasting av en fil fungerer og fila vises i svaret',
+      'BV1: alternativene vises som bilder (blå og oransje rute), ikke som tekst',
+      'S2: AV1 er en lydspiller som spiller MP3-en (440 Hz, 0,5 s); AV2 viser YouTube-videoen (innebygd spiller eller lenke)',
+      `Dokumentlenken «${PDF}» vises i venstremenyen i portalen og åpner PDF-en`,
+      'Pakken installeres selv om dimensjonen DIM_C har tomt navn',
+    ],
+    notes: [
+      'Endetekster er TextValueLabel i svarmalen (value=min/maks), oversatt med entity="TextValueLabel" property="label", som i ekte pakker.',
+      'Dokumentlenken er manifestets reference-attributt på .questionnaire-filen (id med * for mellomrom), som i ekte pakker.',
+      'COUNT skrives som sum av if(answered(Q)=true,1,0), nestet beregning som CalculationType, norm som normLookup(NormType, verdi) – samme mønstre som ekte pakker.',
+      'Usikkert: hva serveren gir for RAW når noen spørsmål er ubesvart (Studio teller ubesvart som 0 i summen). Avvik i svarsettene to_besvart og ingen_telling er i så fall et funn, ikke nødvendigvis en feil i pakken.',
+      'Normtabellen har lookupMin=skår og lookupMax=neste skår − 0,5, så den gjelder bare for heltall.',
+      'Vedleggsfelt har ingen tekstoversettelse i ekte pakker, så VED1/VED2 får ikke engelsk tekst i oversettelsesfila.',
+    ],
+  };
+}
+
 // ── Suite ────────────────────────────────────────────────────────────────────
 
-export const TEST_AREAS: TestArea[] = ['sporsmal', 'beregning', 'rapport', 'media', 'oversettelse', 'flyt', 'matrise'];
+export const TEST_AREAS: TestArea[] = ['sporsmal', 'beregning', 'rapport', 'media', 'oversettelse', 'flyt', 'matrise', 'elementer'];
 
-const BUILDERS: Record<TestArea, (code: string) => TestPackageDef> = { sporsmal, beregning, rapport, media, oversettelse, flyt, matrise };
+const BUILDERS: Record<TestArea, (code: string) => TestPackageDef> = { sporsmal, beregning, rapport, media, oversettelse, flyt, matrise, elementer };
 
 export function testPackageCode(area: TestArea, date: string): string {
   return `andreastest-${area}-${date}`;
@@ -697,7 +826,7 @@ export interface BuiltTestPackage {
 export async function buildSuite(opt: SuiteOptions): Promise<BuiltTestPackage[]> {
   const out: BuiltTestPackage[] = [];
   for (const def of buildSuiteDefs(opt)) {
-    const built = await buildPackageZip(def.questionnaire, def.reports, def.media);
+    const built = await buildPackageZip(def.questionnaire, def.reports, def.media, def.packageMetadata);
     out.push({ def, built, expected: expectedFile(def, built) });
   }
   return out;
@@ -721,7 +850,9 @@ export function loadPackageFiles(files: Record<string, string>): Questionnaire {
   let q = parseQuestionnaire(files[quizKey]);
   const calcs = Object.keys(files).filter((k) => k.endsWith('.calculation'))
     .map((k) => parseCalculationFile(files[k], q)).filter((c): c is Calculation => !!c);
-  q.calculations = { calculations: calcs, norms: [] };
+  const norms = Object.keys(files).filter((k) => k.endsWith('.norm'))
+    .map((k) => parseNormFile(files[k])).filter((n): n is NonNullable<typeof n> => !!n);
+  q.calculations = { calculations: calcs, norms };
   q.flags = Object.keys(files).filter((k) => k.endsWith('.flag'))
     .map((k) => parseFlagFile(files[k], q)).filter((f): f is Flag => !!f);
   for (const k of Object.keys(files).filter((x) => x.endsWith('.translation'))) q = applyTranslationFile(q, files[k]);

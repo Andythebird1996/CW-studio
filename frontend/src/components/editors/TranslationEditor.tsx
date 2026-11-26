@@ -58,7 +58,8 @@ function updateQuestionHelpText(sections: Section[], sId: string, qId: string, l
   });
 }
 
-function updateSliderLabel(sections: Section[], sId: string, qId: string, field: 'minLabel' | 'maxLabel', lang: LanguageType, val: string): Section[] {
+/** Oversett én verdietikett (TextValueLabel) på en glidebryter */
+function updateSliderLabel(sections: Section[], sId: string, qId: string, labelCode: string, lang: LanguageType, val: string): Section[] {
   return sections.map((s) => {
     if (s.id === sId) {
       return {
@@ -67,13 +68,14 @@ function updateSliderLabel(sections: Section[], sId: string, qId: string, field:
           if (q.id !== qId || q.type !== 'slider') return q;
           return {
             ...q,
-            [field]: { ...((q as any)[field] ?? {}), [lang]: val } as Record<LanguageType, string>,
+            valueLabels: (q.valueLabels ?? []).map((v) =>
+              (v.code === labelCode ? { ...v, texts: { ...(v.texts ?? {}), [lang]: val } as Record<LanguageType, string> } : v)),
           };
         }),
       };
     }
     if (s.subSections?.length)
-      return { ...s, subSections: updateSliderLabel(s.subSections, sId, qId, field, lang, val) };
+      return { ...s, subSections: updateSliderLabel(s.subSections, sId, qId, labelCode, lang, val) };
     return s;
   });
 }
@@ -142,11 +144,14 @@ function applyBulkTranslations(
         const helpTrans = updates.get(`${prefix}.helpText`);
         if (helpTrans) updated = { ...updated, helpTexts: { ...(updated.helpTexts ?? {}), [lang]: helpTrans } };
 
-        if (question.type === 'slider') {
-          const minTrans = updates.get(`${prefix}.minLabel`);
-          if (minTrans) updated = { ...updated, minLabel: { ...(updated.minLabel ?? {}), [lang]: minTrans } };
-          const maxTrans = updates.get(`${prefix}.maxLabel`);
-          if (maxTrans) updated = { ...updated, maxLabel: { ...(updated.maxLabel ?? {}), [lang]: maxTrans } };
+        if (question.type === 'slider' && question.valueLabels?.some((v) => updates.has(`${prefix}.vl.${v.code}`))) {
+          updated = {
+            ...updated,
+            valueLabels: question.valueLabels.map((v) => {
+              const tr = updates.get(`${prefix}.vl.${v.code}`);
+              return tr ? { ...v, texts: { ...(v.texts ?? {}), [lang]: tr } } : v;
+            }),
+          };
         }
 
         const opts = (question as any).options as Array<{ code: string; texts?: Record<string, string> }> | undefined;
@@ -381,29 +386,19 @@ export function TranslationEditor({ questionnaire, onChange }: Props) {
         });
       }
 
-      // Slider labels
+      // Tekster ved verdier på glidebryteren (endetekstene er etikettene ved min og maks)
       if (q.type === 'slider') {
-        if (q.minLabel && Object.keys(q.minLabel).length > 0) {
+        for (const v of q.valueLabels ?? []) {
+          if (v.imageFile !== undefined || !v.texts) continue;
+          const ctxKey = v.value === q.min ? 'ctxMinLabel' : v.value === q.max ? 'ctxMaxLabel' : 'ctxValueLabel';
           rows.push({
-            key: `s.${section.id}.q${qi}.minLabel`,
-            context: tf('ctxMinLabel', uiLang, { code: q.code || `Q${qi + 1}` }),
-            texts: q.minLabel as Record<LanguageType, string>,
+            key: `s.${section.id}.q${qi}.vl.${v.code}`,
+            context: tf(ctxKey, uiLang, { code: q.code || `Q${qi + 1}`, value: v.value }),
+            texts: v.texts,
             update: (lang, val) =>
               pushChange({
                 ...questionnaire,
-                sections: updateSliderLabel(questionnaire.sections, section.id, q.id, 'minLabel', lang, val),
-              }, lang),
-          });
-        }
-        if (q.maxLabel && Object.keys(q.maxLabel).length > 0) {
-          rows.push({
-            key: `s.${section.id}.q${qi}.maxLabel`,
-            context: tf('ctxMaxLabel', uiLang, { code: q.code || `Q${qi + 1}` }),
-            texts: q.maxLabel as Record<LanguageType, string>,
-            update: (lang, val) =>
-              pushChange({
-                ...questionnaire,
-                sections: updateSliderLabel(questionnaire.sections, section.id, q.id, 'maxLabel', lang, val),
+                sections: updateSliderLabel(questionnaire.sections, section.id, q.id, v.code, lang, val),
               }, lang),
           });
         }
