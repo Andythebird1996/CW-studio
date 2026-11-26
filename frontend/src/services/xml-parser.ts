@@ -101,7 +101,7 @@ function parseSimpleStatement(el: Element): SimpleStatement | null {
   const valueRef = elems.find((e) => {
     if (e.localName !== 'elements') return false;
     const t = xsiType(e);
-    return t.includes('OptionType') || t.includes('NumericValue') || t.includes('StringValue');
+    return t.includes('OptionType') || t.includes('NumericValue') || t.includes('StringValue') || t.includes('BooleanBasicType');
   });
 
   if (!questionRef && !valueRef) return null;
@@ -121,12 +121,16 @@ function parseSimpleStatement(el: Element): SimpleStatement | null {
     noValue: 'NO_VALUE',
   };
 
-  const optionCode = valueRef ? attr(valueRef, 'option') : undefined;
+  const optionCode = valueRef ? attr(valueRef, 'option') || undefined : undefined;
+  const fnName = questionRef ? attr(questionRef, 'name') : '';
+  const boolRaw = valueRef && xsiType(valueRef).includes('BooleanBasicType') ? attr(valueRef, 'value') : '';
 
   return {
     questionCode,
     operator: operatorMap[type] ?? 'EQ',
     value: optionCode,
+    ...(fnName && fnName !== 'questionResponseValue' ? { fn: fnName } : {}),
+    ...(boolRaw ? { boolValue: boolRaw.toLowerCase() === 'true' } : {}),
   };
 }
 
@@ -448,6 +452,21 @@ function parseSection(
   const repeatCode = attr(secEl, 'repeatCode') || undefined;
   const requiresNewPage = attr(secEl, 'requiresNewPage') === 'true' ? true : undefined;
   const backgroundImage = attr(secEl, 'backgroundImage') || undefined;
+  const optBool = (name: string): boolean | undefined => {
+    const v = secEl.getAttribute(name);
+    return v === null ? undefined : v === 'true';
+  };
+  const startOnRaw = secEl.getAttribute('startOn');
+  const sectionLayout = {
+    ...(optBool('matrix') !== undefined ? { matrix: optBool('matrix') } : {}),
+    ...(optBool('noPageBreaks') !== undefined ? { noPageBreaks: optBool('noPageBreaks') } : {}),
+    ...(optBool('autonumbering') !== undefined ? { autonumbering: optBool('autonumbering') } : {}),
+    ...(attr(secEl, 'numberingType') ? { numberingType: attr(secEl, 'numberingType') } : {}),
+    ...(optBool('resetNumbering') !== undefined ? { resetNumbering: optBool('resetNumbering') } : {}),
+    ...(startOnRaw !== null && startOnRaw !== '' && !Number.isNaN(Number(startOnRaw)) ? { startOn: Number(startOnRaw) } : {}),
+    ...(optBool('returnToTOC') !== undefined ? { returnToTOC: optBool('returnToTOC') } : {}),
+    ...(attr(secEl, 'returnToElement') ? { returnToElement: attr(secEl, 'returnToElement') } : {}),
+  };
 
   const showEl = firstChild(secEl, 'show');
   const showExpression = showEl ? parseShowExpression(showEl) : undefined;
@@ -499,11 +518,10 @@ function parseSection(
     continueIfExpressions: continueIfExpression ? [continueIfExpression] : undefined,
     repeatCode,
     requiresNewPage,
-    ...(backgroundImage ? {
-      backgroundImage,
-      backgroundRepeat: attr(secEl, 'backgroundRepeat') || undefined,
-      backgroundPosition: attr(secEl, 'backgroundPosition') || undefined,
-    } : {}),
+    ...sectionLayout,
+    ...(backgroundImage ? { backgroundImage } : {}),
+    ...(attr(secEl, 'backgroundRepeat') ? { backgroundRepeat: attr(secEl, 'backgroundRepeat') } : {}),
+    ...(attr(secEl, 'backgroundPosition') ? { backgroundPosition: attr(secEl, 'backgroundPosition') } : {}),
   };
 }
 
@@ -515,6 +533,12 @@ export function parseQuestionnaire(xmlText: string): Questionnaire {
   const root = doc.documentElement;
 
   const lang = mapLang(attr(root, 'language') || 'norwegian');
+  // Rotelementer Studio ikke redigerer, men som skal med uendret ved eksport
+  const rawRootElements: { copyright?: string; dictionary?: string; calculations?: string } = {};
+  for (const name of ['copyright', 'dictionary', 'calculations'] as const) {
+    const el = firstChild(root, name);
+    if (el) rawRootElements[name] = new XMLSerializer().serializeToString(el).replace(/ xmlns(?::\w+)?="[^"]*"/g, '');
+  }
   const code = attr(root, 'code');
   const name = attr(root, 'name');
   const version = attr(root, 'version');
@@ -636,6 +660,7 @@ export function parseQuestionnaire(xmlText: string): Questionnaire {
     restrictBackButton,
     allowSingleBackButton,
     unresponsiveUI,
+    ...(Object.keys(rawRootElements).length > 0 ? { _rawRootElements: rawRootElements } : {}),
   };
 }
 
@@ -677,9 +702,12 @@ export function parseCalculationFile(
       ? rawNorm.split('/').pop()?.replace(/\.norm$/, '') || undefined
       : undefined;
 
+    const assignedRaw = root.getAttribute('assignedByVariable');
+    const assigned = assignedRaw === null ? {} : { assignedByVariable: assignedRaw === 'true' };
+
     const exprEl = firstChild(root, 'calculationExpression');
     if (!exprEl) {
-      return { code, name, type: 'CUSTOM', innerCalculations: [], normCode };
+      return { code, name, type: 'CUSTOM', innerCalculations: [], normCode, ...assigned };
     }
 
     // Preserve the raw XML of the expression for lossless round-trip
@@ -689,7 +717,7 @@ export function parseCalculationFile(
 
     const { calcType, innerCalculations } = resolveExpression(exprEl, questionnaire);
     const formula = expressionToFormula(exprEl, questionnaire, 0);
-    return { code, name, type: calcType, innerCalculations, formula, normCode, _rawExpression };
+    return { code, name, type: calcType, innerCalculations, formula, normCode, _rawExpression, ...assigned };
   } catch {
     return null;
   }
@@ -1192,7 +1220,7 @@ export function parseNormFile(xmlText: string): import('../types/questionnaire')
     if (!code) return null;
 
     const contentEl = firstChild(root, 'normContent');
-    const data: Array<{ score: number; normValue: number }> = [];
+    const data: import('../types/questionnaire').Norm['data'] = [];
     let normType: import('../types/questionnaire').NormType = 'NORM';
 
     if (contentEl) {
@@ -1205,9 +1233,13 @@ export function parseNormFile(xmlText: string): import('../types/questionnaire')
           const val = parseFloat(attr(lookupEl, 'value') || '0');
           const ageStr = attr(lookupEl, 'age');
           const genderStr = attr(lookupEl, 'gender');
+          const maxStr = attr(lookupEl, 'lookupMax');
+          const typeStr = attr(lookupEl, 'type');
           data.push({
             score: min,
             normValue: val,
+            ...(maxStr && !Number.isNaN(parseFloat(maxStr)) ? { max: parseFloat(maxStr) } : {}),
+            ...(typeStr ? { intervalType: typeStr } : {}),
             ...(ageStr ? { age: parseFloat(ageStr) } : {}),
             ...(genderStr ? { gender: genderStr } : {}),
           });
@@ -1224,7 +1256,7 @@ export function parseNormFile(xmlText: string): import('../types/questionnaire')
       }
     }
 
-    return { code, name, type: normType, description, origin, data };
+    return { code, name, type: normType, description, origin, data, ...(normType !== 'ZSCORE' ? { _preserveBounds: true } : {}) };
   } catch {
     return null;
   }

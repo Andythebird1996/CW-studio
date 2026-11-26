@@ -16,7 +16,7 @@ export interface XmlDiff {
 }
 
 const IGNORED_ATTRS = new Set(['xmi:version', 'xmlns', 'xsi:schemaLocation']);
-const KEY_ATTRS = ['code', 'entity', 'property', 'language', 'key'];
+const KEY_ATTRS = ['code', 'entity', 'property', 'language', 'key', 'id', 'fileName'];
 
 function signature(el: Element): string {
   const type = el.getAttribute('xsi:type');

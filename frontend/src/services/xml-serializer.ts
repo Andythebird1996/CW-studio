@@ -30,7 +30,11 @@ export function esc(s: string | undefined | null): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    // Linjeskift og tabulator må tegnkodes i attributter, ellers blir de til mellomrom når XML-en leses
+    .replace(/\r/g, '&#13;')
+    .replace(/\n/g, '&#10;')
+    .replace(/\t/g, '&#9;');
 }
 
 // ─── Namespace header ──────────────────────────────────────────────────────
@@ -53,12 +57,14 @@ const OP_MAP: Record<SimpleStatement['operator'], string> = {
 
 function serializeStatement(stmt: SimpleStatement): string {
   return `<elements xsi:type="questionnaire:SimpleStatement" type="${OP_MAP[stmt.operator] ?? 'equal'}">
-        <elements xsi:type="questionnaire:Function" name="questionResponseValue">
+        <elements xsi:type="questionnaire:Function" name="${esc(stmt.fn ?? 'questionResponseValue')}">
           <parameter name="question" type="Question">
             <elements xsi:type="questionnaire:QuestionType" question="${esc(stmt.questionCode)}"/>
           </parameter>
         </elements>
-        ${stmt.value ? `<elements xsi:type="questionnaire:OptionType" option="${esc(stmt.value)}" question="${esc(stmt.questionCode)}"/>` : ''}
+        ${stmt.boolValue !== undefined
+          ? `<elements xsi:type="questionnaire:BooleanBasicType" value="${stmt.boolValue}"/>`
+          : stmt.value ? `<elements xsi:type="questionnaire:OptionType" option="${esc(stmt.value)}" question="${esc(stmt.questionCode)}"/>` : ''}
       </elements>`;
 }
 
@@ -325,14 +331,24 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const requiresNewPageAttr = ` requiresNewPage="${section.requiresNewPage === true}"`;
   const backgroundAttr = section.backgroundImage
     ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
-    : '';
+    : `${section.backgroundRepeat ? ` backgroundRepeat="${esc(section.backgroundRepeat)}"` : ''}${section.backgroundPosition ? ` backgroundPosition="${esc(section.backgroundPosition)}"` : ''}`;
+  // Seksjonsattributter fra modellen som Studio ikke redigerer ennå, men som skal overleve import/eksport
+  const optBool = (name: string, v: boolean | undefined) => (v === undefined ? '' : ` ${name}="${v}"`);
+  const layoutAttrs = optBool('noPageBreaks', section.noPageBreaks)
+    + optBool('matrix', section.matrix)
+    + optBool('autonumbering', section.autonumbering)
+    + (section.numberingType ? ` numberingType="${esc(section.numberingType)}"` : '')
+    + optBool('resetNumbering', section.resetNumbering)
+    + (section.startOn !== undefined ? ` startOn="${section.startOn}"` : '')
+    + optBool('returnToTOC', section.returnToTOC)
+    + (section.returnToElement ? ` returnToElement="${esc(section.returnToElement)}"` : '');
 
   const tag = depth === 0 ? 'section' : 'contains xsi:type="questionnaire:Section"';
   const closeTag = depth === 0 ? 'section' : 'contains';
 
   // Section-modellen har ikke 'title'. description beholdes for eldre lesere, men den synlige
   // overskriften er Text-elementet over (sectionTitleCode). Parseren godtar også 'title' fra eldre eksporter.
-  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
+  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${layoutAttrs}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
 ${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
 ${indent}</${closeTag}>`;
 }
@@ -361,17 +377,19 @@ export function serializeQuestionnaire(q: Questionnaire): string {
   const releaseAttr = q.release ? ` release="${esc(q.release)}"` : '';
   const descAttr = q.description?.[lang] ? ` description="${esc(q.description[lang])}"` : '';
   const clinicianOnlyAttr = q.clinicianOnly ? ' clinicianOnly="true"' : ' clinicianOnly="false"';
-  const visualizeProgressAttr = ` visualizeProgress="${q.visualizeProgress ?? 'Percentage'}"`;
+  // visualizeProgress er «unsettable» i modellen: skrives bare når den er satt (ekte pakker mangler den ofte)
+  const visualizeProgressAttr = q.visualizeProgress ? ` visualizeProgress="${q.visualizeProgress}"` : '';
   const rootType = q.type === 'SCALE' ? 'Scale' : q.type === 'EXERCISE' ? 'Exercise' : 'Questionnaire';
 
   const b = (v: boolean | undefined, def: boolean) => (v ?? def) ? 'true' : 'false';
+  const raw = q._rawRootElements ?? {};
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <questionnaire:${rootType} ${NS} code="${esc(q.code)}" name="${esc(q.name[lang] ?? '')}"${descAttr} version="${esc(q.version)}"${releaseAttr} exportAllowed="${b(q.exportAllowed, true)}" authorizedDevicesOnly="${b(q.authorizedDevicesOnly, false)}"${clinicianOnlyAttr} language="${langStr}" allowTOC="${b(q.allowTOC, false)}" restrictBackButton="${b(q.restrictBackButton, false)}" allowSingleBackButton="${b(q.allowSingleBackButton, false)}" unresponsiveUI="${b(q.unresponsiveUI, false)}"${visualizeProgressAttr}>
-${sectionsXml}
+${sectionsXml}${raw.copyright ? `\n  ${raw.copyright}` : ''}
   ${rtXml}
   ${dimsXml}
-  <application id="Studio" version="1" fileVersion="1"/>
+  <application id="Studio" version="1" fileVersion="1"/>${raw.calculations ? `\n  ${raw.calculations}` : ''}${raw.dictionary ? `\n  ${raw.dictionary}` : ''}
 </questionnaire:${rootType}>`;
 }
 
@@ -467,8 +485,9 @@ export function serializeCalculation(calc: Calculation, questionnaireCode: strin
   // Fall back to rebuilding from innerCalculations (e.g. newly created calculations).
   const expr = calc._rawExpression ?? serializeInnerCalcExpression(calc, questionnaireCode);
   const normAttr = calc.normCode ? ` norm="../norms/${esc(calc.normCode)}.norm"` : '';
+  const assignedAttr = calc.assignedByVariable !== undefined ? ` assignedByVariable="${calc.assignedByVariable}"` : '';
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Calculation ${NS} code="${esc(calc.code)}" name="${esc(calc.name)}"${normAttr}>
+<questionnaire:Calculation ${NS} code="${esc(calc.code)}" name="${esc(calc.name)}"${normAttr}${assignedAttr}>
     ${expr}
   ${calculationQuestionnaireRef(questionnaireCode)}
   <application id="Studio" version="1" fileVersion="1"/>
@@ -531,8 +550,11 @@ export function serializeNorm(norm: Norm): string {
 
   const lookups = norm.data.map((row, i) => {
     const next = norm.data[i + 1];
-    const max = next ? next.score - 0.5 : row.score + 0.5;
-    return `    <lookup value="${row.normValue}" lookupMin="${row.score}" lookupMax="${max}"${row.age !== undefined ? ` age="${row.age}"` : ''}${row.gender !== undefined ? ` gender="${row.gender}"` : ''}/>`;
+    // Importerte normer beholder grensene slik de var; nye normer får lookupMax midt mellom radene
+    const max = norm._preserveBounds ? row.max : next ? next.score - 0.5 : row.score + 0.5;
+    const maxAttr = max !== undefined ? ` lookupMax="${max}"` : '';
+    const typeAttr = row.intervalType ? ` type="${esc(row.intervalType)}"` : '';
+    return `    <lookup value="${row.normValue}" lookupMin="${row.score}"${maxAttr}${typeAttr}${row.age !== undefined ? ` age="${row.age}"` : ''}${row.gender !== undefined ? ` gender="${row.gender}"` : ''}/>`;
   }).join('\n');
 
   return `${header}

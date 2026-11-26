@@ -47,6 +47,8 @@ function newQuestionnaire(uiLang: UILang): Questionnaire {
     supportedLanguages: ['NO'],
     name: { NO: defaultName } as Record<LanguageType, string>,
     sections: [],
+    // Nye skjemaer viser fremdrift som før; importerte beholder det de hadde
+    visualizeProgress: 'Percentage',
   };
 }
 
