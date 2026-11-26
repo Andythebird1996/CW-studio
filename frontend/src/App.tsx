@@ -30,6 +30,7 @@ import { useSettingsStore } from './stores/settings-store';
 import { t, tf, countPhrase, reportTabLabel, type UILang, UILangContext } from './i18n';
 import { storeApi } from './services/store-api';
 import { parseQuestionnaire, parseCalculationFile, parseFlagFile, parseNormFile, applyTranslationFile, parseManifestFile } from './services/xml-parser';
+import { importPackageFiles } from './services/package-import';
 import { serializeQuestionnaire } from './services/xml-serializer';
 import { buildPackageZip } from './services/package-builder';
 import JSZip from 'jszip';
@@ -452,96 +453,13 @@ export default function App() {
     setShowImport(false);
     try {
       const pkg = await storeApi.getPackage(settings, uid);
-      const qFile = pkg.files.find((f) => f.extension === 'questionnaire');
-      if (!qFile) throw new Error(t('noQuestionnaireInPackage', lang));
-
-      let questionnaire = parseQuestionnaire(qFile.content);
-
-      // Collect all .rap report files
+      if (!pkg.files.some((f) => f.extension === 'questionnaire')) throw new Error(t('noQuestionnaireInPackage', lang));
+      // Samme innlesing som rundtur-sjekken og versjonsvarselet bruker
+      const imported = importPackageFiles(pkg.files);
+      const questionnaire = imported.questionnaire;
+      const rapFiles2 = imported.rapFiles;
+      const { mediaFiles, packageMetadata } = imported;
       const rapEntries2 = pkg.files.filter((f) => f.extension === 'rap');
-      const rapFiles2: Record<string, string> = {};
-      for (const re of rapEntries2) rapFiles2[re.fileName] = re.content;
-
-      // Parse .calculation files
-      const calcFiles = pkg.files.filter((f) => f.extension === 'calculation');
-      if (calcFiles.length > 0) {
-        const calculations = calcFiles
-          .map((f) => parseCalculationFile(f.content, questionnaire))
-          .filter(Boolean) as import('./types/questionnaire').Calculation[];
-        if (calculations.length > 0) {
-          questionnaire = {
-            ...questionnaire,
-            calculations: {
-              calculations,
-              norms: questionnaire.calculations?.norms ?? [],
-            },
-          };
-        }
-      }
-
-      // Parse .flag files
-      const flagFiles = pkg.files.filter((f) => f.extension === 'flag');
-      if (flagFiles.length > 0) {
-        const flags = flagFiles
-          .map((f) => parseFlagFile(f.content, questionnaire))
-          .filter(Boolean) as import('./types/questionnaire').Flag[];
-        if (flags.length > 0) {
-          questionnaire = { ...questionnaire, flags };
-        }
-      }
-
-      // Parse .norm files
-      const normFiles = pkg.files.filter((f) => f.extension === 'norm');
-      if (normFiles.length > 0) {
-        const norms = normFiles
-          .map((f) => parseNormFile(f.content))
-          .filter(Boolean) as import('./types/questionnaire').Norm[];
-        if (norms.length > 0) {
-          questionnaire = {
-            ...questionnaire,
-            calculations: {
-              calculations: questionnaire.calculations?.calculations ?? [],
-              norms: [...(questionnaire.calculations?.norms ?? []), ...norms],
-            },
-          };
-        }
-      }
-
-      // Apply .translation files — each enriches the questionnaire with a new language
-      const translationFiles = pkg.files.filter((f) => f.extension === 'translation');
-      for (const tf of translationFiles) {
-        questionnaire = applyTranslationFile(questionnaire, tf.content);
-      }
-
-      // Parse .manifest file (metadata)
-      const manifestFile = pkg.files.find((f) => f.extension === 'manifest');
-      const packageMetadata: PackageMetadata | undefined = manifestFile
-        ? (parseManifestFile(manifestFile.content) ?? undefined)
-        : undefined;
-
-      // Collect media files (binary, stored as base64 data URLs)
-      const MIME: Record<string, string> = {
-        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-        gif: 'image/gif', bmp: 'image/bmp', webp: 'image/webp',
-        svg: 'image/svg+xml', pdf: 'application/pdf',
-        mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg',
-        mp4: 'video/mp4',
-      };
-      const mediaFiles: MediaFile[] = pkg.files
-        .filter((f) => f.extension.toLowerCase() in MIME)
-        .map((f) => {
-          const mime = MIME[f.extension.toLowerCase()] ?? 'application/octet-stream';
-          const dataUrl = f.encoding === 'base64'
-            ? `data:${mime};base64,${f.content}`
-            : '';
-          return {
-            fileName: f.fileName,
-            extension: f.extension,
-            mimeType: mime,
-            dataUrl,
-            sizeKb: Math.round(f.content.length * 0.75 / 1024),
-          };
-        });
 
       const id = `pkg-${uid}`;
       const pkgTitle = questionnaire.name[questionnaire.defaultLanguage] || pkg.name || pkg.code;

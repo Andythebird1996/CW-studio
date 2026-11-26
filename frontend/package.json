@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
-    "test-packages": "bun src/test-packages/build-cli.ts"
+    "test-packages": "bun src/test-packages/build-cli.ts",
+    "test:suite": "vitest run src/test-packages src/services/version-diff.test.ts && bun src/test-packages/build-cli.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
