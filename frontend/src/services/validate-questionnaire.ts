@@ -7,6 +7,7 @@
 
 import type { Questionnaire, Section, Question } from '../types/questionnaire';
 import { t, tf, type UILang } from '../i18n';
+import { matrixProblems, matrixProblemIsError, type MatrixProblem } from './matrix';
 
 export interface ValidationIssue {
   /** Dot-notation path, e.g. "sections[0].questions[2]" */
@@ -45,6 +46,16 @@ function collectAllCalculationCodes(questionnaire: Questionnaire): Set<string> {
     if (calc.code) codes.add(calc.code);
   }
   return codes;
+}
+
+export function matrixProblemMessage(p: MatrixProblem, lang: UILang): string {
+  switch (p.kind) {
+    case 'EMPTY': return t('valMatrixEmpty', lang);
+    case 'NO_SHARED_TEMPLATE': return tf('valMatrixNoSharedTemplate', lang, { code: p.code });
+    case 'MIXED_TEMPLATES': return tf('valMatrixMixedTemplates', lang, { codes: p.codes.join(', ') });
+    case 'TEXT_NOT_FIRST': return tf('valMatrixTextNotFirst', lang, { code: p.code });
+    case 'UNSUPPORTED_ELEMENT': return tf('valMatrixUnsupported', lang, { code: p.code });
+  }
 }
 
 // ── main export ───────────────────────────────────────────────────────────────
@@ -115,6 +126,16 @@ export function validateQuestionnaire(questionnaire: Questionnaire, lang: UILang
         elementLabel: String(sLabel),
         severity: 'warning',
         message: t('valSectionNoTitle', lang),
+      });
+    }
+
+    for (const p of matrixProblems(section, questionnaire.defaultLanguage)) {
+      issues.push({
+        path,
+        elementCode: section.code ?? '',
+        elementLabel: String(sLabel),
+        severity: matrixProblemIsError(p) ? 'error' : 'warning',
+        message: matrixProblemMessage(p, lang),
       });
     }
 

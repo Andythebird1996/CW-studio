@@ -703,6 +703,118 @@ function SliderField({
   );
 }
 
+// ── Matrise (Section.matrix) ────────────────────────────────────────────────
+// Som portalen: første element (en tekst) vises som vanlig blokk, resten som en tabell med
+// spørsmålene som rader og svaralternativene fra den felles svarmalen som kolonner.
+
+function MatrixTable({
+  rows,
+  columns,
+  lang,
+  answers,
+  rep,
+  start,
+  expert,
+  interactive,
+  highlight,
+  onAnswer,
+}: {
+  rows: Question[];
+  columns: TextOption[];
+  lang: LanguageType;
+  answers: AnswerMap;
+  rep: number;
+  start: number;
+  expert: boolean;
+  interactive: boolean;
+  highlight?: Attention | null;
+  onAnswer?: (code: string, value: string | string[]) => void;
+}) {
+  const ui = useChromeLang();
+  let n = start;
+  const width = Math.max(columns.length, 1) + 1;
+  return (
+    <table className="cw-resp-matrix" data-testid="preview-matrix">
+      {columns.length > 0 && (
+        <thead>
+          <tr>
+            <th />
+            {columns.map((c) => (
+              <th key={c.code} scope="col"><Rich text={c.texts[lang] || c.code} /></th>
+            ))}
+          </tr>
+        </thead>
+      )}
+      <tbody>
+        {rows.map((q) => {
+          if (q.type === 'text') {
+            return (
+              <tr key={`${q.id}-${rep}`} className="cw-resp-matrix-text">
+                <td colSpan={width}><Rich text={q.texts[lang] || ''} /></td>
+              </tr>
+            );
+          }
+          if (isNumbered(q)) n += 1;
+          const code = answerKeyFor(q.code, rep);
+          const raw = code ? answers.get(code) : undefined;
+          const commit = (value: string | string[]) => {
+            if (interactive && onAnswer && code) onAnswer(code, value);
+          };
+          const hot = !!highlight && highlight.id === q.id && highlight.rep === rep;
+          const label = (
+            <th scope="row" className="cw-resp-matrix-q">
+              {expert && q.code ? <span className="cw-resp-code">{q.code}</span> : null}
+              {isNumbered(q) ? `${n}. ` : ''}
+              {q.texts[lang] ? <Rich text={q.texts[lang]} /> : <span className="cw-resp-muted">{t('noQuestionText', ui)}</span>}
+            </th>
+          );
+          const choice = q.type === 'radiobutton' || q.type === 'checkbox';
+          if (choice && columns.length > 0) {
+            const chosen = Array.isArray(raw) ? raw : [];
+            return (
+              <tr key={`${q.id}-${rep}`} className={hot ? 'cw-resp-q is-hot' : 'cw-resp-q'} data-qid={`${q.id}-${rep}`}>
+                {label}
+                {columns.map((c) => {
+                  const on = q.type === 'radiobutton' ? raw === c.code : chosen.includes(c.code);
+                  return (
+                    <td key={c.code}>
+                      <input
+                        className="cw-resp-choice"
+                        type={q.type === 'radiobutton' ? 'radio' : 'checkbox'}
+                        name={`${q.id}-${rep}`}
+                        aria-label={c.texts[lang] || c.code}
+                        checked={on}
+                        onChange={() => {
+                          if (q.type === 'radiobutton') commit(c.code);
+                          else commit(on ? chosen.filter((x) => x !== c.code) : [...chosen, c.code]);
+                        }}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          }
+          const inputType = q.type === 'numericInput' ? 'number' : q.type === 'dateInput' ? 'date' : 'text';
+          return (
+            <tr key={`${q.id}-${rep}`} className={hot ? 'cw-resp-q is-hot' : 'cw-resp-q'} data-qid={`${q.id}-${rep}`}>
+              {label}
+              <td colSpan={width - 1}>
+                <input
+                  className="cw-resp-field"
+                  type={inputType}
+                  value={typeof raw === 'string' ? raw : ''}
+                  onChange={(e) => commit(e.target.value)}
+                />
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 // ── Sheet (one section, or the whole assessment for print) ──────────────────
 
 interface Attention {
@@ -822,6 +934,48 @@ function SectionQuestions({
         </div>,
       );
     }
+    if (section.matrix) {
+      const [first, ...rest] = visible;
+      const intro = first?.type === 'text' ? first : undefined;
+      const rows = intro ? rest : visible;
+      if (intro) {
+        blocks.push(
+          <QuestionBlock
+            key={`${intro.id}-${ri}`}
+            question={intro}
+            lang={lang}
+            index={n}
+            showIndex={false}
+            options={[]}
+            answers={answers}
+            answerCode=""
+            rep={ri}
+            hot={false}
+            expert={expert}
+            interactive={interactive}
+          />,
+        );
+      }
+      if (rows.length > 0) {
+        blocks.push(
+          <MatrixTable
+            key={`matrix-${ri}`}
+            rows={rows}
+            columns={optionList(rows.find((r) => r.type !== 'text') ?? rows[0], templateMap)}
+            lang={lang}
+            answers={answers}
+            rep={ri}
+            start={n}
+            expert={expert}
+            interactive={interactive}
+            highlight={highlight}
+            onAnswer={onAnswer}
+          />,
+        );
+        n += rows.filter(isNumbered).length;
+      }
+      continue;
+    }
     for (const q of visible) {
       const numbered = isNumbered(q);
       if (numbered) n += 1;
@@ -881,7 +1035,8 @@ function SectionBlock(props: {
   const ui = useChromeLang();
   const name = sheet.questionnaire.name[sheet.lang] || sheet.questionnaire.code || t('tabQuiz', ui);
   const description = ordinal === 0 ? sheet.questionnaire.description?.[sheet.lang] : undefined;
-  const sectionTitle = section.titles?.[sheet.lang] || '';
+  // Tittel fra Section@description vises ikke i portalen (bare i ekspertvisning her)
+  const sectionTitle = section.titleFromDescription && !sheet.expertMode ? '' : section.titles?.[sheet.lang] || '';
   const copyright = showCopyright ? sheet.questionnaire.copyright : undefined;
 
   return (

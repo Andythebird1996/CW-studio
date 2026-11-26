@@ -3,7 +3,9 @@ import { describe, it, expect } from 'vitest';
 import { parseQuestionnaire } from './xml-parser';
 import { serializeQuestionnaire } from './xml-serializer';
 import { diffXml } from './xml-semantic-diff';
-import type { Question, Section } from '../types/questionnaire';
+import type { Question, Section, TextOption } from '../types/questionnaire';
+import { matrixProblems } from './matrix';
+import { validateQuestionnaire } from './validate-questionnaire';
 
 const NS = 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:questionnaire="http://questionnaire/1.0"';
 const quiz = (templates: string, body: string) => `<?xml version="1.0" encoding="UTF-8"?>
@@ -92,5 +94,61 @@ describe('matriseformat (syntetisk)', () => {
     const d = diffXml(a, b);
     expect(d.filter((x) => x.kind === 'order')).toHaveLength(1);
     expect(d.filter((x) => x.attr === 'questions')).toEqual([]);
+  });
+
+  it('seksjon med bare description får ingen ny synlig overskrift ved eksport', () => {
+    const xml = quiz(TXT, field('F1')).replace('<section code="S1">', '<section code="S1" description="Bare beskrivelse">');
+    const q = parseQuestionnaire(xml);
+    expect(q.sections[0].titles.NO).toBe('Bare beskrivelse');
+    const out = serializeQuestionnaire(q);
+    expect(out).not.toContain('S1_TITLE');
+    expect(out).toContain('description="Bare beskrivelse"');
+    // Seksjoner laget i Studio får fortsatt overskriftselementet
+    const fresh = serializeQuestionnaire({ ...q, sections: [{ ...q.sections[0], titleFromDescription: undefined }] });
+    expect(fresh).toContain('code="S1_TITLE"');
+  });
+
+  it('i en matrise deler spørsmål med like innstillinger én mal automatisk', () => {
+    const q = parseQuestionnaire(quiz('', ''));
+    const base = { required: false, texts: { NO: 'x' } as Question['texts'] };
+    const opts: TextOption[] = [
+      { code: 'A0', score: 0, texts: { NO: 'Nei' } as TextOption['texts'] },
+      { code: 'A1', score: 1, texts: { NO: 'Ja' } as TextOption['texts'] },
+    ];
+    const questions: Question[] = [
+      { ...base, id: 'f1', code: 'F1', type: 'stringInput', size: 'MEDIUM' },
+      { ...base, id: 'f2', code: 'F2', type: 'stringInput', size: 'MEDIUM' },
+      { ...base, id: 'r1', code: 'R1', type: 'radiobutton', options: [...opts] },
+      { ...base, id: 'r2', code: 'R2', type: 'radiobutton', options: [...opts] },
+    ];
+    const sec = { ...q.sections[0], matrix: true, questions };
+    const out = serializeQuestionnaire({ ...q, sections: [sec] });
+    expect(out.match(/<responseTemplate /g)?.length).toBe(2);
+    expect(templateTag(out, 'F1')).toContain('questions="F1 F2"');
+    expect(templateTag(out, 'R1')).toContain('questions="R1 R2"');
+    expect(out).toMatch(/code="R2"[^>]*template="R1"/);
+    // Utenfor matrise får hvert spørsmål sin egen mal som før
+    const plain = serializeQuestionnaire({ ...q, sections: [{ ...sec, matrix: undefined }] });
+    expect(plain.match(/<responseTemplate /g)?.length).toBe(4);
+  });
+
+  it('validering: ulike maler er feil, tekst som ikke står først er advarsel', () => {
+    const body = '<contains xsi:type="questionnaire:Text" code="T0" content="Intro" contentStyle="normal"/>'
+      + field('R1', 'QT1') + field('F1') + '<contains xsi:type="questionnaire:Text" code="T2" content="Midt" contentStyle="normal"/>';
+    const q = parseQuestionnaire(quiz(RB + TXT, body).replace('<section code="S1">', '<section code="S1" matrix="true">'));
+    const kinds = matrixProblems(q.sections[0], q.defaultLanguage).map((p) => p.kind).sort();
+    expect(kinds).toEqual(['MIXED_TEMPLATES', 'TEXT_NOT_FIRST']);
+    const issues = validateQuestionnaire(q, 'NO').filter((i) => i.message.includes('matrise'));
+    expect(issues.map((i) => i.severity).sort()).toEqual(['error', 'warning']);
+    expect(issues.find((i) => i.severity === 'error')?.message).toContain('R1, F1');
+  });
+
+  it('validering: gyldig matrise gir ingen matrisemeldinger, og tittel teller som første tekst', () => {
+    const body = '<contains xsi:type="questionnaire:Text" code="T0" content="Intro" contentStyle="normal"/>' + field('R1', 'QT1') + field('R2', 'QT1');
+    const q = parseQuestionnaire(quiz(RB, body).replace('<section code="S1">', '<section code="S1" matrix="true">'));
+    expect(matrixProblems(q.sections[0], q.defaultLanguage)).toEqual([]);
+    const titled = { ...q.sections[0], titles: { NO: 'Overskrift' } as Section['titles'] };
+    expect(matrixProblems(titled, q.defaultLanguage).map((p) => p.kind)).toEqual(['TEXT_NOT_FIRST']);
+    expect(matrixProblems({ ...titled, questions: [] }, q.defaultLanguage).map((p) => p.kind)).toEqual(['EMPTY']);
   });
 });

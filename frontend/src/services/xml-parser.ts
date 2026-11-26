@@ -544,6 +544,7 @@ function parseSection(
     repeatCode,
     requiresNewPage,
     ...sectionLayout,
+    ...(!headingTitle && (attr(secEl, 'title') || attr(secEl, 'description')) ? { titleFromDescription: true } : {}),
     ...(layout && { layout }),
     ...(layoutData && { layoutData }),
     ...(mixed && { childOrder }),

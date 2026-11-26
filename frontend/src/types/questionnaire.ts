@@ -258,6 +258,11 @@ export interface Section {
   startOn?: number;
   returnToTOC?: boolean;
   returnToElement?: string;
+  /**
+   * Tittelen kom fra Section@description i fila, ikke fra et overskriftselement. Da skrives den bare
+   * tilbake som description, slik at eksporten ikke legger til en synlig overskrift som ikke fantes.
+   */
+  titleFromDescription?: boolean;
   /** Container.layout (f.eks. GridLayout) */
   layout?: RawLayout;
   /** Element.layoutData når seksjonen ligger inne i en annen seksjon */

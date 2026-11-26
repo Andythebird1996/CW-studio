@@ -26,6 +26,9 @@ import type {
   NumericInputQuestion,
   DateInputQuestion,
   SliderQuestion,
+  RadiobuttonQuestion,
+  CheckboxQuestion,
+  ComboboxQuestion,
 } from '../types/questionnaire';
 
 // ─── XML escape ────────────────────────────────────────────────────────────
@@ -123,12 +126,12 @@ export function stringInputSizeAttr(size: StringInputSize | undefined, multiline
 
 type WidgetOnlyQuestion = StringInputQuestion | NumericInputQuestion | DateInputQuestion | SliderQuestion;
 
-function isWidgetOnly(q: Question): q is WidgetOnlyQuestion {
+export function isWidgetOnly(q: Question): q is WidgetOnlyQuestion {
   return q.type === 'stringInput' || q.type === 'numericInput' || q.type === 'dateInput' || q.type === 'slider';
 }
 
 /** Widget-attributter for felt uten svaralternativer. Spørsmålets felter er fasiten. */
-function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> {
+export function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> {
   const wp: Record<string, string> = {};
   // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
   // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
@@ -169,16 +172,50 @@ function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> {
   return wp;
 }
 
+type TemplatedQuestion = WidgetOnlyQuestion | RadiobuttonQuestion | CheckboxQuestion | ComboboxQuestion;
+
+function isTemplated(q: Question): q is TemplatedQuestion {
+  return isWidgetOnly(q) || q.type === 'radiobutton' || q.type === 'checkbox' || q.type === 'combobox';
+}
+
 /**
- * Felt som deler svarmal (f.eks. én StringInput-mal for alle radene i en matrise) beholder den delte
- * malen så lenge innstillingene er like. Har et spørsmål fått andre innstillinger i editoren, får det
- * sin egen mal i stedet for å endre de andre spørsmålene.
+ * Hva et spørsmål i en matrise deler med de andre radene: en delt svarmal, eller like innstillinger /
+ * like svaralternativer. Spørsmål med samme nøkkel kan stå i samme matrise. null = ikke et svarfelt.
  */
-function shareWidgetTemplates(q: Questionnaire): Questionnaire {
+export function matrixKey(q: Question): string | null {
+  if (!isTemplated(q)) return null;
+  if (q.responseTemplateCode) return `tpl:${q.responseTemplateCode}`;
+  if (isWidgetOnly(q)) return `auto:${q.type}|${JSON.stringify(widgetParamsFor(q))}`;
+  const opts = (q.options ?? []).map((o) => [o.code, o.score ?? null, o.texts]);
+  return `inline:${q.type}|${JSON.stringify(opts)}`;
+}
+
+/**
+ * Delte svarmaler ved eksport:
+ * - I en matrise deler spørsmål uten svarmal, men med like innstillinger/alternativer, malen til
+ *   det første av dem (portalen viser matrisen ut fra én felles mal).
+ * - Felt som deler svarmal (f.eks. én StringInput-mal for alle radene) beholder den delte malen så
+ *   lenge innstillingene er like. Har et spørsmål fått andre innstillinger i editoren, får det sin
+ *   egen mal i stedet for å endre de andre spørsmålene.
+ */
+function shareTemplates(q: Questionnaire): Questionnaire {
   const claimed = new Map<string, string>();
+  const shareInMatrix = (questions: Question[]): Question[] => {
+    const first = new Map<string, string>();
+    return questions.map((qq) => {
+      const key = matrixKey(qq);
+      if (!key || !isTemplated(qq) || qq.responseTemplateCode) return qq;
+      const owner = first.get(key);
+      if (owner === undefined) {
+        first.set(key, qq.code);
+        return isWidgetOnly(qq) ? { ...qq, responseTemplateCode: qq.code } : qq;
+      }
+      return { ...qq, responseTemplateCode: owner };
+    });
+  };
   const fix = (sections: Section[]): Section[] => sections.map((sec) => ({
     ...sec,
-    questions: sec.questions.map((qq) => {
+    questions: (sec.matrix ? shareInMatrix(sec.questions) : sec.questions).map((qq) => {
       if (!isWidgetOnly(qq) || !qq.responseTemplateCode) return qq;
       const key = `${qq.type}|${JSON.stringify(widgetParamsFor(qq))}`;
       const prev = claimed.get(qq.responseTemplateCode);
@@ -392,7 +429,7 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
 
   const sectionCode = section.code ?? section.id;
   const titleText = section.titles[lang] ?? '';
-  const headingXml = titleText
+  const headingXml = titleText && !section.titleFromDescription
     ? `${innerIndent}<contains xsi:type="questionnaire:Text" code="${esc(sectionTitleCode(sectionCode))}" content="${esc(titleText)}" contentStyle="${SECTION_TITLE_STYLE}" align="left"/>`
     : '';
   const childrenXml = [headingXml, ...orderedChildren(section).map((c) =>
@@ -444,7 +481,7 @@ function serializeDimensions(q: Questionnaire): string {
 // ─── Main questionnaire serializer ────────────────────────────────────────
 
 export function serializeQuestionnaire(input: Questionnaire): string {
-  const q = shareWidgetTemplates(input);
+  const q = shareTemplates(input);
   const lang = q.defaultLanguage;
   const langStr = LANG_REVERSE[lang] ?? 'norwegian';
 
@@ -678,7 +715,7 @@ export function serializeTranslation(
     const secCode = sec.code ?? sec.id;
     if (titleStr && secCode) {
       // Overskriften vises fra Text-elementet; Section/description beholdes for eldre lesere.
-      lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content" translatedText="${esc(titleStr)}"/>`);
+      if (!sec.titleFromDescription) lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content" translatedText="${esc(titleStr)}"/>`);
       lines.push(`  <translation code="${esc(secCode)}" entity="Section" property="description" translatedText="${esc(titleStr)}"/>`);
     }
   }
