@@ -480,12 +480,22 @@ function QuestionBlock({
     if (!text && !expert) {
       return interactive ? <p className="cw-resp-muted">{t('textBlockEmpty', ui)}</p> : null;
     }
+    // Samme stiler som portalen (text-content/view.js): heading1–3, strong, important; 'header' fra eldre Studio
     const style = question.contentStyle;
-    if (style === 'header') {
+    if (style === 'heading1') {
+      return <h1 className="cw-resp-section-title"><Rich text={text} /></h1>;
+    }
+    if (style === 'heading2') {
+      return <h2 className="cw-resp-section-title"><Rich text={text} /></h2>;
+    }
+    if (style === 'heading3' || style === 'header') {
       return <h3 className="cw-resp-section-title"><Rich text={text} /></h3>;
     }
     return (
-      <div className="cw-resp-info" style={style === 'italic' ? { fontStyle: 'italic' } : undefined}>
+      <div
+        className="cw-resp-info"
+        style={style === 'italic' ? { fontStyle: 'italic' } : style === 'strong' || style === 'important' ? { fontWeight: 600 } : undefined}
+      >
         {expert && question.code ? <span className="cw-resp-code">{question.code}</span> : null}
         {text ? <Rich text={text} /> : <span className="cw-resp-muted">{t('textBlockEmpty', ui)}</span>}
       </div>

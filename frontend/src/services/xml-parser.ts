@@ -29,6 +29,7 @@ import type {
   Dimension,
   PackageMetadata,
 } from '../types/questionnaire';
+import { sectionTitleCode } from './xml-serializer';
 
 // ─── Language mapping ──────────────────────────────────────────────────────
 
@@ -466,7 +467,16 @@ function parseSection(
   const questions: Question[] = [];
   const subSections: Section[] = [];
 
-  for (const containsEl of children(secEl, 'contains')) {
+  // Overskrift eksportert av Studio som første Text-element (sectionTitleCode) → tilbake til seksjonstittel
+  let headingTitle = '';
+  const containsEls = children(secEl, 'contains');
+  const firstEl = containsEls[0];
+  if (secCode && firstEl && xsiType(firstEl).includes('Text') && attr(firstEl, 'code') === sectionTitleCode(secCode)) {
+    headingTitle = attr(firstEl, 'content');
+    containsEls.shift();
+  }
+
+  for (const containsEl of containsEls) {
     const t = xsiType(containsEl);
     if (t.includes('Section')) {
       // Nested section — recurse
@@ -481,7 +491,7 @@ function parseSection(
     id: secCode || crypto.randomUUID(),
     code: secCode || undefined,
     type: sectionType,
-    titles: { [lang]: attr(secEl, 'title') || attr(secEl, 'description') || '' } as Record<LanguageType, string>,
+    titles: { [lang]: headingTitle || attr(secEl, 'title') || attr(secEl, 'description') || '' } as Record<LanguageType, string>,
     questions,
     subSections: subSections.length > 0 ? subSections : undefined,
     showExpressions: showExpression ? [showExpression] : undefined,
@@ -1281,7 +1291,7 @@ export function applyTranslationFile(
 
     // Apply translations lazily — only clone objects that actually have a translation
     function applyToSection(s: import('../types/questionnaire').Section): import('../types/questionnaire').Section {
-      const titleTrans = s.code ? sectionByCode.get(s.code) : undefined;
+      const titleTrans = s.code ? (translByCode.get(sectionTitleCode(s.code)) ?? sectionByCode.get(s.code)) : undefined;
 
       const newQuestions = s.questions.map((q) => {
         const qTrans = translByCode.get(q.code);

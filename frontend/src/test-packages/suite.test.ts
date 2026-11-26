@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { lintRap, engineEchoPerLine } from '../services/rap-interpreter';
+import { parseQuestionnaire } from '../services/xml-parser';
 import { buildSuite, simulateSet, unzipText, loadPackageFiles, TEST_AREAS, type BuiltTestPackage } from './suite';
 
 let suite: BuiltTestPackage[] = [];
@@ -120,10 +122,39 @@ describe('testpakkene i ekte Checkware-format', () => {
   it('oversettelse: alle tekster har engelsk oversettelse', () => {
     const f = files.get('andreastest-oversettelse-20261125') ?? {};
     const tr = f[Object.keys(f).find((k) => k.endsWith('_EN.translation')) ?? ''] ?? '';
-    for (const c of ['entity="Questionnaire" property="name"', 'code="S1" entity="Section"', 'code="TX1" entity="Text" property="content"',
+    for (const c of ['entity="Questionnaire" property="name"', 'code="S1" entity="Section"', 'code="S1_TITLE" entity="Text" property="content"', 'code="TX1" entity="Text" property="content"',
       'code="R1" entity="Question"', 'code="C1_2" entity="TextOption"', 'code="K1_1" entity="TextOption"', 'code="N1" entity="Question"']) {
       expect(tr).toContain(c);
     }
     expect(tr.match(/translatedText="(?!\[EN\])/g) ?? []).toEqual([]);
+  });
+
+  it('seksjonsoverskrifter eksporteres som Text-element først i seksjonen og leses tilbake som tittel', () => {
+    for (const p of suite) {
+      const f = files.get(p.def.code) ?? {};
+      const xml = f[Object.keys(f).find((k) => k.endsWith('.questionnaire')) ?? ''] ?? '';
+      for (const sec of p.def.questionnaire.sections) {
+        const re = new RegExp(`<section code="${sec.code}"[^>]*>\\s*(?:<(?:show|hide)\\b[\\s\\S]*?</(?:show|hide)>\\s*)*<contains xsi:type="questionnaire:Text" code="${sec.code}_TITLE" content="([^"]*)" contentStyle="heading2"`);
+        expect(xml.match(re)?.[1], `${p.def.code}/${sec.code}`).toBe(sec.titles.NO);
+      }
+      const back = loadPackageFiles(f);
+      expect(back.sections.map((s) => s.titles.NO), p.def.code).toEqual(p.def.questionnaire.sections.map((s) => s.titles.NO));
+    }
+    const tr = loadPackageFiles(files.get('andreastest-oversettelse-20261125') ?? {});
+    expect(tr.sections.map((s) => s.titles.EN)).toEqual(['[EN] English section 1', '[EN] English section 2']);
+  });
+
+  it('import fjerner bare overskrift-elementet med seksjonens egen kode', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><questionnaire:Questionnaire xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:questionnaire="http://www.checkware.no/questionnaire" code="X" name="X">
+<section code="S1"><contains xsi:type="questionnaire:Text" code="T1" content="Ekte overskrift" contentStyle="heading1"/></section></questionnaire:Questionnaire>`;
+    const q = parseQuestionnaire(xml);
+    expect(q.sections[0].questions.map((x) => x.code)).toEqual(['T1']);
+  });
+
+  it('ECHO: lint varsler flere per linje, og simulatoren gjør som rapportmotoren', () => {
+    const rap = '[$A = eval("1")]\n<p>[ECHO($A,1)] [ECHO($B,0)]</p>\n<p>[ECHO($B,0)]</p>';
+    expect(lintRap(rap).filter((i) => i.code === 'MULTI_ECHO').map((i) => i.line)).toEqual([2]);
+    expect(engineEchoPerLine(rap).split('\n')[1]).toBe('<p>[ECHO($A,1)] [ECHO($A,1)]</p>');
+    expect(engineEchoPerLine(rap).split('\n')[2]).toBe('<p>[ECHO($B,0)]</p>');
   });
 });

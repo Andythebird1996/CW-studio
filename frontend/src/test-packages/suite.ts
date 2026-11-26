@@ -155,22 +155,22 @@ function sporsmal(code: string): TestPackageDef {
       {
         name: 'sett1', description: 'R1=Alternativ 2, C1=Alternativ 1, RS1=Alternativ 1, alle felt fylt',
         answers: { R1: 'R1_2', C1: 'C1_1', K1: ['K1_0', 'K1_3'], V1: 'V1_1', RS1: 'RS1_1', T1: 'Linje <p> & || test', T2: 'Linje 1\nLinje 2', T3: 'Lang tekst', N1: '42', N2: '3.5', SL1: '7', SL2: '55', D1: '2026-11-25', D2: '2026-11-25 14:30', D3: '1990-05-17' },
-        calculations: { SUM_VALG: 3, RS1_VERDI: 1 },
+        calculations: { SUM_VALG: 3, RS1_VERDI: 2 },
         flags: {},
-        report: { NO: ['<p>SUM_VALG=3.00</p>', '<p>RS1_VERDI=1.00</p>'] },
+        report: { NO: ['<p>SUM_VALG=3.00</p>', '<p>RS1_VERDI=2.00</p>'] },
         browser: ['K1: et tredje kryss skal ikke gå (limit 2)', 'Alle verdier lagres uendret (T1 med <p> & ||, T2 med linjeskift, N2=3.5, SL2=55, D2 med klokkeslett)'],
       },
       {
         name: 'sett2', description: 'R1=Alternativ 3, C1=Alternativ 2, RS1=Alternativ 3, valgfrie felt tomme',
         answers: { R1: 'R1_3', C1: 'C1_2', RS1: 'RS1_3' },
-        calculations: { SUM_VALG: 5, RS1_VERDI: 3 },
+        calculations: { SUM_VALG: 5, RS1_VERDI: 0 },
         flags: {},
-        report: { NO: ['<p>SUM_VALG=5.00</p>', '<p>RS1_VERDI=3.00</p>'] },
+        report: { NO: ['<p>SUM_VALG=5.00</p>', '<p>RS1_VERDI=0.00</p>'] },
         browser: ['Skjemaet kan sendes inn med tomme valgfrie felt (T*, N*, SL*, D*, K1, V1)'],
       },
     ],
     browserChecks: [
-      'Tre sider: S1, S2, S3 (requiresNewPage), seksjonsoverskriftene vises',
+      'Tre sider: S1, S2, S3 (requiresNewPage); seksjonsoverskriftene vises som overskrift (h2) øverst på hver side',
       'R1 i to kolonner; C1 er nedtrekksliste; K1 avkrysning',
       'RO1 er skrivebeskyttet (kan ikke velges); V1 er frivillig; RS1 kan besvares',
       'T1 ett linjefelt, T2 tekstområde, T3 stort tekstområde',
@@ -179,7 +179,8 @@ function sporsmal(code: string): TestPackageDef {
       'D1 bare dato, D2 dato og klokkeslett, D3 skal IKKE ha min/max="Invalid date" (årsgrenser 1900–2100); D1/D2 har det fortsatt (ingen grenser, som ekte pakker)',
     ],
     notes: [
-      'RS1_VERDI: simulatoren bruker alternativets verdi uendret (1 og 3). Hvis Checkware snur verdien for reversedScore, blir det 2.00 og 0.00 – meld i så fall tilbake hva serveren gir.',
+      'RS1_VERDI: serveren snur reversedScore selv (skår = minste + største alternativskår − valgt skår). Alternativ 1 gir 2 og Alternativ 3 gir 0 på skalaen 0–3; simulatoren gjør nå det samme.',
+      'Seksjonsoverskrifter eksporteres som et Text-element (kode <SEKSJON>_TITLE, contentStyle=heading2) først i hver seksjon, fordi serveren ikke lagrer Section@description.',
     ],
   };
 }
@@ -305,7 +306,9 @@ function rapport(code: string): TestPackageDef {
 <p>SUM_A=[CALC(SUM_A)] SUM_B=[CALC(SUM_B)] TOTAL=[CALC(TOTAL)] SNITT=[CALC(SNITT)]</p>
 [$TOT = eval("CALC(TOTAL)")]
 [$SN = eval("CALC(SNITT)")]
-<p>ECHO_TOTAL_1=[ECHO($TOT,1)] ECHO_SNITT_1=[ECHO($SN,1)] ECHO_SNITT_0=[ECHO($SN,0)]</p>
+<p>ECHO_TOTAL_1=[ECHO($TOT,1)]</p>
+<p>ECHO_SNITT_1=[ECHO($SN,1)]</p>
+<p>ECHO_SNITT_0=[ECHO($SN,0)]</p>
 [if(CALC(TOTAL)>=8) {"<p>NIVA=HOY</p>"}]
 [if(CALC(TOTAL)<8) {"<p>NIVA=LAV</p>"}]
 ${ifPair('CALC(SUM_A)>=6 && CALC(SUM_B)>=4', 'CALC(SUM_A)<6 || CALC(SUM_B)<4', 'BEGGE=JA', 'BEGGE=NEI')}
@@ -331,7 +334,7 @@ ${graphs.split('[$g2=')[0].trim()}`;
         calculations: { SUM_A: 7, SUM_B: 4, TOTAL: 11, SNITT: 2.75 },
         flags: {},
         report: {
-          NO: ['<p>SUM_A=7.00 SUM_B=4.00 TOTAL=11.00 SNITT=2.75</p>', '<p>ECHO_TOTAL_1=11 ECHO_SNITT_1=2.8 ECHO_SNITT_0=3</p>', '<p>NIVA=HOY</p>', '<p>BEGGE=JA</p>', '<p>MINST_EN=JA</p>'],
+          NO: ['<p>SUM_A=7.00 SUM_B=4.00 TOTAL=11.00 SNITT=2.75</p>', '<p>ECHO_TOTAL_1=11</p>', '<p>ECHO_SNITT_1=2.8</p>', '<p>ECHO_SNITT_0=3</p>', '<p>NIVA=HOY</p>', '<p>BEGGE=JA</p>', '<p>MINST_EN=JA</p>'],
           EN: ['<p>TOTAL=11.00 MEAN=2.75</p>', '<p>ECHO_TOTAL_1=11</p>', '<p>LEVEL=HIGH</p>'],
         },
         reportAbsent: { NO: ['NIVA=LAV', 'BEGGE=NEI', 'MINST_EN=NEI'], EN: ['LEVEL=LOW'] },
@@ -342,7 +345,7 @@ ${graphs.split('[$g2=')[0].trim()}`;
         calculations: { SUM_A: 1, SUM_B: 1, TOTAL: 2, SNITT: 0.5 },
         flags: {},
         report: {
-          NO: ['<p>SUM_A=1.00 SUM_B=1.00 TOTAL=2.00 SNITT=0.50</p>', '<p>ECHO_TOTAL_1=2 ECHO_SNITT_1=0.5 ECHO_SNITT_0=1</p>', '<p>NIVA=LAV</p>', '<p>BEGGE=NEI</p>', '<p>MINST_EN=NEI</p>'],
+          NO: ['<p>SUM_A=1.00 SUM_B=1.00 TOTAL=2.00 SNITT=0.50</p>', '<p>ECHO_TOTAL_1=2</p>', '<p>ECHO_SNITT_1=0.5</p>', '<p>ECHO_SNITT_0=1</p>', '<p>NIVA=LAV</p>', '<p>BEGGE=NEI</p>', '<p>MINST_EN=NEI</p>'],
           EN: ['<p>TOTAL=2.00 MEAN=0.50</p>', '<p>ECHO_TOTAL_1=2</p>', '<p>LEVEL=LOW</p>'],
         },
         reportAbsent: { NO: ['NIVA=HOY', 'BEGGE=JA', 'MINST_EN=JA'], EN: ['LEVEL=HIGH'] },
@@ -451,10 +454,10 @@ function oversettelse(code: string): TestPackageDef {
     browserChecks: [
       'På norsk: ingen tekst begynner med [EN]',
       'På engelsk: skjemanavn, infotekst TX1, alle spørsmål og alle alternativer begynner med [EN]',
-      'På engelsk: seksjonsoverskriftene «[EN] English section 1/2» (Section description i oversettelsen; ekte pakker oversetter sjelden seksjoner, så meld hvis de forblir norske)',
+      'På norsk vises overskriftene «Norsk seksjon 1/2», på engelsk «[EN] English section 1/2» (Text-elementene S1_TITLE/S2_TITLE, oversatt som Text/content)',
       'Utfylt på norsk gir norsk rapport (SPRAK=NORSK), utfylt på engelsk gir engelsk rapport (LANGUAGE=ENGLISH)',
     ],
-    notes: [],
+    notes: ['Seksjonsoverskriftene er nå Text-elementer (S1_TITLE, S2_TITLE) med oversettelse Text/content, fordi serveren ikke lagrer Section@description.'],
   };
 }
 
@@ -501,7 +504,7 @@ function flyt(code: string): TestPackageDef {
         answers: { F1: 'F1_0', F3: 'F3_0', F5: 'F5_0' },
         calculations: { F_SUM: 0 }, flags: {},
         report: { NO: ['<p>F_SUM=0.00</p>', '<p>VEI=IKKE_JA_JA</p>'] },
-        browser: ['Side 1: F2 og TX1 er skjult, F3 vises', 'Bare to sider; side 3 hoppes over og skjemaet kan sendes uten F7'],
+        browser: ['Side 1: F2 og TX1 er skjult, F3 vises', 'Side 3 hoppes IKKE over (plattformbegrensning): den vises tom med «Forrige side» og «Ferdig»; F7 er skjult og skjemaet kan sendes uten F7'],
       },
     ],
     browserChecks: [
@@ -509,7 +512,10 @@ function flyt(code: string): TestPackageDef {
       'F4 (voluntary) og F6 (valgfri) kan stå tomme; meld hvordan portalen viser voluntary',
       'Vis/skjul endres med en gang F1 endres',
     ],
-    notes: ['Vis/skjul på tekstelementer (TX1) skrives nå som barn av Text-elementet (før ble de ikke eksportert).'],
+    notes: [
+      'Vis/skjul på tekstelementer (TX1) skrives som barn av Text-elementet.',
+      'Plattformbegrensning: portalen deler inn i sider én gang ut fra requiresNewPage (pager.js) og ser ikke på synlighet, så en skjult seksjon på egen side blir en tom side. Ekte pakker gjør det samme (52 seksjoner med show + requiresNewPage). Eneste måte å avslutte tidlig er continueIf på seksjonen (stopper skjemaet), som ingen ekte pakker bruker.',
+    ],
   };
 }
 

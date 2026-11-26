@@ -281,6 +281,17 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}>${shows}${hides}${continueIfs}</contains>`;
 }
 
+/**
+ * Serveren lagrer ikke Section@description, og ekte pakker har ingen seksjonsnavn – overskrifter er et
+ * Text-element med contentStyle="heading1/2/3" først i seksjonen. Studio eksporterer derfor tittelen
+ * som et Text-element med denne koden, og parseren fjerner det igjen ved import.
+ */
+export function sectionTitleCode(sectionCode: string): string {
+  return `${sectionCode}_TITLE`;
+}
+
+export const SECTION_TITLE_STYLE = 'heading2';
+
 function serializeSection(section: Section, lang: LanguageType, depth = 0): string {
   const indent = '  '.repeat(depth + 1);
   const innerIndent = '  '.repeat(depth + 2);
@@ -295,8 +306,13 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
     .map((e) => `${innerIndent}${serializeExpression(e as ShowExpression, 'continueIf')}`)
     .join('');
 
-  const questionsXml = section.questions
-    .map((q) => serializeContains(q, lang, innerIndent))
+  const sectionCode = section.code ?? section.id;
+  const titleText = section.titles[lang] ?? '';
+  const headingXml = titleText
+    ? `${innerIndent}<contains xsi:type="questionnaire:Text" code="${esc(sectionTitleCode(sectionCode))}" content="${esc(titleText)}" contentStyle="${SECTION_TITLE_STYLE}" align="left"/>`
+    : '';
+  const questionsXml = [headingXml, ...section.questions.map((q) => serializeContains(q, lang, innerIndent))]
+    .filter(Boolean)
     .join('\n');
 
   const subSectionsXml = (section.subSections ?? [])
@@ -310,14 +326,13 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const backgroundAttr = section.backgroundImage
     ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
     : '';
-  const titleText = section.titles[lang] ?? '';
 
   const tag = depth === 0 ? 'section' : 'contains xsi:type="questionnaire:Section"';
   const closeTag = depth === 0 ? 'section' : 'contains';
 
-  // Section-modellen har ikke 'title' – overskriften ligger i 'description' (som i ekte pakker og
-  // i oversettelsene). Parseren godtar fortsatt 'title' fra eldre Studio-eksporter.
-  return `${indent}<${tag} code="${esc(section.code ?? section.id)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
+  // Section-modellen har ikke 'title'. description beholdes for eldre lesere, men den synlige
+  // overskriften er Text-elementet over (sectionTitleCode). Parseren godtar også 'title' fra eldre eksporter.
+  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
 ${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
 ${indent}</${closeTag}>`;
 }
@@ -560,8 +575,11 @@ export function serializeTranslation(
   }
   for (const sec of flattenSects(q.sections)) {
     const titleStr = sec.titles[lang];
-    if (titleStr && sec.code) {
-      lines.push(`  <translation code="${esc(sec.code)}" entity="Section" property="description" translatedText="${esc(titleStr)}"/>`);
+    const secCode = sec.code ?? sec.id;
+    if (titleStr && secCode) {
+      // Overskriften vises fra Text-elementet; Section/description beholdes for eldre lesere.
+      lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content" translatedText="${esc(titleStr)}"/>`);
+      lines.push(`  <translation code="${esc(secCode)}" entity="Section" property="description" translatedText="${esc(titleStr)}"/>`);
     }
   }
 
