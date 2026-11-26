@@ -621,7 +621,7 @@ function elementer(code: string): TestPackageDef {
   const PNG_B = 'andreastest-valg-b.png';
   const URL = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';
   const c = (n: number): Question => ({
-    id: `c${n}`, code: `C${n}`, type: 'radiobutton', required: false,
+    id: `c${n}`, code: `C${n}`, type: 'radiobutton', required: false, voluntary: true,
     texts: L(`Telling C${n} (frivillig)`, `[EN] Count C${n} (optional)`), options: opts(`C${n}`, 4, { en: true }),
   }) as Question;
   const q = baseQuestionnaire(code, 'andreastest elementer (syntetisk testpakke)', '[EN] andreastest elements (synthetic test package)', [
@@ -650,6 +650,28 @@ function elementer(code: string): TestPackageDef {
       { id: 'av2', code: 'AV2', type: 'audioVideo', mediaFile: URL, required: false, texts: L('') },
     ] },
     { id: 's3', code: 'S3', type: 'NORMAL', requiresNewPage: true, titles: L('Telling', '[EN] Counting'), questions: [c(1), c(2), c(3), c(4)] },
+    { id: 's4', code: 'S4', type: 'NORMAL', requiresNewPage: true, titles: L('Range og skyveknapp over alternativer', '[EN] Range and option sliders'), questions: [
+      {
+        id: 'rg1', code: 'RG1', type: 'radiobutton', required: true, choiceWidget: 'Range',
+        texts: L('Hvor enig er du? (Range over 5 alternativer)', '[EN] How much do you agree? (Range over 5 options)'),
+        options: ['Helt uenig', 'Uenig', 'Nøytral', 'Enig', 'Helt enig'].map((t, i) => ({
+          code: `RG1_${i}`, score: i, texts: L(t, `[EN] ${['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'][i]}`),
+        })),
+      },
+      {
+        id: 'cs1', code: 'CS1', type: 'radiobutton', required: true, choiceWidget: 'Slider', choiceDirection: 'vertical',
+        texts: L('Hvor ofte? (loddrett skyveknapp over 3 alternativer)', '[EN] How often? (vertical slider over 3 options)'),
+        options: ['Sjelden', 'Av og til', 'Ofte'].map((t, i) => ({ code: `CS1_${i}`, score: i * 5, texts: L(t, `[EN] ${['Rarely', 'Sometimes', 'Often'][i]}`) })),
+      },
+      {
+        id: 'nr1', code: 'NR1', type: 'slider', rangeWidget: true, min: 0, max: 100, step: 10, labelStep: 50, displayValue: true, required: true,
+        texts: L('Hvor mye energi har du? (NumericRange 0–100)', '[EN] How much energy do you have? (NumericRange 0–100)'),
+        valueLabels: [
+          { code: 'NR1-VL1', value: 0, texts: L('Ingen', '[EN] None') },
+          { code: 'NR1-VL2', value: 100, texts: L('Full', '[EN] Full') },
+        ],
+      },
+    ] },
   ]);
   const cs = ['C1', 'C2', 'C3', 'C4'];
   q.dimensions = [
@@ -666,19 +688,22 @@ function elementer(code: string): TestPackageDef {
     { code: 'T_SKAR', name: 'T-skår (norm av RAW)', type: 'SUM', normCode: 'NORM_T', innerCalculations: [{ calculationCode: 'RAW' }] },
     sumCalc('SKYV', 'Skyveknapp', ['SL1']),
     sumCalc('BILDE', 'Bildevalg', ['BV1']),
+    sumCalc('RG', 'Range RG1', ['RG1']),
+    sumCalc('CSL', 'Skyveknapp over alternativer CS1', ['CS1']),
+    sumCalc('NR', 'NumericRange NR1', ['NR1']),
   ], norms: [norm] };
   q.flags = [
     { code: 'T_HOY', name: 'T-skår ≥ 60', type: 'WARNING', logic: 'AND', conditions: [{ calculationCode: 'T_SKAR', operator: 'GTE', threshold: 60 }] },
     { code: 'NESTET_HOY', name: 'NESTET ≥ 20', type: 'INFO', logic: 'AND', conditions: [{ calculationCode: 'NESTET', operator: 'GTE', threshold: 20 }] },
   ] as Flag[];
-  const calcLine = '<p>RAW=[CALC(RAW)] ANTALL=[CALC(ANTALL)] NESTET=[CALC(NESTET)] T_SKAR=[CALC(T_SKAR)] SKYV=[CALC(SKYV)] BILDE=[CALC(BILDE)]</p>';
+  const calcLine = '<p>RAW=[CALC(RAW)] ANTALL=[CALC(ANTALL)] NESTET=[CALC(NESTET)] T_SKAR=[CALC(T_SKAR)] SKYV=[CALC(SKYV)] BILDE=[CALC(BILDE)]</p>\n<p>RG=[CALC(RG)] CSL=[CALC(CSL)] NR=[CALC(NR)]</p>';
   const no = `<h1>Elementer</h1>
 ${calcLine}
 ${ifPair('CALC(T_SKAR)>=60', 'CALC(T_SKAR)<60', 'T_HOY=JA', 'T_HOY=NEI')}
 ${ifPair('CALC(NESTET)>=20', 'CALC(NESTET)<20', 'NESTET_HOY=JA', 'NESTET_HOY=NEI')}`;
   const en = `<h1>Elements</h1>
 ${calcLine}`;
-  const set = (name: string, sl: number, bv: number, cAns: (number | null)[], browser?: string[]): AnswerSet => {
+  const set = (name: string, sl: number, bv: number, cAns: (number | null)[], rg: number, csl: number, nr: number, browser?: string[]): AnswerSet => {
     const answered = cAns.filter((v): v is number => v !== null);
     const raw = answered.reduce((a, b) => a + b, 0);
     const antall = answered.length;
@@ -686,16 +711,18 @@ ${calcLine}`;
     const t = [...norm.data].reverse().find((r) => r.score <= raw)?.normValue ?? 30;
     const f = (n: number) => n.toFixed(2);
     const line = `<p>RAW=${f(raw)} ANTALL=${f(antall)} NESTET=${f(nestet)} T_SKAR=${f(t)} SKYV=${f(sl)} BILDE=${f(bv)}</p>`;
+    const rangeLine = `<p>RG=${f(rg)} CSL=${f(csl * 5)} NR=${f(nr)}</p>`;
     return {
       name,
-      description: [`SL1=${sl}`, `BV1=${bv === 0 ? 'Blått' : 'Oransje'}`, ...cs.map((k, i) => `${k}=${cAns[i] === null ? 'ubesvart' : `Alternativ ${cAns[i]}`}`)].join(', '),
+      description: [`SL1=${sl}`, `BV1=${bv === 0 ? 'Blått' : 'Oransje'}`, ...cs.map((k, i) => `${k}=${cAns[i] === null ? 'ubesvart' : `Alternativ ${cAns[i]}`}`),
+        `RG1=${['Helt uenig', 'Uenig', 'Nøytral', 'Enig', 'Helt enig'][rg]}`, `CS1=${['Sjelden', 'Av og til', 'Ofte'][csl]}`, `NR1=${nr}`].join(', '),
       answers: {
-        SL1: String(sl), BV1: `BV1_${bv}`,
+        SL1: String(sl), BV1: `BV1_${bv}`, RG1: `RG1_${rg}`, CS1: `CS1_${csl}`, NR1: String(nr),
         ...Object.fromEntries(cs.flatMap((k, i) => (cAns[i] === null ? [] : [[k, `${k}_${cAns[i]}`]]))),
       },
-      calculations: { RAW: raw, ANTALL: antall, NESTET: nestet, T_SKAR: t, SKYV: sl, BILDE: bv },
+      calculations: { RAW: raw, ANTALL: antall, NESTET: nestet, T_SKAR: t, SKYV: sl, BILDE: bv, RG: rg, CSL: csl * 5, NR: nr },
       flags: { T_HOY: t >= 60, NESTET_HOY: nestet >= 20 },
-      report: { NO: [line, `<p>T_HOY=${t >= 60 ? 'JA' : 'NEI'}</p>`, `<p>NESTET_HOY=${nestet >= 20 ? 'JA' : 'NEI'}</p>`], EN: [line] },
+      report: { NO: [line, rangeLine, `<p>T_HOY=${t >= 60 ? 'JA' : 'NEI'}</p>`, `<p>NESTET_HOY=${nestet >= 20 ? 'JA' : 'NEI'}</p>`], EN: [line, rangeLine] },
       reportAbsent: { NO: [`T_HOY=${t >= 60 ? 'NEI' : 'JA'}`, `NESTET_HOY=${nestet >= 20 ? 'NEI' : 'JA'}`] },
       ...(browser && { browser }),
     };
@@ -705,7 +732,7 @@ ${calcLine}`;
   const pdf = toBase64(makePdf('andreastest veiledning (syntetisk PDF)'));
   return {
     area: 'elementer', code, name: q.name.NO, questionnaire: q,
-    description: 'Skyveknapp med endetekster og midttekst (TextValueLabel, NO/EN), to vedleggsfelt (bilde, dokumenter), bildealternativer (ImageOption), lyd fra MP3 og fra URL, PDF som dokumentlenke i menyen, dimensjon uten navn, telling (COUNT), nestet beregning (beregning av beregninger + konstant) og norm (normLookup) med flagg.',
+    description: 'Range og Slider over alternativer, NumericRange, frivillige (voluntary) spørsmål, skyveknapp med endetekster og midttekst (TextValueLabel, NO/EN), to vedleggsfelt (bilde, dokumenter), bildealternativer (ImageOption), lyd fra MP3 og fra URL, PDF som dokumentlenke i menyen, dimensjon uten navn, telling (COUNT), nestet beregning (beregning av beregninger + konstant) og norm (normLookup) med flagg.',
     reports: { [`${code}-rapport`]: rap('NO', no), [`${code}-rapport-en`]: rap('EN', en) },
     media: [
       mediaFile(MP3, 'audio/mpeg', MP3_BASE64),
@@ -715,10 +742,10 @@ ${calcLine}`;
     ],
     packageMetadata: { code, isPublic: false, documentLinks: [PDF] },
     answerSets: [
-      set('alle_hoy', 8, 1, [3, 3, 2, 2], ['T_SKAR 60 (råskår 10 ligger i intervallet 9–11) gir T_HOY=JA; NESTET=25 gir NESTET_HOY=JA']),
-      set('to_besvart', 0, 0, [1, null, 2, null], ['Bare C1 og C3 besvart: ANTALL=2, RAW=3, T_SKAR=40']),
-      set('grense', 10, 0, [3, 3, 3, 0], ['RAW=9 er nøyaktig nedre grense for T=60 → T_HOY=JA; NESTET=23']),
-      set('ingen_telling', 5, 1, [null, null, null, null], ['Ingen av C1–C4 besvart: ANTALL=0, RAW=0, NESTET=1, T_SKAR=30']),
+      set('alle_hoy', 8, 1, [3, 3, 2, 2], 4, 2, 70, ['T_SKAR 60 (råskår 10 ligger i intervallet 9–11) gir T_HOY=JA; NESTET=25 gir NESTET_HOY=JA']),
+      set('to_besvart', 0, 0, [1, null, 2, null], 0, 0, 0, ['Bare C1 og C3 besvart: ANTALL=2, RAW=3, T_SKAR=40']),
+      set('grense', 10, 0, [3, 3, 3, 0], 2, 1, 100, ['RAW=9 er nøyaktig nedre grense for T=60 → T_HOY=JA; NESTET=23']),
+      set('ingen_telling', 5, 1, [null, null, null, null], 3, 2, 50, ['Ingen av C1–C4 besvart: ANTALL=0, RAW=0, NESTET=1, T_SKAR=30']),
     ],
     browserChecks: [
       'SL1: endetekstene «Ingen smerte» (ved 0) og «Verst tenkelig» (ved 10) vises ved endene av skyveknappen, «Middels» ved 5; på engelsk «No pain» / «Worst imaginable» / «Moderate»',
@@ -727,6 +754,8 @@ ${calcLine}`;
       'S2: AV1 er en lydspiller som spiller MP3-en (440 Hz, 0,5 s); AV2 viser YouTube-videoen (innebygd spiller eller lenke)',
       `Dokumentlenken «${PDF}» vises i venstremenyen i portalen og åpner PDF-en`,
       'Pakken installeres selv om dimensjonen DIM_C har tomt navn',
+      'S3: C1–C4 er voluntary: å gå videre uten å svare gir IKKE dialogen «Ubesvarte spørsmål»',
+      'S4: RG1 vises som Range over 5 alternativer (Helt uenig … Helt enig); CS1 som loddrett skyveknapp over 3 alternativer; NR1 som NumericRange 0–100 med steg 10, «Ingen»/«Full» i endene og verdien vist',
     ],
     notes: [
       'Endetekster er TextValueLabel i svarmalen (value=min/maks), oversatt med entity="TextValueLabel" property="label", som i ekte pakker.',
@@ -734,6 +763,7 @@ ${calcLine}`;
       'COUNT skrives som sum av if(answered(Q)=true,1,0), nestet beregning som CalculationType, norm som normLookup(NormType, verdi) – samme mønstre som ekte pakker.',
       'Usikkert: hva serveren gir for RAW når noen spørsmål er ubesvart (Studio teller ubesvart som 0 i summen). Avvik i svarsettene to_besvart og ingen_telling er i så fall et funn, ikke nødvendigvis en feil i pakken.',
       'Normtabellen har lookupMin=skår og lookupMax=neste skår − 0,5, så den gjelder bare for heltall.',
+      'Range/Slider med alternativer er valgspørsmål: svaret er alternativkoden og verdien er alternativets value (CS1: 0, 5, 10). NumericRange har samme attributter som NumericSlider.',
       'Vedleggsfelt har ingen tekstoversettelse i ekte pakker, så VED1/VED2 får ikke engelsk tekst i oversettelsesfila.',
     ],
   };

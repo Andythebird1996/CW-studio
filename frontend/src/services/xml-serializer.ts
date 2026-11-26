@@ -112,6 +112,19 @@ const WIDGET_TYPE_MAP: Partial<Record<Question['type'], string>> = {
   country: 'CountryWidget',
 };
 
+/** Standardattributtene på Slider/Range i ekte pakker, i samme rekkefølge (vanligste verdi). */
+export const CHOICE_SLIDER_DEFAULTS: Readonly<Record<string, string>> = {
+  showEndLabels: 'true', showScaleLabels: 'true', labelPosition: 'after', direction: 'horizontal',
+  displayValue: 'true', showTicks: 'false', showDigitalPoints: 'false', showClear: 'true', hairline: 'false',
+};
+
+function radioParams(qq: RadiobuttonQuestion): Record<string, string> | undefined {
+  const wp: Record<string, string> = {};
+  if (qq.numberOfColumns !== undefined) wp.numberOfColumns = String(qq.numberOfColumns);
+  if (qq.ignoreAnswerOptionCode) wp.ignoreAnswerOptionCode = qq.ignoreAnswerOptionCode;
+  return Object.keys(wp).length ? wp : undefined;
+}
+
 /** Flyttall slik EMF skriver dem: 0 → "0.0", 0.5 → "0.5". */
 export function emfFloat(n: number): string {
   return Number.isInteger(n) ? n.toFixed(1) : String(n);
@@ -158,22 +171,24 @@ export function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> 
     wp.addTime = String(qq.includeTime === true);
     wp.addDate = 'true';
   } else if (qq.type === 'slider') {
+    // Importerte felt: et attributt som manglet i fila og ikke er satt i editoren, skrives ikke
+    const keep = (attr: string, value: unknown) => !qq._widgetAttrs || value !== undefined || qq._widgetAttrs.includes(attr);
     const step = qq.step ?? 1;
     wp.minValue = emfFloat(qq.min);
     wp.maxValue = emfFloat(qq.max);
     wp.step = emfFloat(step);
     wp.labelStep = emfFloat(qq.labelStep ?? step);
-    wp.showEndLabels = String(qq.showEndLabels ?? true);
-    wp.showScaleLabels = String(qq.showScaleLabels ?? true);
-    wp.valuePosition = qq.valuePosition ?? 'after';
-    wp.labelPosition = qq.scaleLabelPosition ?? 'after';
-    wp.direction = qq.direction ?? 'horizontal';
+    if (keep('showEndLabels', qq.showEndLabels)) wp.showEndLabels = String(qq.showEndLabels ?? true);
+    if (keep('showScaleLabels', qq.showScaleLabels)) wp.showScaleLabels = String(qq.showScaleLabels ?? true);
+    if (keep('valuePosition', qq.valuePosition)) wp.valuePosition = qq.valuePosition ?? 'after';
+    if (keep('labelPosition', qq.scaleLabelPosition)) wp.labelPosition = qq.scaleLabelPosition ?? 'after';
+    if (keep('direction', qq.direction)) wp.direction = qq.direction ?? 'horizontal';
     if (qq.sliderLength !== undefined) wp.length = qq.sliderLength;
-    wp.displayValue = String(qq.displayValue ?? false);
-    wp.showTicks = String(qq.showTicks ?? false);
-    wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
-    wp.showClear = String(qq.showClear ?? true);
-    wp.hairline = String(qq.hairline ?? false);
+    if (keep('displayValue', qq.displayValue)) wp.displayValue = String(qq.displayValue ?? false);
+    if (keep('showTicks', qq.showTicks)) wp.showTicks = String(qq.showTicks ?? false);
+    if (keep('showDigitalPoints', qq.showDigitalPoints)) wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
+    if (keep('showClear', qq.showClear)) wp.showClear = String(qq.showClear ?? true);
+    if (keep('hairline', qq.hairline)) wp.hairline = String(qq.hairline ?? false);
   }
   return wp;
 }
@@ -181,7 +196,8 @@ export function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> 
 /** Det to felt uten svaralternativer må ha like for å dele svarmal: widget-innstillingene og verdietikettene. */
 function widgetKey(qq: WidgetOnlyQuestion): string {
   const labels = qq.type === 'slider' ? (qq.valueLabels ?? []).map((v) => [v.code, v.value, v.texts ?? null, v.imageFile ?? null]) : [];
-  return `${qq.type}|${JSON.stringify(widgetParamsFor(qq))}|${JSON.stringify(labels)}`;
+  const range = qq.type === 'slider' && qq.rangeWidget ? '|range' : '';
+  return `${qq.type}${range}|${JSON.stringify(widgetParamsFor(qq))}|${JSON.stringify(labels)}`;
 }
 
 type TemplatedQuestion = WidgetOnlyQuestion | RadiobuttonQuestion | CheckboxQuestion | ComboboxQuestion;
@@ -311,7 +327,7 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
         code,
         name: existing?.name ?? code,
         options: existing?.options ?? [],
-        widgetType: WIDGET_TYPE_MAP[qq.type] ?? qq.type,
+        widgetType: qq.type === 'slider' && qq.rangeWidget ? 'NumericRange' : WIDGET_TYPE_MAP[qq.type] ?? qq.type,
         widgetParams: Object.keys(wp).length > 0 ? wp : undefined,
         ...(qq.type === 'slider'
           ? (qq.valueLabels?.length ? { valueLabels: qq.valueLabels } : {})
@@ -319,6 +335,27 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
         ...(existing?._extraXml && { _extraXml: existing._extraXml }),
       });
     }
+  }
+
+  // Valgspørsmål vist som skyveknapp: Slider/Range med svaralternativene i malen
+  const choiceDone = new Set<string>();
+  for (const qq of allQs) {
+    if (qq.type !== 'radiobutton') continue;
+    const code = qq.responseTemplateCode ?? qq.code;
+    const existing = templateMap.get(code);
+    if (!existing || choiceDone.has(code)) continue;
+    choiceDone.add(code);
+    const cur = existing.widgetType ?? 'Radiobutton';
+    const isChoiceSlider = cur === 'Slider' || cur === 'Range';
+    if (!qq.choiceWidget) {
+      if (isChoiceSlider) templateMap.set(code, { ...existing, widgetType: 'Radiobutton', widgetParams: radioParams(qq) });
+      continue;
+    }
+    const wp: Record<string, string> = { ...(cur === qq.choiceWidget ? existing.widgetParams ?? {} : CHOICE_SLIDER_DEFAULTS) };
+    if (qq.choiceDirection) wp.direction = qq.choiceDirection;
+    if (qq.choiceDisplayValue !== undefined) wp.displayValue = String(qq.choiceDisplayValue);
+    if (qq.choiceShowTicks !== undefined) wp.showTicks = String(qq.choiceShowTicks);
+    templateMap.set(code, { ...existing, widgetType: qq.choiceWidget, widgetParams: wp });
   }
 
   const allTemplates = Array.from(templateMap.values());

@@ -161,12 +161,23 @@ export interface CheckboxQuestion extends BaseQuestion {
   ignoreAnswerOptionCode?: string; // option code to exclude from logic
 }
 
+/** Skyveknapp over svaralternativene: questionnaire:Slider eller questionnaire:Range (begge med option-er) */
+export type ChoiceSliderWidget = 'Slider' | 'Range';
+
 export interface RadiobuttonQuestion extends BaseQuestion {
   type: 'radiobutton';
   options?: TextOption[];
   responseTemplateCode?: string;
   numberOfColumns?: number;
   ignoreAnswerOptionCode?: string;
+  /**
+   * Vis alternativene som skyveknapp (Slider) eller Range i stedet for radioknapper. Svaret er fortsatt
+   * alternativkoden, og verdien er alternativets value. Resten av widget-attributtene beholdes fra malen.
+   */
+  choiceWidget?: ChoiceSliderWidget;
+  choiceDirection?: 'horizontal' | 'vertical';
+  choiceDisplayValue?: boolean;
+  choiceShowTicks?: boolean;
 }
 
 export interface ComboboxQuestion extends BaseQuestion {
@@ -231,6 +242,10 @@ export interface SliderQuestion extends BaseQuestion {
   scaleLabelPosition?: 'before' | 'after';
   sliderLength?: string; // CSS length like "300px"
   hairline?: boolean;
+  /** Importert: widget-attributtene som stod i fila. Standardverdier for attributter som manglet, skrives ikke. */
+  _widgetAttrs?: string[];
+  /** Skrives som questionnaire:NumericRange (samme attributter som NumericSlider) i stedet for NumericSlider */
+  rangeWidget?: boolean;
 }
 
 export interface RankQuestion extends BaseQuestion {

@@ -324,6 +324,58 @@ function EmptyOptions() {
   return <span className="cw-resp-muted">{t('noOptionsYet', ui)}</span>;
 }
 
+/** Slider/Range over svaralternativene: én posisjon per alternativ, svaret er alternativkoden. */
+function ChoiceSliderField({
+  widget,
+  options,
+  lang,
+  displayValue,
+  selected,
+  onChange,
+}: {
+  widget: 'Slider' | 'Range';
+  options: TextOption[];
+  lang: LanguageType;
+  displayValue: boolean;
+  selected: string | null;
+  onChange?: (code: string) => void;
+}) {
+  if (options.length === 0) return <div className="cw-resp-options"><EmptyOptions /></div>;
+  const idx = Math.max(0, options.findIndex((o) => o.code === selected));
+  const last = options.length - 1;
+  return (
+    <div className="cw-resp-slider" data-testid="preview-choice-slider" data-widget={widget}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <input
+          type="range"
+          min={0}
+          max={last}
+          step={1}
+          value={idx}
+          aria-label={widget}
+          onChange={(e) => onChange?.(options[Number(e.target.value)]?.code ?? '')}
+        />
+        {displayValue && selected && (
+          <span className="cw-resp-btn cw-resp-btn-primary" style={{ minHeight: 26, padding: '0 8px', cursor: 'default' }}>
+            {options[idx]?.texts[lang] ?? options[idx]?.code}
+          </span>
+        )}
+      </div>
+      <div data-testid="choice-slider-labels" style={{ position: 'relative', height: 32, margin: '2px 0 0' }}>
+        {options.map((o, i) => {
+          const pct = last > 0 ? (i / last) * 100 : 0;
+          const align = pct <= 0 ? { left: 0 } : pct >= 100 ? { right: 0 } : { left: `${pct}%`, transform: 'translateX(-50%)' };
+          return (
+            <span key={o.code} className="cw-resp-opt-label" style={{ position: 'absolute', top: 0, maxWidth: `${Math.max(20, 90 / options.length)}%`, fontSize: 12, ...align }}>
+              {o.texts[lang] ?? o.code}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ChoiceList({
   questionId,
   kind,
@@ -566,7 +618,17 @@ function QuestionBlock({
       {label}
       {help ? <div className="cw-resp-help">{help}</div> : null}
 
-      {question.type === 'radiobutton' && (
+      {question.type === 'radiobutton' && question.choiceWidget && (
+        <ChoiceSliderField
+          widget={question.choiceWidget}
+          options={options}
+          lang={lang}
+          displayValue={question.choiceDisplayValue ?? true}
+          selected={typeof raw === 'string' ? raw : null}
+          onChange={(code) => commit(code)}
+        />
+      )}
+      {question.type === 'radiobutton' && !question.choiceWidget && (
         <ChoiceList
           questionId={`${question.id}-${rep}`}
           kind="radio"

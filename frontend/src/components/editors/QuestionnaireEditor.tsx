@@ -51,7 +51,7 @@ import type {
   TextOption,
 } from '../../types/questionnaire';
 import { ExpressionEditor } from './ExpressionEditor';
-import { SliderLabelsEditor, AttachmentEditor, AudioSourceEditor } from './ElementEditors';
+import { SliderLabelsEditor, AttachmentEditor, AudioSourceEditor, ChoiceWidgetEditor, SliderWidgetSelect } from './ElementEditors';
 import { AssessmentPreview } from '../preview/AssessmentPreview';
 import { SpreadsheetOptionsEditor } from './SpreadsheetOptionsEditor';
 import { t, tf, countPhrase, copyCode, useUILang, type UILang } from '../../i18n';
@@ -726,6 +726,7 @@ function QuestionRow({
           {/* Slider options */}
           {question.type === 'slider' && (
             <div className="space-y-3">
+              <SliderWidgetSelect question={question} onChange={onChange} />
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-cw-gray-text mb-1">Min</label>
@@ -867,6 +868,9 @@ function QuestionRow({
               </div>
             </details>
           )}
+
+          {/* Radioknapper eller skyveknapp over alternativene */}
+          {question.type === 'radiobutton' && <ChoiceWidgetEditor question={question} onChange={onChange} />}
 
           {/* Radiobutton layout */}
           {question.type === 'radiobutton' && (
