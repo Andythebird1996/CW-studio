@@ -16,6 +16,8 @@ import { ResponseTemplatesEditor } from './components/editors/ResponseTemplatesE
 import { NormEditor } from './components/editors/NormEditor';
 import { ReportEditor } from './components/editors/ReportEditor';
 import { MediaEditor } from './components/editors/MediaEditor';
+import { findMediaReferences, mediaRenameError, renameMediaFile, type MediaPackageState } from './services/media-rename';
+
 import { MetadataEditor } from './components/editors/MetadataEditor';
 import { DimensionsEditor } from './components/editors/DimensionsEditor';
 import { ScoringDebugger } from './components/editors/ScoringDebugger';
@@ -36,6 +38,11 @@ import { buildPackageZip } from './services/package-builder';
 import JSZip from 'jszip';
 import type { Questionnaire, LanguageType } from './types/questionnaire';
 import type { EditorTab } from './stores/workspace-store';
+
+/** Det media-rename trenger fra en fane */
+function mediaState(tab: EditorTab): MediaPackageState {
+  return { questionnaire: tab.data!, rapFiles: tab.rapFiles, mediaFiles: tab.mediaFiles, packageMetadata: tab.packageMetadata };
+}
 
 function newQuestionnaire(uiLang: UILang): Questionnaire {
   const defaultName = t('newQuestionnaire', uiLang);
@@ -801,6 +808,28 @@ export default function App() {
                 onChange={(files) => {
                   if (!activeTabId) return;
                   updateTab(activeTabId, { mediaFiles: files.length > 0 ? files : undefined, _pushHistory: false });
+                  markDirty(activeTabId);
+                }}
+                referenceCount={(name) => findMediaReferences(mediaState(activeTab), name).length}
+                renameError={(from, to) => mediaRenameError(mediaState(activeTab), from, to)}
+                onRename={(from, to) => {
+                  if (!activeTabId) return;
+                  const next = renameMediaFile(mediaState(activeTab), from, to);
+                  // Kartlegging og rapporter endres sammen, så angre tar alt med én gang
+                  updateTab(activeTabId, {
+                    data: next.questionnaire,
+                    rapFiles: next.rapFiles,
+                    mediaFiles: next.mediaFiles,
+                    packageMetadata: next.packageMetadata,
+                  });
+                  markDirty(activeTabId);
+                }}
+                documentLinks={activeTab.packageMetadata?.documentLinks}
+                onToggleDocumentLink={(name, on) => {
+                  if (!activeTabId || !activeTab.data) return;
+                  const pm = activeTab.packageMetadata ?? { code: activeTab.data.code, isPublic: false };
+                  const links = (pm.documentLinks ?? []).filter((n) => n !== name);
+                  updateTab(activeTabId, { packageMetadata: { ...pm, documentLinks: on ? [...links, name] : links }, _pushHistory: false });
                   markDirty(activeTabId);
                 }}
               />

@@ -29,6 +29,8 @@ import type {
   CalculationType,
   Dimension,
   PackageMetadata,
+  ValueLabel,
+  AttachmentFileType,
 } from '../types/questionnaire';
 import { sectionTitleCode } from './xml-serializer';
 import { expressionFingerprint } from './expression-raw';
@@ -104,6 +106,7 @@ const KNOWN_CONTAINS_ATTRS: Record<string, string[]> = {
   Text: ['code', 'content', 'contentStyle', 'align', 'labelPosition'],
   ImageElement: ['code', 'imageFile'],
   AudioVideo: ['code', 'audioVideoFile'],
+  Attachment: ['code', 'text', 'fileType', 'maxFiles', 'maxFileSize'],
   CountryWidget: ['code', 'question', 'mandatory', 'align', 'labelPosition'],
   Question: ['code', 'question', 'mandatory', 'template', 'voluntary', 'readonly', 'readOnly', 'reversedScore', 'helpText', 'maxRank', 'align', 'labelPosition'],
 };
@@ -225,8 +228,10 @@ function parseResponseTemplate(el: Element, lang: LanguageType): ResponseTemplat
     score: attr(opt, 'value') ? parseFloat(attr(opt, 'value')) : undefined,
     texts: { [lang]: attr(opt, 'label') } as Record<LanguageType, string>,
     ...(opt.children.length > 0 && { _extraXml: Array.from(opt.children).map(rawXmlOf).join('') }),
+    ...(xsiType(opt).includes('ImageOption') && { imageFile: attr(opt, 'imageFile') }),
   }));
-  const templateExtra = extraChildrenXml(el, new Set(['widget', 'option']));
+  const valueLabels = children(el, 'valueLabel').map((vl) => parseValueLabel(vl, lang));
+  const templateExtra = extraChildrenXml(el, new Set(['widget', 'option', 'valueLabel']));
 
   return {
     code,
@@ -234,8 +239,33 @@ function parseResponseTemplate(el: Element, lang: LanguageType): ResponseTemplat
     options,
     widgetType: widgetType || undefined,
     widgetParams: Object.keys(widgetParams).length > 0 ? widgetParams : undefined,
+    ...(valueLabels.length > 0 && { valueLabels }),
     ...(templateExtra && { _extraXml: templateExtra }),
   };
+}
+
+/** TextValueLabel / ImageValueLabel (ResponseTemplate.valueLabel) */
+function parseValueLabel(vl: Element, lang: LanguageType): ValueLabel {
+  const rawValue = attr(vl, 'value');
+  const value = Number(rawValue);
+  const description = vl.getAttribute('description');
+  return {
+    code: attr(vl, 'code'),
+    value: Number.isNaN(value) ? 0 : value,
+    _rawValue: rawValue,
+    ...(xsiType(vl).includes('ImageValueLabel')
+      ? { imageFile: attr(vl, 'imageFile') }
+      : { texts: { [lang]: attr(vl, 'label') } as Record<LanguageType, string> }),
+    ...(description !== null && { description }),
+  };
+}
+
+/** Eldre Studio-filer hadde labelMin/labelMax på widgeten; de blir verdietiketter ved min og maks. */
+function legacySliderLabels(tplCode: string, min: number, max: number, wp: Record<string, string>, lang: LanguageType): ValueLabel[] | undefined {
+  const out: ValueLabel[] = [];
+  if (wp.labelMin) out.push({ code: `${tplCode}-VL1`, value: min, texts: { [lang]: wp.labelMin } as Record<LanguageType, string> });
+  if (wp.labelMax) out.push({ code: `${tplCode}-VL${out.length + 1}`, value: max, texts: { [lang]: wp.labelMax } as Record<LanguageType, string> });
+  return out.length > 0 ? out : undefined;
 }
 
 // ─── Question / section type determination ────────────────────────────────
@@ -323,6 +353,21 @@ function parseContains(
   };
 
   // Stand-alone elements (not wrapped in questionnaire:Question)
+  if (type.includes('Attachment')) {
+    const ft = attr(el, 'fileType');
+    const fileType = (['ANY', 'IMAGE', 'DOCUMENT'] as const).find((v) => v === ft) as AttachmentFileType | undefined;
+    const maxFiles = numAttr(el.getAttribute('maxFiles') ?? undefined);
+    const maxFileSize = numAttr(el.getAttribute('maxFileSize') ?? undefined);
+    return {
+      ...baseAttrs,
+      type: 'attachment' as const,
+      texts: { [lang]: attr(el, 'text') } as Record<LanguageType, string>,
+      ...(fileType && { fileType }),
+      ...(maxFiles !== undefined && { maxFiles }),
+      ...(maxFileSize !== undefined && { maxFileSize }),
+    };
+  }
+
   if (type.includes('AudioVideo')) {
     const mediaFile = attr(el, 'audioVideoFile') || undefined;
     return { ...baseAttrs, type: 'audioVideo' as const, ...(mediaFile && { mediaFile }) };
@@ -428,8 +473,7 @@ function parseContains(
         const max = numAttr(wp.maxValue ?? wp.max) ?? 10;
         const step = numAttr(wp.step);
         const labelStep = numAttr(wp.labelStep);
-        const minLabel = wp.labelMin ? { [lang]: wp.labelMin } as Record<LanguageType, string> : undefined;
-        const maxLabel = wp.labelMax ? { [lang]: wp.labelMax } as Record<LanguageType, string> : undefined;
+        const valueLabels = template?.valueLabels?.map((v) => ({ ...v })) ?? legacySliderLabels(templateCode || code, min, max, wp, lang);
         const showTicks = wp.showTicks !== undefined ? wp.showTicks === 'true' : undefined;
         const showEndLabels = wp.showEndLabels !== undefined ? wp.showEndLabels === 'true' : undefined;
         const showScaleLabels = wp.showScaleLabels !== undefined ? wp.showScaleLabels === 'true' : undefined;
@@ -438,13 +482,15 @@ function parseContains(
         const displayValue = wp.displayValue !== undefined ? wp.displayValue === 'true' : undefined;
         const direction = (wp.direction === 'horizontal' || wp.direction === 'vertical') ? wp.direction as 'horizontal' | 'vertical' : undefined;
         const sliderLength = wp.length;
+        const pos = (v: string | undefined) => (v === 'before' || v === 'after' ? v : undefined);
+        const valuePosition = pos(wp.valuePosition);
+        const scaleLabelPosition = pos(wp.labelPosition);
         const hairline = wp.hairline !== undefined ? wp.hairline === 'true' : undefined;
         return {
           ...base, type: 'slider', min, max, responseTemplateCode: templateCode || undefined,
           ...(step !== undefined && { step }),
           ...(labelStep !== undefined && { labelStep }),
-          ...(minLabel && { minLabel }),
-          ...(maxLabel && { maxLabel }),
+          ...(valueLabels && { valueLabels }),
           ...(showTicks !== undefined && { showTicks }),
           ...(showEndLabels !== undefined && { showEndLabels }),
           ...(showScaleLabels !== undefined && { showScaleLabels }),
@@ -453,6 +499,8 @@ function parseContains(
           ...(displayValue !== undefined && { displayValue }),
           ...(direction && { direction }),
           ...(sliderLength !== undefined && { sliderLength }),
+          ...(valuePosition && { valuePosition }),
+          ...(scaleLabelPosition && { scaleLabelPosition }),
           ...(hairline !== undefined && { hairline }),
         };
       }
@@ -677,7 +725,8 @@ export function parseQuestionnaire(xmlText: string): Questionnaire {
   if (dimsContainer) {
     for (const dimEl of children(dimsContainer, 'dimension')) {
       const dimCode = attr(dimEl, 'code');
-      const dimName = attr(dimEl, 'name') || dimCode;
+      const rawDimName = dimEl.getAttribute('name');
+      const dimName = rawDimName ?? '';
       if (!dimCode) continue;
 
       const questionCodes: string[] = [];
@@ -705,7 +754,7 @@ export function parseQuestionnaire(xmlText: string): Questionnaire {
         }
       }
 
-      dimensions.push({ code: dimCode, name: dimName, questionCodes });
+      dimensions.push({ code: dimCode, name: dimName, questionCodes, ...(rawDimName === null && { _noName: true }) });
     }
   }
 
@@ -765,7 +814,7 @@ export function parseCalculationFile(
     const name = attr(root, 'name') || code;
     if (!code) return null;
 
-    // normCode is stored as a relative path reference, e.g. "../norms/TOTAL.norm"
+    // Eldre Studio-versjoner skrev norm="../norms/KODE.norm" (finnes ikke i modellen); normLookup leses nedenfor
     const rawNorm = attr(root, 'norm');
     const normCode = rawNorm
       ? rawNorm.split('/').pop()?.replace(/\.norm$/, '') || undefined
@@ -784,12 +833,92 @@ export function parseCalculationFile(
     // Strip redundant xmlns declarations added by XMLSerializer (parent doc already declares them)
     const _rawExpression = rawXml.replace(/ xmlns(?::\w+)?="[^"]*"/g, '');
 
-    const { calcType, innerCalculations } = resolveExpression(exprEl, questionnaire);
+    const studio = recognizeStudioCalculation(exprEl, questionnaire);
+    const { calcType, innerCalculations } = studio ?? resolveExpression(exprEl, questionnaire);
     const formula = expressionToFormula(exprEl, questionnaire, 0);
-    return { code, name, type: calcType, innerCalculations, formula, normCode, _rawExpression, ...assigned };
+    return { code, name, type: calcType, innerCalculations, formula, normCode: studio?.normCode ?? normCode, _rawExpression, ...assigned };
   } catch {
     return null;
   }
+}
+
+// ─── Studio-formene av beregninger (det serializeInnerCalcExpression skriver) ─────
+// Gjenkjennes nøyaktig, så nestede beregninger, tellinger, konstanter og normer leses tilbake.
+// Alt annet faller tilbake til resolveExpression.
+
+const elementsOf = (el: Element) => Array.from(el.children).filter((c) => c.localName === 'elements');
+const paramEl = (el: Element, name: string) => children(el, 'parameter').find((p) => attr(p, 'name') === name);
+const fnIs = (el: Element, name: string) => xsiType(el).includes('Function') && attr(el, 'name') === name;
+const numberOf = (el: Element | undefined): number | null => {
+  if (!el || !xsiType(el).includes('NumberBasicType')) return null;
+  const v = parseFloat(attr(el, 'value'));
+  return Number.isNaN(v) ? null : v;
+};
+
+function studioTerm(el: Element, q: Questionnaire): InnerCalculation | null {
+  const n = numberOf(el);
+  if (n !== null) return { constantValue: n };
+  if (xsiType(el).includes('CalculationType') && attr(el, 'name')) return { calculationCode: attr(el, 'name') };
+  if (fnIs(el, 'questionResponseValue')) {
+    const ic = questionFromFunctionParam(el, q);
+    return ic.questionCode ? ic : null;
+  }
+  if (xsiType(el).includes('Operator') && attr(el, 'type') === 'multiply') {
+    const [a, b] = elementsOf(el);
+    const factor = numberOf(b);
+    const base = a && elementsOf(el).length === 2 && factor !== null ? studioTerm(a, q) : null;
+    return base && base.constantValue === undefined ? { ...base, multiplier: factor ?? 1 } : null;
+  }
+  return null;
+}
+
+/** if(answered(Q) = true, 1, 0) → Q */
+function studioCountTerm(el: Element, q: Questionnaire): InnerCalculation | null {
+  if (numberOf(el) === 1) return { constantValue: 1 };
+  if (!fnIs(el, 'if')) return null;
+  const cond = paramEl(el, 'if') && firstChild(paramEl(el, 'if')!, 'elements');
+  if (numberOf(paramEl(el, 'then') && firstChild(paramEl(el, 'then')!, 'elements') || undefined) !== 1) return null;
+  if (numberOf(paramEl(el, 'else') && firstChild(paramEl(el, 'else')!, 'elements') || undefined) !== 0) return null;
+  if (!cond || !xsiType(cond).includes('SimpleStatement') || attr(cond, 'type') !== 'equal') return null;
+  const [ans, bool] = elementsOf(cond);
+  if (!ans || !fnIs(ans, 'answered') || !bool || attr(bool, 'value') !== 'true') return null;
+  const ic = questionFromFunctionParam(ans, q);
+  return ic.questionCode ? { questionCode: ic.questionCode } : null;
+}
+
+function studioValue(el: Element, q: Questionnaire): { calcType: CalculationType; innerCalculations: InnerCalculation[] } | null {
+  const single = studioTerm(el, q);
+  if (single?.calculationCode) return { calcType: 'SUM', innerCalculations: [single] };
+  if (!xsiType(el).includes('Operator')) return null;
+  const op = attr(el, 'type');
+  const parts = elementsOf(el);
+  if (op === 'plus') {
+    const terms = parts.map((p) => studioTerm(p, q));
+    if (terms.length && terms.every(Boolean)) return { calcType: 'SUM', innerCalculations: terms as InnerCalculation[] };
+    const counts = parts.map((p) => studioCountTerm(p, q));
+    if (counts.length && counts.every(Boolean) && counts.some((c) => c?.questionCode)) {
+      return { calcType: 'COUNT', innerCalculations: counts.map((c) => (c?.questionCode ? c : { constantValue: 1 })) };
+    }
+    return null;
+  }
+  if (op === 'divide' && parts.length === 2) {
+    const n = numberOf(parts[1]);
+    const sum = studioValue(parts[0], q);
+    if (sum?.calcType === 'SUM' && n === sum.innerCalculations.length) return { calcType: 'MEAN', innerCalculations: sum.innerCalculations };
+  }
+  return null;
+}
+
+/** Gjenkjenner uttrykk i formen Studio skriver dem, inkludert normLookup(norm, verdi). */
+export function recognizeStudioCalculation(exprEl: Element, q: Questionnaire): { calcType: CalculationType; innerCalculations: InnerCalculation[]; normCode?: string } | null {
+  if (fnIs(exprEl, 'normLookup')) {
+    const normEl = paramEl(exprEl, 'norm') && firstChild(paramEl(exprEl, 'norm')!, 'elements');
+    const valEl = paramEl(exprEl, 'value') && firstChild(paramEl(exprEl, 'value')!, 'elements');
+    const normCode = normEl ? attr(normEl, 'name') : '';
+    const value = valEl ? studioValue(valEl, q) : null;
+    return normCode && value ? { ...value, normCode } : null;
+  }
+  return studioValue(exprEl, q);
 }
 
 interface ExprResult {
@@ -1339,6 +1468,12 @@ export function parseNormFile(xmlText: string): import('../types/questionnaire')
 // We apply translations directly to the questionnaire's multilingual text fields
 // so that the TranslationEditor and SimulatorEditor can show the correct language.
 
+/** Språket en .translation-fil gjelder (Translations@language), eller undefined om fila ikke kan leses */
+export function translationFileLanguage(xmlText: string): LanguageType | undefined {
+  const m = /<questionnaire:Translations\b[^>]*\slanguage="([^"]*)"/.exec(xmlText);
+  return m ? mapLang(m[1]) : undefined;
+}
+
 export function applyTranslationFile(
   questionnaire: Questionnaire,
   xmlText: string,
@@ -1369,11 +1504,24 @@ export function applyTranslationFile(
     const helpTextByCode = new Map<string, string>();      // question helpText codes
     const sliderMinByCode = new Map<string, string>();     // slider labelMin codes
     const sliderMaxByCode = new Map<string, string>();     // slider labelMax codes
+    const valueLabelByCode = new Map<string, string>();    // TextValueLabel-koder (endetekster på skalaer)
+    const extraXml: string[] = [];                         // oversettelser Studio ikke redigerer
+    const translateLabels = (labels: ValueLabel[] | undefined): ValueLabel[] | undefined => {
+      if (!labels?.some((v) => valueLabelByCode.has(v.code) && !v.imageFile)) return labels;
+      return labels.map((v) => {
+        const tr = valueLabelByCode.get(v.code);
+        return tr && !v.imageFile ? { ...v, texts: { ...(v.texts ?? {}), [lang]: tr } as Record<LanguageType, string> } : v;
+      });
+    };
     for (const translEl of children(root, 'translation')) {
       const code = attr(translEl, 'code');
       const entity = attr(translEl, 'entity');
       const property = attr(translEl, 'property');
       const translated = attr(translEl, 'translatedText');
+      const handled = (entity === 'Question' && ['question', 'helpText', 'labelMin', 'labelMax'].includes(property)) ||
+        (entity === 'Text' && property === 'content') || (entity === 'TextOption' && property === 'label') ||
+        (entity === 'TextValueLabel' && property === 'label') || entity === 'Section' || entity === 'Questionnaire';
+      if (!handled && code) { extraXml.push(rawXmlOf(translEl)); continue; }
       if (!translated || !code) continue;
       if ((entity === 'Question' && property === 'question') || (entity === 'Text' && property === 'content')) {
         translByCode.set(code, translated);
@@ -1385,6 +1533,8 @@ export function applyTranslationFile(
         sliderMaxByCode.set(code, translated);
       } else if (entity === 'TextOption' && property === 'label') {
         optionByCode.set(code, translated);
+      } else if (entity === 'TextValueLabel' && property === 'label') {
+        valueLabelByCode.set(code, translated);
       } else if (entity === 'Section' && (property === 'description' || property === 'title')) {
         sectionByCode.set(code, translated);
       }
@@ -1401,12 +1551,26 @@ export function applyTranslationFile(
         const sliderMax = q.type === 'slider' ? sliderMaxByCode.get(q.code) : undefined;
         const hasOptionTrans = (q.type === 'radiobutton' || q.type === 'checkbox' || q.type === 'combobox') &&
           (q.options ?? []).some((o) => optionByCode.has(o.code));
-        if (!qTrans && !helpTrans && !sliderMin && !sliderMax && !hasOptionTrans) return q;
+        const labelTrans = q.type === 'slider' ? translateLabels(q.valueLabels) : undefined;
+        const hasLabelTrans = q.type === 'slider' && labelTrans !== q.valueLabels;
+        if (!qTrans && !helpTrans && !sliderMin && !sliderMax && !hasOptionTrans && !hasLabelTrans) return q;
         let updated: import('../types/questionnaire').Question = { ...q };
         if (qTrans) updated = { ...updated, texts: { ...q.texts, [lang]: qTrans } };
         if (helpTrans) updated = { ...updated, helpTexts: { ...(q.helpTexts ?? {}), [lang]: helpTrans } as Record<LanguageType, string> };
-        if (sliderMin && updated.type === 'slider') updated = { ...updated, minLabel: { ...(updated.minLabel ?? {}), [lang]: sliderMin } as Record<LanguageType, string> };
-        if (sliderMax && updated.type === 'slider') updated = { ...updated, maxLabel: { ...(updated.maxLabel ?? {}), [lang]: sliderMax } as Record<LanguageType, string> };
+        if (hasLabelTrans && updated.type === 'slider') updated = { ...updated, valueLabels: labelTrans };
+        // Eldre Studio-filer: labelMin/labelMax-oversettelser hører til etikettene ved min og maks
+        if ((sliderMin || sliderMax) && updated.type === 'slider') {
+          const s0 = updated;
+          const withText = (labels: ValueLabel[], value: number, text: string, n: number): ValueLabel[] => {
+            const i = labels.findIndex((v) => v.value === value && !v.imageFile);
+            if (i >= 0) return labels.map((v, j) => (j === i ? { ...v, texts: { ...(v.texts ?? {}), [lang]: text } as Record<LanguageType, string> } : v));
+            return [...labels, { code: `${s0.responseTemplateCode ?? s0.code}-VL${n}`, value, texts: { [lang]: text } as Record<LanguageType, string> }];
+          };
+          let labels = s0.valueLabels ?? [];
+          if (sliderMin) labels = withText(labels, s0.min, sliderMin, labels.length + 1);
+          if (sliderMax) labels = withText(labels, s0.max, sliderMax, labels.length + 1);
+          updated = { ...s0, valueLabels: labels };
+        }
         if (hasOptionTrans && (updated.type === 'radiobutton' || updated.type === 'checkbox' || updated.type === 'combobox')) {
           updated = {
             ...updated,
@@ -1438,9 +1602,11 @@ export function applyTranslationFile(
       ? {
           templates: questionnaire.responseTemplates.templates.map((tpl) => {
             const hasChange = tpl.options.some((o) => optionByCode.has(o.code));
-            if (!hasChange) return tpl;
+            const labels = translateLabels(tpl.valueLabels);
+            if (!hasChange && labels === tpl.valueLabels) return tpl;
             return {
               ...tpl,
+              ...(labels && { valueLabels: labels }),
               options: tpl.options.map((o) => {
                 const t = optionByCode.get(o.code);
                 return t ? { ...o, texts: { ...o.texts, [lang]: t } } : o;
@@ -1459,6 +1625,9 @@ export function applyTranslationFile(
       ? questionnaire.supportedLanguages
       : [...questionnaire.supportedLanguages, lang];
 
+    const questionnaireName = root.getAttribute('questionnaireName') ?? undefined;
+    const _extraTranslations = { ...(questionnaire._extraTranslations ?? {}), [lang]: { questionnaireName, xml: extraXml } };
+
     return {
       ...questionnaire,
       name: updatedName,
@@ -1466,6 +1635,7 @@ export function applyTranslationFile(
       sections: updatedSections,
       responseTemplates: updatedTemplates,
       supportedLanguages,
+      _extraTranslations,
     };
   } catch {
     return questionnaire;
@@ -1476,12 +1646,36 @@ export function applyTranslationFile(
 //
 // Manifest ecore model: code, description, requiredSkills, public
 
+/** Manifestets id for en fil: filnavnet med * i stedet for mellomrom (som Checkware Studio skriver det) */
+export function manifestFileId(fileName: string): string {
+  return fileName.replace(/ /g, '*');
+}
+
+function f_hasRef(f: Element): boolean {
+  return f.getAttribute('reference') !== null;
+}
+
 export function parseManifestFile(xmlText: string): PackageMetadata | null {
   try {
     const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
     const root = doc.documentElement;
     const code = attr(root, 'code');
     if (!code) return null;
+    // Filene i manifestet: id = filnavnet med * for mellomrom; reference = mellomromsseparerte id-er
+    const fileEls = Array.from(doc.getElementsByTagName('file'));
+    const idToName = new Map<string, string>();
+    for (const f of fileEls) {
+      const fileName = attr(f, 'fileName');
+      if (fileName) { idToName.set(attr(f, 'id') || manifestFileId(fileName), fileName); idToName.set(fileName, fileName); }
+    }
+    const refsOf = (f: Element) => attr(f, 'reference').split(/\s+/).filter(Boolean).map((id) => idToName.get(id) ?? id.replace(/\*/g, ' '));
+    const mainQ = fileEls.find((f) => attr(f, 'extension') === 'questionnaire');
+    const documentLinks = mainQ && f_hasRef(mainQ) ? refsOf(mainQ) : undefined;
+    const otherReferences: Record<string, string[]> = {};
+    for (const f of fileEls) if (f !== mainQ && f_hasRef(f)) otherReferences[attr(f, 'fileName')] = refsOf(f);
+    const order = fileEls.map((f) => attr(f, 'fileName')).filter(Boolean);
+    const noCode = fileEls.filter((f) => f.getAttribute('code') === null).map((f) => attr(f, 'fileName'));
+    const noRequiredSkills = root.getAttribute('requiredSkills') === null;
     return {
       code,
       description: attr(root, 'description') || undefined,
@@ -1490,6 +1684,9 @@ export function parseManifestFile(xmlText: string): PackageMetadata | null {
       ...(root.getAttribute('name') !== null && { name: attr(root, 'name') }),
       ...(attr(root, 'version') && { version: attr(root, 'version') }),
       ...(attr(root, 'release') && { release: attr(root, 'release') }),
+      ...(documentLinks && { documentLinks }),
+      ...(Object.keys(otherReferences).length > 0 && { otherReferences }),
+      ...(order.length > 0 && { sourceFileNames: { order, ...(noCode.length > 0 && { noCode }), ...(noRequiredSkills && { noRequiredSkills }) } }),
     };
   } catch {
     return null;

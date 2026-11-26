@@ -51,6 +51,7 @@ import type {
   TextOption,
 } from '../../types/questionnaire';
 import { ExpressionEditor } from './ExpressionEditor';
+import { SliderLabelsEditor, AttachmentEditor, AudioSourceEditor } from './ElementEditors';
 import { AssessmentPreview } from '../preview/AssessmentPreview';
 import { SpreadsheetOptionsEditor } from './SpreadsheetOptionsEditor';
 import { t, tf, countPhrase, copyCode, useUILang, type UILang } from '../../i18n';
@@ -59,10 +60,10 @@ import { useClipboardStore } from '../../stores/clipboard-store';
 // ── Question type catalogue ───────────────────────────────────────────────────
 
 const QUESTION_TYPE_VALUES: Question['type'][] = [
-  'radiobutton', 'checkbox', 'combobox', 'stringInput', 'numericInput', 'dateInput', 'slider', 'rank', 'text', 'image', 'audioVideo', 'country',
+  'radiobutton', 'checkbox', 'combobox', 'stringInput', 'numericInput', 'dateInput', 'slider', 'rank', 'text', 'image', 'audioVideo', 'attachment', 'country',
 ];
 
-type QTKey = 'qtRadiobutton' | 'qtCheckbox' | 'qtCombobox' | 'qtStringInput' | 'qtNumericInput' | 'qtDateInput' | 'qtSlider' | 'qtRank' | 'qtText' | 'qtImage' | 'qtAudioVideo' | 'qtCountry';
+type QTKey = 'qtRadiobutton' | 'qtCheckbox' | 'qtCombobox' | 'qtStringInput' | 'qtNumericInput' | 'qtDateInput' | 'qtSlider' | 'qtRank' | 'qtText' | 'qtImage' | 'qtAudioVideo' | 'qtAttachment' | 'qtCountry';
 
 const QT_I18N: Record<Question['type'], QTKey> = {
   radiobutton:  'qtRadiobutton',
@@ -76,6 +77,7 @@ const QT_I18N: Record<Question['type'], QTKey> = {
   text:         'qtText',
   image:        'qtImage',
   audioVideo:   'qtAudioVideo',
+  attachment:   'qtAttachment',
   country:      'qtCountry',
 };
 
@@ -112,6 +114,7 @@ function newQuestion(type: Question['type']): Question {
     case 'rank':         return { ...base, type: 'rank', options: [] };
     case 'image':        return { ...base, type: 'image', imageSrc: '' };
     case 'audioVideo':   return { ...base, type: 'audioVideo', mediaFile: '' };
+    case 'attachment':   return { ...base, type: 'attachment', fileType: 'ANY', maxFiles: 1 };
     case 'country':      return { ...base, type: 'country' };
     default:             return { ...base, type: 'text', isQuestion: false };
   }
@@ -809,8 +812,11 @@ function QuestionRow({
                   </div>
                 </div>
               </details>
+              <SliderLabelsEditor question={question} lang={lang} onChange={onChange} />
             </div>
           )}
+
+          {question.type === 'attachment' && <AttachmentEditor question={question} onChange={onChange} />}
 
           {/* Checkbox layout */}
           {question.type === 'checkbox' && (
@@ -945,29 +951,7 @@ function QuestionRow({
                 <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>{t('audioDisplayHint', uiLang)}</span>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-cw-gray-text mb-1">{t('fileNameOrCode', uiLang)}</label>
-                {mediaCodes.length > 0 ? (
-                  <select
-                    value={question.mediaFile ?? ''}
-                    onChange={(e) => onChange({ ...question, mediaFile: e.target.value || undefined })}
-                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
-                  >
-                    <option value="">{t('selectMediaFile', uiLang)}</option>
-                    {mediaCodes.map((code) => (
-                      <option key={code} value={code}>{code}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={question.mediaFile ?? ''}
-                    onChange={(e) => onChange({ ...question, mediaFile: e.target.value || undefined })}
-                    placeholder="lyd.mp3"
-                    className="w-full border border-cw-border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cw-blue/30"
-                  />
-                )}
-              </div>
+              <AudioSourceEditor question={question} mediaCodes={mediaCodes} onChange={onChange} />
             </div>
           )}
 

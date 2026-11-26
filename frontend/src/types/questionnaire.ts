@@ -63,6 +63,8 @@ export interface TextOption {
   texts: Record<LanguageType, string>; // language → text
   /** Barneelementer fra fila (f.eks. show på alternativet), skrives tilbake uendret */
   _extraXml?: string;
+  /** Alternativet er et bildealternativ (questionnaire:ImageOption@imageFile) */
+  imageFile?: string;
 }
 
 
@@ -77,6 +79,23 @@ export type Option = TextOption | ImageOption;
 
 // ─── Response template ────────────────────────────────────────────────────
 
+/**
+ * Verdietikett på en skala (ResponseTemplate.valueLabel i questionnaire.ecore).
+ * Ekte pakker bruker TextValueLabel ved min og maks som endetekster på glidebrytere
+ * («Ingen smerte» / «Verst tenkelige smerte»), og ImageValueLabel for bilder ved verdiene.
+ */
+export interface ValueLabel {
+  code: string;
+  value: number;
+  /** Verdien slik den sto i fila («1» / «1.0»), så den skrives likt tilbake */
+  _rawValue?: string;
+  /** TextValueLabel@label per språk */
+  texts?: Record<LanguageType, string>;
+  /** ImageValueLabel@imageFile – da er etiketten et bilde */
+  imageFile?: string;
+  description?: string;
+}
+
 export interface ResponseTemplate {
   code: string;
   name: string;
@@ -85,7 +104,9 @@ export interface ResponseTemplate {
   widgetType?: string;
   /** Raw widget XML attributes for round-trip fidelity, e.g. { min: '0', max: '100', decimals: '0' } */
   widgetParams?: Record<string, string>;
-  /** Andre barneelementer i malen (f.eks. valueLabel), skrives tilbake uendret */
+  /** Verdietiketter (TextValueLabel / ImageValueLabel) */
+  valueLabels?: ValueLabel[];
+  /** Andre barneelementer i malen, skrives tilbake uendret */
   _extraXml?: string;
 }
 
@@ -193,9 +214,11 @@ export interface SliderQuestion extends BaseQuestion {
   step?: number;
   /** NumericSlider.labelStep – avstand mellom skalaetiketter (standard = step) */
   labelStep?: number;
-  /** Kun for import av eldre Studio-filer – Checkware-modellen har ingen endeetiketter på slider */
-  minLabel?: Record<LanguageType, string>;
-  maxLabel?: Record<LanguageType, string>;
+  /**
+   * Tekster ved verdier på skalaen (ResponseTemplate.valueLabel). Endetekstene er etikettene
+   * med verdi lik min og maks. Eldre Studio-filer med labelMin/labelMax leses inn hit.
+   */
+  valueLabels?: ValueLabel[];
   showTicks?: boolean;
   showEndLabels?: boolean;
   showScaleLabels?: boolean;
@@ -203,6 +226,9 @@ export interface SliderQuestion extends BaseQuestion {
   showClear?: boolean;
   displayValue?: boolean;
   direction?: 'horizontal' | 'vertical';
+  /** NumericSlider.valuePosition / labelPosition (TextPosition: before | after) */
+  valuePosition?: 'before' | 'after';
+  scaleLabelPosition?: 'before' | 'after';
   sliderLength?: string; // CSS length like "300px"
   hairline?: boolean;
 }
@@ -235,6 +261,20 @@ export interface AudioVideoQuestion extends BaseQuestion {
   mediaFile?: string;
 }
 
+export type AttachmentFileType = 'ANY' | 'IMAGE' | 'DOCUMENT';
+
+/**
+ * Vedlegg (questionnaire:Attachment): respondenten laster opp filer. Teksten står i `texts`
+ * (Attachment@text). Brukes i 180 av ~25 000 pakker i store.
+ */
+export interface AttachmentQuestion extends BaseQuestion {
+  type: 'attachment';
+  fileType?: AttachmentFileType;
+  maxFiles?: number;
+  /** Største filstørrelse slik modellen har den (Attachment@maxFileSize) */
+  maxFileSize?: number;
+}
+
 export interface CountryQuestion extends BaseQuestion {
   type: 'country';
   multiSelect?: boolean;
@@ -251,6 +291,7 @@ export type Question =
   | RankQuestion
   | TextElement
   | AudioVideoQuestion
+  | AttachmentQuestion
   | ImageQuestion
   | CountryQuestion;
 
@@ -351,7 +392,10 @@ export interface Calculations {
 
 export interface Dimension {
   code: string;
+  /** Tomt navn finnes i ekte pakker og beholdes (vis koden i editoren i stedet) */
   name: string;
+  /** Fila hadde ikke name-attributtet i det hele tatt */
+  _noName?: boolean;
   questionCodes: string[];
 }
 
@@ -423,6 +467,16 @@ export interface Questionnaire {
   copyright?: string;
   /** Remote scoring configuration — sends results to external service after completion */
   remoteScoring?: RemoteScoring;
+  /**
+   * Fra de importerte .translation-filene, per språk: questionnaireName og oversettelser Studio ikke
+   * redigerer (f.eks. Phrase/name fra ordboka, Flag/name). Skrives tilbake uendret.
+   */
+  _extraTranslations?: Partial<Record<LanguageType, {
+    questionnaireName?: string;
+    xml: string[];
+    /** «kode|entitet|egenskap» → originalText fra fila og hovedspråkteksten den hørte til ved import */
+    originalTexts?: Record<string, { original: string; source: string }>;
+  }>>;
   /** Rå XML for rotelementer Studio ikke redigerer (copyright, dictionary, calculations), beholdes ved eksport */
   _rawRootElements?: { copyright?: string; dictionary?: string; calculations?: string };
 }
@@ -446,6 +500,29 @@ export interface PackageMetadata {
    * Studio redigerer bare den første; disse skrives tilbake uendret ved eksport og publisering.
    */
   extraQuestionnaires?: Array<{ fileName: string; content: string }>;
+  /**
+   * Dokumentlenker: filer i media/ som kartleggingen viser som lenker i menyen i portalen
+   * (manifest: file@reference på .questionnaire-fila, mellomromsseparerte id-er). Filnavn her.
+   */
+  documentLinks?: string[];
+  /** .project fra den importerte pakken (Eclipse-prosjektfila), skrives tilbake uendret */
+  projectXml?: string;
+  /** reference på andre filer i manifestet (f.eks. rapporter), filnavn → filnavn de peker på */
+  otherReferences?: Record<string, string[]>;
+  /**
+   * Filnavnene fra den importerte pakken, så eksporten ikke gir filene nye navn:
+   * kartleggingen (og koden den hadde da) og oversettelsene per språk.
+   */
+  sourceFileNames?: {
+    questionnaire?: { fileName: string; code: string };
+    translations?: Partial<Record<LanguageType, string>>;
+    /** Rekkefølgen filene hadde i manifestet (filnavn) */
+    order?: string[];
+    /** Filer som sto uten code i manifestet */
+    noCode?: string[];
+    /** Manifestet hadde ikke requiredSkills */
+    noRequiredSkills?: boolean;
+  };
 }
 
 // ─── Media file ────────────────────────────────────────────────────────────

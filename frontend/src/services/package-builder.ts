@@ -14,12 +14,30 @@ import {
   esc,
   calculationQuestionnaireRef,
 } from './xml-serializer';
+import { manifestFileId } from './xml-parser';
 
 export interface ManifestFile {
   fileName: string;
   path: string;
   extension: string;
   code: string;
+  /** Filer denne fila viser til (manifest: reference), filnavn */
+  reference?: string[];
+}
+
+/**
+ * Filnavnet kartleggingen får i pakken: navnet den hadde da den ble importert, så lenge koden
+ * er den samme. Får kartleggingen ny kode, blir fila «NY-KODE.questionnaire».
+ */
+export function questionnaireFileName(q: Questionnaire, pm?: PackageMetadata): string {
+  const src = pm?.sourceFileNames?.questionnaire;
+  return src && src.code === q.code ? src.fileName : `${q.code}.questionnaire`;
+}
+
+/** Bytt ut referanser til kartleggingsfila («GAMMEL.questionnaire#…») med det nye filnavnet. */
+export function renameQuestionnaireRefs(xml: string, oldFile: string | undefined, newFile: string): string {
+  if (!oldFile || oldFile === newFile) return xml;
+  return xml.split(`/${esc(oldFile)}#`).join(`/${esc(newFile)}#`).split(`"${esc(oldFile)}#`).join(`"${esc(newFile)}#`);
 }
 
 /** Pakkeversjonen i store: manifestets, ellers kartleggingens. */
@@ -40,6 +58,8 @@ function manifestXml(q: Questionnaire, files: ManifestFile[], pm?: PackageMetada
   const description = pm?.description ?? '';
   const isPublic = pm?.isPublic ?? false;
   const requiredSkills = pm?.requiredSkills ?? '';
+  const noCode = new Set(pm?.sourceFileNames?.noCode ?? []);
+  const skillsAttr = pm?.sourceFileNames?.noRequiredSkills && !requiredSkills ? '' : ` requiredSkills="${esc(requiredSkills)}"`;
 
   // Group files by folder
   const byFolder = new Map<string, ManifestFile[]>();
@@ -56,20 +76,21 @@ function manifestXml(q: Questionnaire, files: ManifestFile[], pm?: PackageMetada
     const fileLines = folderFiles
       .map(
         (f) =>
-          `      <file fileName="${esc(f.fileName)}" path="${esc(f.path)}" extension="${esc(f.extension)}" code="${esc(f.code)}" id="${esc(f.fileName)}"/>`,
+          `      <file fileName="${esc(f.fileName)}" path="${esc(f.path)}" extension="${esc(f.extension)}"${noCode.has(f.fileName) ? '' : ` code="${esc(f.code)}"`}${f.reference?.length ? ` reference="${esc(f.reference.map(manifestFileId).join(' '))}"` : ''} id="${esc(manifestFileId(f.fileName))}"/>`,
       )
       .join('\n');
     return `    <folder name="${folder}">\n${fileLines}\n    </folder>`;
   });
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Manifest xmlns:questionnaire="http://questionnaire/1.0" code="${esc(code)}" description="${esc(description)}" public="${isPublic}" requiredSkills="${esc(requiredSkills)}" version="${esc(version)}" release="${esc(release)}" name="${esc(name)}">
+<questionnaire:Manifest xmlns:questionnaire="http://questionnaire/1.0" code="${esc(code)}" description="${esc(description)}" public="${isPublic}"${skillsAttr} version="${esc(version)}" release="${esc(release)}" name="${esc(name)}">
   <content>
 ${folderXml.join('\n')}
   </content>
 </questionnaire:Manifest>`;
 }
 
+/** Ny .project for pakker laget i Studio. Importerte pakker beholder sin egen (packageMetadata.projectXml). */
 function projectXml(q: Questionnaire): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
@@ -206,8 +227,9 @@ export function findRapsMissingHeaders(rapFiles: Record<string, string>): string
 export function findCalcsMissingQuestionnaireRef(
   calcFiles: Record<string, string>,
   questionnaireCode: string,
+  questionnaireFile?: string,
 ): string[] {
-  const ref = calculationQuestionnaireRef(questionnaireCode);
+  const ref = calculationQuestionnaireRef(questionnaireCode, questionnaireFile);
   return Object.entries(calcFiles)
     .filter(([, xml]) => !xml.includes(ref))
     .map(([code]) => code);
@@ -226,12 +248,16 @@ export async function buildPackageZip(
   const rapLanguage = LANG_TO_BCP47[q.defaultLanguage] ?? q.defaultLanguage.toLowerCase();
 
   // ── Questionnaire ──────────────────────────────────────────────────────────
-  zip.file(`quiz/${q.code}.questionnaire`, serializeQuestionnaire(q));
+  const qFile = questionnaireFileName(q, packageMetadata);
+  const oldQFile = packageMetadata?.sourceFileNames?.questionnaire?.fileName;
+  const fixRefs = (xml: string) => renameQuestionnaireRefs(xml, oldQFile, qFile);
+  zip.file(`quiz/${qFile}`, fixRefs(serializeQuestionnaire(q)));
   manifestFiles.push({
-    fileName: `${q.code}.questionnaire`,
+    fileName: qFile,
     path: 'quiz',
     extension: 'questionnaire',
     code: q.code,
+    ...(packageMetadata?.documentLinks?.length && { reference: packageMetadata.documentLinks }),
   });
   // Andre kartlegginger i pakken skrives tilbake uendret (Studio redigerer bare den første)
   for (const extra of packageMetadata?.extraQuestionnaires ?? []) {
@@ -243,7 +269,7 @@ export async function buildPackageZip(
   // ── Calculations ───────────────────────────────────────────────────────────
   for (const calc of q.calculations?.calculations ?? []) {
     const fileName = `${calc.code}.calculation`;
-    const xml = serializeCalculation(calc, q.code);
+    const xml = fixRefs(serializeCalculation(calc, q.code, qFile));
     calcXml[calc.code] = xml;
     zip.file(`calculations/${fileName}`, xml);
     manifestFiles.push({ fileName, path: 'calculations', extension: 'calculation', code: calc.code });
@@ -259,14 +285,14 @@ export async function buildPackageZip(
   // ── Flags ──────────────────────────────────────────────────────────────────
   for (const flag of q.flags ?? []) {
     const fileName = `${flag.code}.flag`;
-    zip.file(`flags/${fileName}`, serializeFlag(flag, q.code));
+    zip.file(`flags/${fileName}`, fixRefs(serializeFlag(flag, q.code, qFile)));
     manifestFiles.push({ fileName, path: 'flags', extension: 'flag', code: flag.code });
   }
 
   // ── Translations (non-default languages) ──────────────────────────────────
   for (const lang of q.supportedLanguages) {
     if (lang === q.defaultLanguage) continue;
-    const fileName = `${q.code}_${lang}.translation`;
+    const fileName = packageMetadata?.sourceFileNames?.translations?.[lang] ?? `${q.code}_${lang}.translation`;
     zip.file(`translations/${fileName}`, serializeTranslation(q, lang, q.code));
     manifestFiles.push({ fileName, path: 'translations', extension: 'translation', code: q.code });
   }
@@ -300,7 +326,17 @@ export async function buildPackageZip(
   }
 
   // ── Manifest + project ────────────────────────────────────────────────────
-  zip.file('.project', projectXml(q));
+  // reference på andre filer (f.eks. rapporter) beholdes; filer i samme rekkefølge som i den importerte pakken
+  for (const f of manifestFiles) {
+    const refs = packageMetadata?.otherReferences?.[f.fileName];
+    if (refs && !f.reference) f.reference = refs;
+  }
+  const order = new Map((packageMetadata?.sourceFileNames?.order ?? []).map((n, i) => [n, i] as const));
+  if (order.size > 0) {
+    const idx = new Map(manifestFiles.map((f, i) => [f, i] as const));
+    manifestFiles.sort((a, b) => (order.get(a.fileName) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.fileName) ?? Number.MAX_SAFE_INTEGER) || (idx.get(a) ?? 0) - (idx.get(b) ?? 0));
+  }
+  zip.file('.project', packageMetadata?.projectXml ?? projectXml(q));
   zip.file('metadata/assessmentPackage.manifest', manifestXml(q, manifestFiles, packageMetadata));
 
   const buf = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
@@ -317,7 +353,7 @@ export async function buildPackageZip(
     fileName: `${packageMetadata?.code || q.code}_v${packageVersion(q, packageMetadata)}.${packageRelease(q, packageMetadata)}.zip`,
     sizeBytes: buf.length,
     files: manifestFiles,
-    calcsMissingQuestionnaireRef: findCalcsMissingQuestionnaireRef(calcXml, q.code),
+    calcsMissingQuestionnaireRef: findCalcsMissingQuestionnaireRef(calcXml, q.code, qFile),
     rapsMissingHeaders: findRapsMissingHeaders(rapOut),
     rapsMissingFrame: findRapsMissingFrame(rapOut),
     unsupportedMedia: findUnsupportedMedia(mediaFiles ?? []),

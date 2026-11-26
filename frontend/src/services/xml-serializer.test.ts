@@ -428,7 +428,7 @@ describe('serializeTranslation — svaralternativer på spørsmålet', () => {
       texts: { NO: 'Spørsmål', EN: 'Question', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' },
       options: [{ code: 'Q1_0', score: 0, texts: { NO: 'Nei', EN: 'No', SV: '', DA: '', FI: '', DE: '', FR: '', PL: '' } }],
     }] })] });
-    expect(serializeTranslation(q, 'EN', 'TEST_Q')).toContain('<translation code="Q1_0" entity="TextOption" property="label" translatedText="No"/>');
+    expect(serializeTranslation(q, 'EN', 'TEST_Q')).toContain('<translation code="Q1_0" entity="TextOption" property="label" originalText="Nei" translatedText="No"/>');
   });
 });
 
@@ -456,11 +456,12 @@ describe('svarmaler — samme attributter som ekte store-pakker', () => {
   });
 
   it('NumericSlider: full attributtliste og rekkefølge som ekte pakker', () => {
-    const xml = build([{ id: 's', code: 'SL1', type: 'slider', required: false, texts: t('s'), min: 0, max: 10, minLabel: t('Lav') }]);
+    const xml = build([{ id: 's', code: 'SL1', type: 'slider', required: false, texts: t('s'), min: 0, max: 10, valueLabels: [{ code: 'SL1-VL1', value: 0, texts: t('Lav') }] }]);
     expect(widget(xml, 'NumericSlider')).toBe(
       '<widget xsi:type="questionnaire:NumericSlider" minValue="0.0" maxValue="10.0" step="1.0" labelStep="1.0" showEndLabels="true" showScaleLabels="true" valuePosition="after" labelPosition="after" direction="horizontal" displayValue="false" showTicks="false" showDigitalPoints="false" showClear="true" hairline="false"/>',
     );
     expect(xml).not.toContain('labelMin');
+    expect(xml).toContain('<valueLabel xsi:type="questionnaire:TextValueLabel" code="SL1-VL1" value="0" label="Lav"/>');
     const q = parseQuestionnaire(xml).sections[0].questions[0];
     expect(q.type === 'slider' && [q.min, q.max, q.step, q.showClear]).toEqual([0, 10, 1, true]);
   });
@@ -496,7 +497,8 @@ describe('svarmaler — samme attributter som ekte store-pakker', () => {
       '<responseTemplates><responseTemplate questions="X1" code="X1"><widget xsi:type="questionnaire:NumericSlider" min="2" max="8" labelMin="Lav"/></responseTemplate></responseTemplates>',
     ).replace('</section>', '<contains xsi:type="questionnaire:Question" code="X1" question="x" mandatory="false" template="X1"/></section>');
     const q = parseQuestionnaire(old).sections[0].questions[0];
-    expect(q.type === 'slider' && [q.min, q.max, q.minLabel?.NO]).toEqual([2, 8, 'Lav']);
+    // labelMin blir verdietiketten ved min
+    expect(q.type === 'slider' && [q.min, q.max, q.valueLabels?.[0]?.value, q.valueLabels?.[0]?.texts?.NO]).toEqual([2, 8, 2, 'Lav']);
   });
 });
 

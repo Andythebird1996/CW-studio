@@ -21,6 +21,7 @@ import type {
   FlagCondition,
   Norm,
   TextOption,
+  ValueLabel,
   StringInputSize,
   RawLayout,
   StringInputQuestion,
@@ -164,8 +165,8 @@ export function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> 
     wp.labelStep = emfFloat(qq.labelStep ?? step);
     wp.showEndLabels = String(qq.showEndLabels ?? true);
     wp.showScaleLabels = String(qq.showScaleLabels ?? true);
-    wp.valuePosition = 'after';
-    wp.labelPosition = 'after';
+    wp.valuePosition = qq.valuePosition ?? 'after';
+    wp.labelPosition = qq.scaleLabelPosition ?? 'after';
     wp.direction = qq.direction ?? 'horizontal';
     if (qq.sliderLength !== undefined) wp.length = qq.sliderLength;
     wp.displayValue = String(qq.displayValue ?? false);
@@ -175,6 +176,12 @@ export function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> 
     wp.hairline = String(qq.hairline ?? false);
   }
   return wp;
+}
+
+/** Det to felt uten svaralternativer må ha like for å dele svarmal: widget-innstillingene og verdietikettene. */
+function widgetKey(qq: WidgetOnlyQuestion): string {
+  const labels = qq.type === 'slider' ? (qq.valueLabels ?? []).map((v) => [v.code, v.value, v.texts ?? null, v.imageFile ?? null]) : [];
+  return `${qq.type}|${JSON.stringify(widgetParamsFor(qq))}|${JSON.stringify(labels)}`;
 }
 
 type TemplatedQuestion = WidgetOnlyQuestion | RadiobuttonQuestion | CheckboxQuestion | ComboboxQuestion;
@@ -190,7 +197,7 @@ function isTemplated(q: Question): q is TemplatedQuestion {
 export function matrixKey(q: Question): string | null {
   if (!isTemplated(q)) return null;
   if (q.responseTemplateCode) return `tpl:${q.responseTemplateCode}`;
-  if (isWidgetOnly(q)) return `auto:${q.type}|${JSON.stringify(widgetParamsFor(q))}`;
+  if (isWidgetOnly(q)) return `auto:${widgetKey(q)}`;
   const opts = (q.options ?? []).map((o) => [o.code, o.score ?? null, o.texts]);
   return `inline:${q.type}|${JSON.stringify(opts)}`;
 }
@@ -222,7 +229,7 @@ function shareTemplates(q: Questionnaire): Questionnaire {
     ...sec,
     questions: (sec.matrix ? shareInMatrix(sec.questions) : sec.questions).map((qq) => {
       if (!isWidgetOnly(qq) || !qq.responseTemplateCode) return qq;
-      const key = `${qq.type}|${JSON.stringify(widgetParamsFor(qq))}`;
+      const key = widgetKey(qq);
       const prev = claimed.get(qq.responseTemplateCode);
       if (prev === undefined) {
         claimed.set(qq.responseTemplateCode, key);
@@ -233,6 +240,17 @@ function shareTemplates(q: Questionnaire): Questionnaire {
     subSections: sec.subSections ? fix(sec.subSections) : sec.subSections,
   }));
   return { ...q, sections: fix(q.sections) };
+}
+
+/** TextValueLabel / ImageValueLabel med samme attributter som ekte pakker */
+export function serializeValueLabel(v: ValueLabel, lang: LanguageType): string {
+  const value = v._rawValue !== undefined && Number(v._rawValue) === v.value ? v._rawValue : String(v.value);
+  const desc = v.description !== undefined ? ` description="${esc(v.description)}"` : '';
+  if (v.imageFile !== undefined) {
+    return `<valueLabel xsi:type="questionnaire:ImageValueLabel" code="${esc(v.code)}" value="${esc(value)}"${desc} imageFile="${esc(v.imageFile)}"/>`;
+  }
+  const label = v.texts?.[lang] ?? Object.values(v.texts ?? {})[0] ?? '';
+  return `<valueLabel xsi:type="questionnaire:TextValueLabel" code="${esc(v.code)}" value="${esc(value)}"${desc} label="${esc(label)}"/>`;
 }
 
 function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): string {
@@ -295,6 +313,9 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
         options: existing?.options ?? [],
         widgetType: WIDGET_TYPE_MAP[qq.type] ?? qq.type,
         widgetParams: Object.keys(wp).length > 0 ? wp : undefined,
+        ...(qq.type === 'slider'
+          ? (qq.valueLabels?.length ? { valueLabels: qq.valueLabels } : {})
+          : (existing?.valueLabels && { valueLabels: existing.valueLabels })),
         ...(existing?._extraXml && { _extraXml: existing._extraXml }),
       });
     }
@@ -313,9 +334,13 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
       .map((qq) => qq.code)
       .join(' ');
 
-    const opts = tmpl.options.map((o) =>
-      `      <option xsi:type="questionnaire:TextOption" code="${esc(o.code)}" value="${o.score ?? 0}" label="${esc(o.texts[lang] ?? '')}"${o._extraXml ? `>${o._extraXml}</option>` : '/>'}`
-    ).join('\n');
+    const opts = tmpl.options.map((o) => {
+      const body = o.imageFile !== undefined
+        ? `<option xsi:type="questionnaire:ImageOption" code="${esc(o.code)}" value="${o.score ?? 0}" imageFile="${esc(o.imageFile)}"`
+        : `<option xsi:type="questionnaire:TextOption" code="${esc(o.code)}" value="${o.score ?? 0}" label="${esc(o.texts[lang] ?? '')}"`;
+      return `      ${body}${o._extraXml ? `>${o._extraXml}</option>` : '/>'}`;
+    }).join('\n');
+    const labels = (tmpl.valueLabels ?? []).map((v) => `\n      ${serializeValueLabel(v, lang)}`).join('');
 
     // Determine widget xsi:type — prefer stored widgetType, else infer from options
     const widgetShortName = tmpl.widgetType ?? 'Radiobutton';
@@ -327,7 +352,7 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
     const nameAttr = tmpl.name !== undefined && tmpl.name !== tmpl.code ? ` name="${esc(tmpl.name)}"` : '';
     return `    <responseTemplate ${questionsAttr}code="${esc(tmpl.code)}"${nameAttr}>
       <widget xsi:type="questionnaire:${widgetShortName}"${widgetAttrs}/>
-${opts}${tmpl._extraXml ? `\n      ${tmpl._extraXml}` : ''}
+${opts}${labels}${tmpl._extraXml ? `\n      ${tmpl._extraXml}` : ''}
     </responseTemplate>`;
   }).join('\n');
 
@@ -375,6 +400,13 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   if (q.type === 'audioVideo') {
     const fileAttr = q.mediaFile ? ` audioVideoFile="${esc(q.mediaFile)}"` : '';
     return closeEl(`${indent}<contains xsi:type="questionnaire:AudioVideo" code="${esc(q.code)}"${fileAttr}`);
+  }
+
+  if (q.type === 'attachment') {
+    const ft = q.fileType ? ` fileType="${q.fileType}"` : '';
+    const mf = q.maxFiles !== undefined ? ` maxFiles="${q.maxFiles}"` : '';
+    const ms = q.maxFileSize !== undefined ? ` maxFileSize="${q.maxFileSize}"` : '';
+    return closeEl(`${indent}<contains xsi:type="questionnaire:Attachment" code="${esc(q.code)}" text="${esc(q.texts[lang] ?? '')}"${mf}${ms}${ft}`);
   }
 
   if (q.type === 'country') {
@@ -484,7 +516,7 @@ function serializeDimensions(q: Questionnaire): string {
   const dims = q.dimensions ?? [];
   if (dims.length === 0) return '<dimensions/>';
   const inner = dims.map((d) =>
-    `    <dimension code="${esc(d.code)}" name="${esc(d.name)}" question="${esc(d.questionCodes.join(' '))}"/>`
+    `    <dimension code="${esc(d.code)}"${d._noName && !d.name ? '' : ` name="${esc(d.name)}"`} question="${esc(d.questionCodes.join(' '))}"/>`
   ).join('\n');
   return `<dimensions>\n${inner}\n  </dimensions>`;
 }
@@ -524,98 +556,114 @@ ${sectionsXml}${raw.copyright ? `\n  ${raw.copyright}` : ''}
 function serializeInnerCalcExpression(
   calc: Calculation,
   questionnaireCode: string,
+  questionnaireFile = `${questionnaireCode}.questionnaire`,
 ): string {
   const { type, innerCalculations } = calc;
   const qRef = (code: string) =>
-    `../quiz/${esc(questionnaireCode)}.questionnaire#${esc(code)}`;
-
-  function questionValueEl(ic: InnerCalculation): string {
-    return `<elements xsi:type="questionnaire:Function" name="questionResponseValue">
-        <parameter name="question" type="Question">
+    `../quiz/${esc(questionnaireFile)}#${esc(code)}`;
+  const questionParam = (code: string) => `<parameter name="question" type="Question">
           <elements xsi:type="questionnaire:QuestionType">
-            <question href="${qRef(ic.questionCode ?? '')}"/>
+            <question href="${qRef(code)}"/>
           </elements>
-        </parameter>
+        </parameter>`;
+  const num = (v: number) => `<elements xsi:type="questionnaire:NumberBasicType" value="${v}"/>`;
+
+  /** Ett ledd: spørsmålsverdi, en annen beregning (CalculationType, som ekte pakker) eller et tall. */
+  function termEl(ic: InnerCalculation): string {
+    if (ic.constantValue !== undefined) return num(ic.constantValue);
+    if (ic.calculationCode) return `<elements xsi:type="questionnaire:CalculationType" name="${esc(ic.calculationCode)}"/>`;
+    return `<elements xsi:type="questionnaire:Function" name="questionResponseValue">
+        ${questionParam(ic.questionCode ?? '')}
       </elements>`;
   }
 
   function maybeMultiply(ic: InnerCalculation): string {
-    const base = questionValueEl(ic);
+    const base = termEl(ic);
     if (!ic.multiplier || ic.multiplier === 1) return base;
     return `<elements xsi:type="questionnaire:Operator" type="multiply">
         ${base}
-        <elements xsi:type="questionnaire:NumberBasicType" value="${ic.multiplier}"/>
+        ${num(ic.multiplier)}
       </elements>`;
   }
 
-  if (innerCalculations.length === 0) {
-    return `<calculationExpression xsi:type="questionnaire:NumberBasicType" value="0"/>`;
-  }
-
-  if (innerCalculations.length === 1) {
-    const single = maybeMultiply(innerCalculations[0]);
-    if (type === 'MEAN') {
-      return `<calculationExpression xsi:type="questionnaire:Operator" type="divide">
-      ${single}
-      <elements xsi:type="questionnaire:NumberBasicType" value="1"/>
-    </calculationExpression>`;
-    }
-    return `<calculationExpression xsi:type="questionnaire:Operator" type="plus">
-      ${single}
-    </calculationExpression>`;
-  }
-
-  const sumParts = innerCalculations.map(maybeMultiply).join('\n      ');
-  const sumExpr = `<elements xsi:type="questionnaire:Operator" type="plus">
-      ${sumParts}
-    </elements>`;
-
-  if (type === 'MEAN') {
-    return `<calculationExpression xsi:type="questionnaire:Operator" type="divide">
-      ${sumExpr}
-      <elements xsi:type="questionnaire:NumberBasicType" value="${innerCalculations.length}"/>
-    </calculationExpression>`;
-  }
-
-  if (type === 'COUNT') {
-    // numberOfResponsesInSection — approximated as count of answered questions
-    return `<calculationExpression xsi:type="questionnaire:Operator" type="plus">
-      ${innerCalculations.map((ic) =>
-        `<elements xsi:type="questionnaire:Function" name="answered">
-        <parameter name="question" type="Question">
-          <elements xsi:type="questionnaire:QuestionType">
-            <question href="${qRef(ic.questionCode ?? '')}"/>
+  /** Antall besvarte: if(answered(Q) = true, 1, 0) per spørsmål, slik ekte pakker teller. Andre ledd teller som 1. */
+  function countEl(ic: InnerCalculation): string {
+    if (!ic.questionCode) return num(1);
+    return `<elements xsi:type="questionnaire:Function" name="if">
+        <parameter name="if" type="Boolean">
+          <elements xsi:type="questionnaire:SimpleStatement" type="equal">
+            <elements xsi:type="questionnaire:Function" name="answered">
+              ${questionParam(ic.questionCode)}
+            </elements>
+            <elements xsi:type="questionnaire:BooleanBasicType" value="true"/>
           </elements>
         </parameter>
-      </elements>`
-      ).join('\n      ')}
-    </calculationExpression>`;
+        <parameter name="then" type="Expression">
+          ${num(1)}
+        </parameter>
+        <parameter name="else" type="Expression">
+          ${num(0)}
+        </parameter>
+      </elements>`;
   }
 
-  // SUM / CUSTOM
-  return `<calculationExpression xsi:type="questionnaire:Operator" type="plus">
-      ${sumParts}
-    </calculationExpression>`;
+  /** Uttrykket som ett <elements>-element (uten norm). */
+  function valueEl(): string {
+    if (innerCalculations.length === 0) return num(0);
+    if (type === 'COUNT') {
+      return `<elements xsi:type="questionnaire:Operator" type="plus">
+      ${innerCalculations.map(countEl).join('\n      ')}
+    </elements>`;
+    }
+    const sumExpr = `<elements xsi:type="questionnaire:Operator" type="plus">
+      ${innerCalculations.map(maybeMultiply).join('\n      ')}
+    </elements>`;
+    if (type === 'MEAN') {
+      return `<elements xsi:type="questionnaire:Operator" type="divide">
+      ${sumExpr}
+      ${num(innerCalculations.length)}
+    </elements>`;
+    }
+    // SUM / CUSTOM. Ett enkelt beregningsledd skrives direkte, som verdien til normLookup i ekte pakker.
+    if (innerCalculations.length === 1 && innerCalculations[0].calculationCode && !(innerCalculations[0].multiplier && innerCalculations[0].multiplier !== 1)) {
+      return termEl(innerCalculations[0]);
+    }
+    return sumExpr;
+  }
+
+  let expr = valueEl();
+  if (calc.normCode) {
+    // Norm slik ekte pakker bruker den: normLookup(norm, verdi). Calculation har ikke noe norm-attributt i modellen.
+    expr = `<elements xsi:type="questionnaire:Function" name="normLookup">
+      <parameter name="norm" type="Norm">
+        <elements xsi:type="questionnaire:NormType" name="${esc(calc.normCode)}"/>
+      </parameter>
+      <parameter name="value" type="Number">
+        ${expr}
+      </parameter>
+    </elements>`;
+  }
+  return expr.replace(/^<elements\b/, '<calculationExpression').replace(/<\/elements>$/, '</calculationExpression>');
 }
 
 /**
  * Referansen til kartleggingen som Checkware-serveren leser skjemakoden fra ved installasjon.
  * Mangler den, feiler installasjonen med «Assessment  not found» (tom kode).
  */
-export function calculationQuestionnaireRef(questionnaireCode: string): string {
-  return `<questionnaire href="../quiz/${esc(questionnaireCode)}.questionnaire#${esc(questionnaireCode)}"/>`;
+export function calculationQuestionnaireRef(questionnaireCode: string, questionnaireFile = `${questionnaireCode}.questionnaire`): string {
+  return `<questionnaire href="../quiz/${esc(questionnaireFile)}#${esc(questionnaireCode)}"/>`;
 }
 
-export function serializeCalculation(calc: Calculation, questionnaireCode: string): string {
+/** `questionnaireFile` er filnavnet kartleggingen har i pakken (standard: «KODE.questionnaire»). */
+export function serializeCalculation(calc: Calculation, questionnaireCode: string, questionnaireFile?: string): string {
   // Prefer the preserved raw expression for lossless round-trip.
   // Fall back to rebuilding from innerCalculations (e.g. newly created calculations).
-  const expr = calc._rawExpression ?? serializeInnerCalcExpression(calc, questionnaireCode);
-  const normAttr = calc.normCode ? ` norm="../norms/${esc(calc.normCode)}.norm"` : '';
+  const expr = calc._rawExpression ?? serializeInnerCalcExpression(calc, questionnaireCode, questionnaireFile);
   const assignedAttr = calc.assignedByVariable !== undefined ? ` assignedByVariable="${calc.assignedByVariable}"` : '';
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Calculation ${NS} code="${esc(calc.code)}" name="${esc(calc.name)}"${normAttr}${assignedAttr}>
+<questionnaire:Calculation ${NS} code="${esc(calc.code)}" name="${esc(calc.name)}"${assignedAttr}>
     ${expr}
-  ${calculationQuestionnaireRef(questionnaireCode)}
+  ${calculationQuestionnaireRef(questionnaireCode, questionnaireFile)}
   <application id="Studio" version="1" fileVersion="1"/>
 </questionnaire:Calculation>`;
 }
@@ -649,10 +697,10 @@ function serializeFlagExpression(flag: Flag): string {
  * Flagg i samme form som ekte store-pakker: kartleggingen som barnenode med «#kode».
  * Uten «#kode» feiler installasjonen med «flag without quest found!».
  */
-export function serializeFlag(flag: Flag, questionnaireCode: string): string {
+export function serializeFlag(flag: Flag, questionnaireCode: string, questionnaireFile?: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <questionnaire:Flag ${NS} code="${esc(flag.code)}" name="${esc(flag.name)}">
-  ${calculationQuestionnaireRef(questionnaireCode)}
+  ${calculationQuestionnaireRef(questionnaireCode, questionnaireFile)}
   <application id="Studio" version="1" fileVersion="1"/>
   ${serializeFlagExpression(flag)}
 </questionnaire:Flag>`;
@@ -700,13 +748,23 @@ export function serializeTranslation(
 ): string {
   const langStr = LANG_REVERSE[lang] ?? 'english';
   const lines: string[] = [];
+  // Som ekte pakker: originalText er teksten på hovedspråket, så oversetteren ser hva som er oversatt
+  const src = q.defaultLanguage;
+  // Var originalText i den importerte fila en annen (eldre) tekst, og er hovedspråkteksten ikke endret
+  // siden, skrives fila sin originalText tilbake.
+  const kept = q._extraTranslations?.[lang]?.originalTexts ?? {};
+  const orig = (text: string | undefined, code: string, entity: string, property: string) => {
+    const k = kept[`${code}|${entity}|${property}`];
+    const value = k && k.source === (text ?? '') ? k.original : text;
+    return value ? ` originalText="${esc(value)}"` : '';
+  };
 
   // Questionnaire name + description
   if (q.name[lang]) {
-    lines.push(`  <translation code="${esc(questionnaireCode)}" entity="Questionnaire" property="name" translatedText="${esc(q.name[lang])}"/>`);
+    lines.push(`  <translation code="${esc(questionnaireCode)}" entity="Questionnaire" property="name"${orig(q.name[src], questionnaireCode, 'Questionnaire', 'name')} translatedText="${esc(q.name[lang])}"/>`);
   }
   if (q.description?.[lang]) {
-    lines.push(`  <translation code="${esc(questionnaireCode)}" entity="Questionnaire" property="description" translatedText="${esc(q.description[lang])}"/>`);
+    lines.push(`  <translation code="${esc(questionnaireCode)}" entity="Questionnaire" property="description"${orig(q.description?.[src], questionnaireCode, 'Questionnaire', 'description')} translatedText="${esc(q.description[lang])}"/>`);
   }
 
   // Section titles
@@ -726,40 +784,56 @@ export function serializeTranslation(
     const secCode = sec.code ?? sec.id;
     if (titleStr && secCode) {
       // Overskriften vises fra Text-elementet; Section/description beholdes for eldre lesere.
-      if (!sec.titleFromDescription) lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content" translatedText="${esc(titleStr)}"/>`);
-      lines.push(`  <translation code="${esc(secCode)}" entity="Section" property="description" translatedText="${esc(titleStr)}"/>`);
+      if (!sec.titleFromDescription) lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content"${orig(sec.titles[src], sectionTitleCode(secCode), 'Text', 'content')} translatedText="${esc(titleStr)}"/>`);
+      lines.push(`  <translation code="${esc(secCode)}" entity="Section" property="description"${orig(sec.titles[src], secCode, 'Section', 'description')} translatedText="${esc(titleStr)}"/>`);
     }
   }
 
   // All questions (flat)
   for (const q2 of flattenAllQuestions(q.sections)) {
     // Bilde/lyd har ingen oversettbar tekst i modellen
-    if (q2.type !== 'image' && q2.type !== 'audioVideo' && q2.texts[lang]) {
+    // Vedlegg (Attachment@text) har ingen oversettelser i ekte pakker
+    if (q2.type !== 'image' && q2.type !== 'audioVideo' && q2.type !== 'attachment' && q2.texts[lang]) {
       const entity = q2.type === 'text' ? 'Text' : 'Question';
       const prop = q2.type === 'text' ? 'content' : 'question';
-      lines.push(`  <translation code="${esc(q2.code)}" entity="${entity}" property="${prop}" translatedText="${esc(q2.texts[lang])}"/>`);
+      lines.push(`  <translation code="${esc(q2.code)}" entity="${entity}" property="${prop}"${orig(q2.texts[src], q2.code, entity, prop)} translatedText="${esc(q2.texts[lang])}"/>`);
     }
     // Help text
     const helpText = q2.helpTexts?.[lang];
     if (helpText) {
-      lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="helpText" translatedText="${esc(helpText)}"/>`);
+      lines.push(`  <translation code="${esc(q2.code)}" entity="Question" property="helpText"${orig(q2.helpTexts?.[src], q2.code, 'Question', 'helpText')} translatedText="${esc(helpText)}"/>`);
     }
   }
 
   // Svaralternativer: både delte svarmaler og alternativer lagt direkte på spørsmålet
   const seenOptions = new Set<string>();
   const pushOption = (opt: TextOption) => {
-    if (!opt.texts?.[lang] || seenOptions.has(opt.code)) return;
+    // ImageOption har ingen label i modellen, så den har ingenting å oversette
+    if (opt.imageFile !== undefined || !opt.texts?.[lang] || seenOptions.has(opt.code)) return;
     seenOptions.add(opt.code);
-    lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label" translatedText="${esc(opt.texts[lang])}"/>`);
+    lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label"${orig(opt.texts[src], opt.code, 'TextOption', 'label')} translatedText="${esc(opt.texts[lang])}"/>`);
   };
   for (const tmpl of q.responseTemplates?.templates ?? []) tmpl.options.forEach(pushOption);
   for (const q2 of flattenAllQuestions(q.sections)) {
     if ('options' in q2 && q2.options) q2.options.forEach(pushOption);
   }
 
+  // Tekster ved verdier på skalaer (endetekster på glidebrytere): TextValueLabel/label
+  const seenLabels = new Set<string>();
+  const pushLabel = (v: ValueLabel) => {
+    if (v.imageFile !== undefined || !v.texts?.[lang] || seenLabels.has(v.code)) return;
+    seenLabels.add(v.code);
+    lines.push(`  <translation code="${esc(v.code)}" entity="TextValueLabel" property="label"${orig(v.texts[src], v.code, 'TextValueLabel', 'label')} translatedText="${esc(v.texts[lang])}"/>`);
+  };
+  for (const q2 of flattenAllQuestions(q.sections)) if (q2.type === 'slider') (q2.valueLabels ?? []).forEach(pushLabel);
+  for (const tmpl of q.responseTemplates?.templates ?? []) (tmpl.valueLabels ?? []).forEach(pushLabel);
+
+  const extra = q._extraTranslations?.[lang];
+  for (const x of extra?.xml ?? []) lines.push(`  ${x}`);
+  const qName = extra?.questionnaireName ?? questionnaireCode;
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Translations ${NS} language="${langStr}" questionnaireName="${esc(questionnaireCode)}">
+<questionnaire:Translations ${NS} language="${langStr}" questionnaireName="${esc(qName)}">
   <application id="Studio" version="1" fileVersion="1"/>
 ${lines.join('\n')}
 </questionnaire:Translations>`;
