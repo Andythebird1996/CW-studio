@@ -34,7 +34,8 @@ import {
   X,
 } from 'lucide-react';
 import { generateCodes } from '../../services/generate-codes';
-import { validateQuestionnaire, type ValidationIssue } from '../../services/validate-questionnaire';
+import { validateQuestionnaire, matrixProblemMessage, type ValidationIssue } from '../../services/validate-questionnaire';
+import { matrixProblems, matrixProblemIsError } from '../../services/matrix';
 import { ImportTextDialog } from '../dialogs/ImportTextDialog';
 import type {
   Questionnaire,
@@ -1267,6 +1268,21 @@ function SectionEditor({
           <span className="text-xs text-cw-gray-text">{t('newPage', uiLang)}</span>
         </label>
 
+        <label
+          className="flex items-center gap-1 cursor-pointer shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          title={t('matrixToggleHint', uiLang)}
+          data-testid="section-matrix-toggle"
+        >
+          <input
+            type="checkbox"
+            checked={section.matrix ?? false}
+            onChange={(e) => onChange({ ...section, matrix: e.target.checked ? true : section.matrix === undefined ? undefined : false })}
+            className="accent-cw-blue"
+          />
+          <span className="text-xs text-cw-gray-text">{t('matrixToggle', uiLang)}</span>
+        </label>
+
         <span className="text-xs text-cw-gray-text tabular-nums">
           {countAllQuestions(section)} {t('questionsQ', uiLang)}
         </span>
@@ -1303,6 +1319,18 @@ function SectionEditor({
       {/* Body: questions + sub-sections */}
       {!collapsed && (
         <div className="p-3">
+          {section.matrix && matrixProblems(section, lang).length > 0 && (
+            <ul
+              className="mb-2 rounded border border-cw-orange/40 bg-cw-orange-soft px-3 py-2 text-xs text-cw-ink list-disc list-inside"
+              data-testid="matrix-problems"
+            >
+              {matrixProblems(section, lang).map((p, i) => (
+                <li key={i} className={matrixProblemIsError(p) ? 'text-cw-negative' : undefined}>
+                  {matrixProblemMessage(p, uiLang)}
+                </li>
+              ))}
+            </ul>
+          )}
           {/* Direct questions */}
           {section.questions.length > 0 && (
             <DndContext

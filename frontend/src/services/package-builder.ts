@@ -22,10 +22,21 @@ export interface ManifestFile {
   code: string;
 }
 
+/** Pakkeversjonen i store: manifestets, ellers kartleggingens. */
+export function packageVersion(q: Questionnaire, pm?: PackageMetadata): string {
+  return pm?.version ?? q.version;
+}
+
+export function packageRelease(q: Questionnaire, pm?: PackageMetadata): string {
+  return pm?.release ?? q.release ?? '0';
+}
+
 function manifestXml(q: Questionnaire, files: ManifestFile[], pm?: PackageMetadata): string {
   const lang = q.defaultLanguage;
   const code = pm?.code || q.code;
-  const name = q.name[lang] ?? code;
+  const name = pm?.name ?? q.name[lang] ?? code;
+  const version = packageVersion(q, pm);
+  const release = packageRelease(q, pm);
   const description = pm?.description ?? '';
   const isPublic = pm?.isPublic ?? false;
   const requiredSkills = pm?.requiredSkills ?? '';
@@ -52,7 +63,7 @@ function manifestXml(q: Questionnaire, files: ManifestFile[], pm?: PackageMetada
   });
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<questionnaire:Manifest xmlns:questionnaire="http://questionnaire/1.0" code="${esc(code)}" description="${esc(description)}" public="${isPublic}" requiredSkills="${esc(requiredSkills)}" version="${esc(q.version)}" release="${esc(q.release ?? '0')}" name="${esc(name)}">
+<questionnaire:Manifest xmlns:questionnaire="http://questionnaire/1.0" code="${esc(code)}" description="${esc(description)}" public="${isPublic}" requiredSkills="${esc(requiredSkills)}" version="${esc(version)}" release="${esc(release)}" name="${esc(name)}">
   <content>
 ${folderXml.join('\n')}
   </content>
@@ -222,6 +233,12 @@ export async function buildPackageZip(
     extension: 'questionnaire',
     code: q.code,
   });
+  // Andre kartlegginger i pakken skrives tilbake uendret (Studio redigerer bare den første)
+  for (const extra of packageMetadata?.extraQuestionnaires ?? []) {
+    zip.file(`quiz/${extra.fileName}`, extra.content);
+    const extraCode = /<questionnaire:Questionnaire\b[^>]*?\scode="([^"]*)"/.exec(extra.content)?.[1] ?? extra.fileName.replace(/\.questionnaire$/, '');
+    manifestFiles.push({ fileName: extra.fileName, path: 'quiz', extension: 'questionnaire', code: extraCode });
+  }
 
   // ── Calculations ───────────────────────────────────────────────────────────
   for (const calc of q.calculations?.calculations ?? []) {
@@ -297,7 +314,7 @@ export async function buildPackageZip(
 
   return {
     base64,
-    fileName: `${q.code}_v${q.version}.${q.release ?? '0'}.zip`,
+    fileName: `${packageMetadata?.code || q.code}_v${packageVersion(q, packageMetadata)}.${packageRelease(q, packageMetadata)}.zip`,
     sizeBytes: buf.length,
     files: manifestFiles,
     calcsMissingQuestionnaireRef: findCalcsMissingQuestionnaireRef(calcXml, q.code),

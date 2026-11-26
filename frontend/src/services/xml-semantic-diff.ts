@@ -3,7 +3,8 @@
  * Rekkefølgen på attributter spiller ingen rolle, og barn matches på kode/entity/property der de finnes.
  * Stiene er generiske (elementnavn og xsi:type, uten indekser), slik at like forskjeller kan telles på tvers av pakker.
  */
-export type XmlDiffKind = 'lost' | 'added' | 'changed';
+/** 'order': spørsmål/seksjoner (contains) står i annen rekkefølge enn i originalen */
+export type XmlDiffKind = 'lost' | 'added' | 'changed' | 'order';
 
 export interface XmlDiff {
   kind: XmlDiffKind;
@@ -17,6 +18,13 @@ export interface XmlDiff {
 
 const IGNORED_ATTRS = new Set(['xmi:version', 'xmlns', 'xsi:schemaLocation']);
 const KEY_ATTRS = ['code', 'entity', 'property', 'language', 'key', 'id', 'fileName'];
+/** Referanselister der rekkefølgen ikke betyr noe (responseTemplate@questions) */
+const SET_ATTRS = new Set(['questions']);
+
+function sameSet(a: string, b: string): boolean {
+  const norm = (s: string) => s.split(/\s+/).filter(Boolean).sort().join(' ');
+  return norm(a) === norm(b);
+}
 
 function signature(el: Element): string {
   const type = el.getAttribute('xsi:type');
@@ -65,7 +73,7 @@ function diffElements(a: Element, b: Element, path: string, out: XmlDiff[]): voi
   const ba = attrsOf(b);
   for (const [k, v] of aa) {
     if (!ba.has(k)) out.push({ kind: 'lost', path, attr: k, from: v });
-    else if (!sameValue(v, ba.get(k) ?? '')) out.push({ kind: 'changed', path, attr: k, from: v, to: ba.get(k) });
+    else if (!sameValue(v, ba.get(k) ?? '') && !(SET_ATTRS.has(k) && sameSet(v, ba.get(k) ?? ''))) out.push({ kind: 'changed', path, attr: k, from: v, to: ba.get(k) });
   }
   for (const [k, v] of ba) if (!aa.has(k)) out.push({ kind: 'added', path, attr: k, to: v });
 
@@ -75,6 +83,20 @@ function diffElements(a: Element, b: Element, path: string, out: XmlDiff[]): voi
     if (!bt) out.push({ kind: 'lost', path, attr: '#text', from: at });
     else if (!at) out.push({ kind: 'added', path, attr: '#text', to: bt });
     else if (!sameValue(at, bt)) out.push({ kind: 'changed', path, attr: '#text', from: at, to: bt });
+  }
+
+  // Rekkefølgen på contains-barn betyr noe (det er rekkefølgen i skjemaet); attributter og andre barn ikke
+  const containsKeys = (el: Element) =>
+    childElements(el).filter((c) => c.localName === 'contains').map((c) => childKey(c)).filter((k): k is string => !!k);
+  const ak = containsKeys(a);
+  const bk = containsKeys(b);
+  const bSet = new Set(bk);
+  const aSet = new Set(ak);
+  const aCommon = ak.filter((k) => bSet.has(k));
+  const bCommon = bk.filter((k) => aSet.has(k));
+  if (aCommon.join('\n') !== bCommon.join('\n')) {
+    const i = aCommon.findIndex((k, j) => k !== bCommon[j]);
+    out.push({ kind: 'order', path, attr: 'contains', from: aCommon[i], to: bCommon[i] });
   }
 
   // Barn grupperes på signatur; innen gruppen matches de på nøkkel, ellers på plass

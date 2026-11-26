@@ -30,19 +30,28 @@ export interface SimpleStatement {
   boolValue?: boolean;
 }
 
+/** Uttrykket slik det sto i fila, og fingeravtrykk av det Studio leste ut av det (se expression-raw.ts) */
+export interface RawExpression {
+  xml: string;
+  fingerprint: string;
+}
+
 export interface HideExpression {
   statements: SimpleStatement[];
   logic: 'AND' | 'OR';
+  _raw?: RawExpression;
 }
 
 export interface ShowExpression {
   statements: SimpleStatement[];
   logic: 'AND' | 'OR';
+  _raw?: RawExpression;
 }
 
 export interface ContinueIfExpression {
   statements: SimpleStatement[];
   logic: 'AND' | 'OR';
+  _raw?: RawExpression;
 }
 
 // ─── Options / Answer alternatives ────────────────────────────────────────
@@ -52,6 +61,8 @@ export interface TextOption {
   score?: number;
   reverseValue?: boolean;
   texts: Record<LanguageType, string>; // language → text
+  /** Barneelementer fra fila (f.eks. show på alternativet), skrives tilbake uendret */
+  _extraXml?: string;
 }
 
 
@@ -74,6 +85,8 @@ export interface ResponseTemplate {
   widgetType?: string;
   /** Raw widget XML attributes for round-trip fidelity, e.g. { min: '0', max: '100', decimals: '0' } */
   widgetParams?: Record<string, string>;
+  /** Andre barneelementer i malen (f.eks. valueLabel), skrives tilbake uendret */
+  _extraXml?: string;
 }
 
 export interface ResponseTemplates {
@@ -81,6 +94,13 @@ export interface ResponseTemplates {
 }
 
 // ─── Question types ───────────────────────────────────────────────────────
+
+/** Layout/LayoutData fra modellen (f.eks. GridLayout, GridData@horizontalSpan) – bevares uendret ved import/eksport. */
+export interface RawLayout {
+  /** xsi:type, f.eks. 'questionnaire:GridData' */
+  type: string;
+  attrs?: Record<string, string>;
+}
 
 interface BaseQuestion {
   id: string;
@@ -92,6 +112,14 @@ interface BaseQuestion {
   showExpressions?: ShowExpression[];
   continueIfExpressions?: ContinueIfExpression[];
   labelPosition?: LabelPosition;
+  /** Element.layoutData (f.eks. GridData med horizontalSpan) */
+  layoutData?: RawLayout;
+  /**
+   * Attributter og barneelementer fra fila som Studio ikke redigerer (f.eks. defaultOption,
+   * defaultResponseValue, textExpression). Skrives tilbake uendret.
+   */
+  _extraAttrs?: Record<string, string>;
+  _extraXml?: string;
   /** Element alignment within the form layout */
   align?: ElementAlignment;
   /** Question answer is optional (not counted toward mandatory completion) */
@@ -128,12 +156,16 @@ export interface ComboboxQuestion extends BaseQuestion {
 
 export interface StringInputQuestion extends BaseQuestion {
   type: 'stringInput';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   size: StringInputSize;
   multiline?: boolean;
 }
 
 export interface NumericInputQuestion extends BaseQuestion {
   type: 'numericInput';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   min?: number;
   max?: number;
   decimals?: number;
@@ -142,6 +174,8 @@ export interface NumericInputQuestion extends BaseQuestion {
 
 export interface DateInputQuestion extends BaseQuestion {
   type: 'dateInput';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   includeTime?: boolean;
   /** Årsgrenser (DateInput i questionnaire.ecore). Relativ = i forhold til inneværende år, f.eks. -120 / 0. */
   minAbsoluteYear?: number;
@@ -152,6 +186,8 @@ export interface DateInputQuestion extends BaseQuestion {
 
 export interface SliderQuestion extends BaseQuestion {
   type: 'slider';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   min: number;
   max: number;
   step?: number;
@@ -241,6 +277,20 @@ export interface Section {
   startOn?: number;
   returnToTOC?: boolean;
   returnToElement?: string;
+  /**
+   * Tittelen kom fra Section@description i fila, ikke fra et overskriftselement. Da skrives den bare
+   * tilbake som description, slik at eksporten ikke legger til en synlig overskrift som ikke fantes.
+   */
+  titleFromDescription?: boolean;
+  /** Container.layout (f.eks. GridLayout) */
+  layout?: RawLayout;
+  /** Element.layoutData når seksjonen ligger inne i en annen seksjon */
+  layoutData?: RawLayout;
+  /**
+   * Rekkefølgen på spørsmål og underseksjoner slik de lå i fila ('q:KODE' / 's:KODE').
+   * Uten denne skrives spørsmålene først og underseksjonene etter.
+   */
+  childOrder?: string[];
   /** Bildefil i media/ som vises i seksjonen (EMF Container.backgroundImage) */
   backgroundImage?: string;
   backgroundRepeat?: string;
@@ -384,6 +434,18 @@ export interface PackageMetadata {
   description?: string;
   requiredSkills?: string;
   isPublic: boolean;
+  /**
+   * Pakkens navn, versjon og utgivelse fra manifestet. Store bruker disse, og de kan være ulike
+   * kartleggingens egne (f.eks. pakke 3.2 med kartlegging versjon 1). Mangler de, brukes kartleggingens.
+   */
+  name?: string;
+  version?: string;
+  release?: string;
+  /**
+   * Andre kartlegginger i samme pakke (f.eks. statuslys-pakker med én kartlegging per farge).
+   * Studio redigerer bare den første; disse skrives tilbake uendret ved eksport og publisering.
+   */
+  extraQuestionnaires?: Array<{ fileName: string; content: string }>;
 }
 
 // ─── Media file ────────────────────────────────────────────────────────────

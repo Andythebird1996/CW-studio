@@ -65,7 +65,11 @@ export function importPackageFiles(files: PackageFileInput[]): ImportedPackage {
   for (const tf of byExt('translation')) questionnaire = applyTranslationFile(questionnaire, tf.content);
 
   const manifestFile = byExt('manifest')[0];
-  const packageMetadata = manifestFile ? (parseManifestFile(manifestFile.content) ?? undefined) : undefined;
+  const manifest = manifestFile ? (parseManifestFile(manifestFile.content) ?? undefined) : undefined;
+  const extraQuestionnaires = byExt('questionnaire').slice(1).map((f) => ({ fileName: f.fileName, content: f.content }));
+  const packageMetadata: PackageMetadata | undefined = extraQuestionnaires.length > 0
+    ? { ...(manifest ?? { code: questionnaire.code, isPublic: false }), extraQuestionnaires }
+    : manifest;
 
   const rapFiles: Record<string, string> = {};
   for (const r of byExt('rap')) rapFiles[r.fileName] = r.content;

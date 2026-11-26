@@ -16,7 +16,7 @@ import { JPEG_BASE64, MP3_BASE64, makePdf, makePng, mediaFile, toBase64 } from '
 
 // ── Typer ────────────────────────────────────────────────────────────────────
 
-export type TestArea = 'sporsmal' | 'beregning' | 'rapport' | 'media' | 'oversettelse' | 'flyt';
+export type TestArea = 'sporsmal' | 'beregning' | 'rapport' | 'media' | 'oversettelse' | 'flyt' | 'matrise';
 
 /** Svar på ett spørsmål: alternativkode(r) for valgspørsmål, ellers rå verdi (tekst/tall/dato). */
 export type TestAnswer = string | string[];
@@ -520,11 +520,101 @@ function flyt(code: string): TestPackageDef {
   };
 }
 
+// ── 7. Matrise ───────────────────────────────────────────────────────────────
+
+function matrise(code: string): TestPackageDef {
+  const often = ['Aldri', 'Sjelden', 'Ofte', 'Alltid'];
+  const much = ['Ikke', 'Litt', 'Mye'];
+  const tplOptions = (prefix: string, labels: string[]): TextOption[] =>
+    labels.map((label, i) => ({ code: `${prefix}_${i}`, score: i, texts: L(label) }));
+  const m1Options = tplOptions('M1', often);
+  const m2Options = tplOptions('M2', much);
+  const row = (c: string, text: string, tpl: string, options: TextOption[]): Question =>
+    ({ id: c.toLowerCase(), code: c, type: 'radiobutton', required: true, texts: L(text), responseTemplateCode: tpl, options }) as Question;
+  const m1 = ['M1A', 'M1B', 'M1C', 'M1D'];
+  const m2 = ['M2A', 'M2B', 'M2C'];
+  const q = baseQuestionnaire(code, 'andreastest matrise (syntetisk testpakke)', undefined, [
+    {
+      id: 's1', code: 'S1', type: 'NORMAL', titles: L('Matriser'), questions: [],
+      subSections: [
+        {
+          // Matrise 1: bare radioknapper (4 alternativer). Tittelen er en beskrivelse, ingen overskrift.
+          id: 'm1', code: 'M1', type: 'NORMAL', titles: L('Matrise 1'), titleFromDescription: true, matrix: true,
+          questions: m1.map((c, i) => row(c, `Påstand ${i + 1} i matrise 1`, 'M1', m1Options)),
+        },
+        {
+          // Matrise 2: tekst først, deretter spørsmålene (3 alternativer)
+          id: 'm2', code: 'M2', type: 'NORMAL', titles: L('Matrise 2'), titleFromDescription: true, matrix: true,
+          questions: [
+            { id: 'm2_intro', code: 'M2_INTRO', type: 'text', required: false, texts: L('Tenk på den siste uken.') } as Question,
+            ...m2.map((c, i) => row(c, `Påstand ${i + 1} i matrise 2`, 'M2', m2Options)),
+          ],
+        },
+      ],
+    },
+  ]);
+  q.responseTemplates = { templates: [
+    { code: 'M1', name: 'Hvor ofte', options: m1Options, widgetType: 'Radiobutton' },
+    { code: 'M2', name: 'Hvor mye', options: m2Options, widgetType: 'Radiobutton' },
+  ] };
+  q.calculations = { calculations: [
+    sumCalc('M1_SUM', 'Sum matrise 1', m1),
+    sumCalc('M2_SUM', 'Sum matrise 2', m2),
+    sumCalc('TOTAL', 'Total', [...m1, ...m2]),
+  ], norms: [] };
+  q.flags = [
+    { code: 'HOY_TOTAL', name: 'Total ≥ 12', type: 'WARNING', logic: 'AND', conditions: [{ calculationCode: 'TOTAL', operator: 'GTE', threshold: 12 }] },
+  ] as Flag[];
+  const body = `<h1>Matriser</h1>
+<p>M1_SUM=[CALC(M1_SUM)] M2_SUM=[CALC(M2_SUM)] TOTAL=[CALC(TOTAL)]</p>
+${ifPair('CALC(TOTAL)>=12', 'CALC(TOTAL)<12', 'HOY_TOTAL=JA', 'HOY_TOTAL=NEI')}`;
+  const lines = (a: number, b: number, flag: boolean) => [
+    `<p>M1_SUM=${a.toFixed(2)} M2_SUM=${b.toFixed(2)} TOTAL=${(a + b).toFixed(2)}</p>`,
+    `<p>HOY_TOTAL=${flag ? 'JA' : 'NEI'}</p>`,
+  ];
+  const set = (name: string, m1Idx: number[], m2Idx: number[], browser?: string[]): AnswerSet => {
+    const a = m1Idx.reduce((x, y) => x + y, 0);
+    const b = m2Idx.reduce((x, y) => x + y, 0);
+    const flag = a + b >= 12;
+    return {
+      name,
+      description: [...m1.map((c, i) => `${c}=${often[m1Idx[i]]}`), ...m2.map((c, i) => `${c}=${much[m2Idx[i]]}`)].join(', '),
+      answers: Object.fromEntries([...m1.map((c, i) => [c, `M1_${m1Idx[i]}`]), ...m2.map((c, i) => [c, `M2_${m2Idx[i]}`])]),
+      calculations: { M1_SUM: a, M2_SUM: b, TOTAL: a + b },
+      flags: { HOY_TOTAL: flag },
+      report: { NO: lines(a, b, flag) },
+      reportAbsent: { NO: [`HOY_TOTAL=${flag ? 'NEI' : 'JA'}`] },
+      ...(browser && { browser }),
+    };
+  };
+  return {
+    area: 'matrise', code, name: q.name.NO, questionnaire: q,
+    description: 'To matriser: radioknapper med 4 alternativer (felles svarmal M1), og en tekst først fulgt av spørsmål med 3 alternativer (felles svarmal M2). Summer per matrise, total og ett flagg.',
+    reports: { [`${code}-rapport`]: rap('NO', body) },
+    media: [],
+    answerSets: [
+      set('hoy', [3, 3, 2, 2], [2, 1, 2], ['Total 15 gir HOY_TOTAL=JA']),
+      set('grense', [3, 2, 1, 1], [2, 2, 1], ['Total 12 (akkurat grensen) gir HOY_TOTAL=JA']),
+      set('lav', [0, 1, 0, 0], [0, 0, 1]),
+    ],
+    browserChecks: [
+      'Matrise 1 vises som én tabell: 4 rader (M1A–M1D) og 4 kolonner (Aldri, Sjelden, Ofte, Alltid), én radioknapp per celle',
+      'Matrise 2: teksten «Tenk på den siste uken.» vises over tabellen, ikke som en rad; tabellen har 3 rader (M2A–M2C) og 3 kolonner (Ikke, Litt, Mye)',
+      'Overskriftene «Matrise 1»/«Matrise 2» vises ikke (de er bare seksjonsbeskrivelser); bare «Matriser» vises som sideoverskrift',
+      'Å velge en celle velger bare det alternativet i den raden; svarene lagres med alternativkodene M1_0–M1_3 og M2_0–M2_2',
+    ],
+    notes: [
+      'Begge matrisene er nestede seksjoner med matrix="true", slik ekte pakker er bygget.',
+      'Spørsmålene i hver matrise deler én svarmal (questions-attributtet lister alle radene).',
+    ],
+  };
+}
+
 // ── Suite ────────────────────────────────────────────────────────────────────
 
-export const TEST_AREAS: TestArea[] = ['sporsmal', 'beregning', 'rapport', 'media', 'oversettelse', 'flyt'];
+export const TEST_AREAS: TestArea[] = ['sporsmal', 'beregning', 'rapport', 'media', 'oversettelse', 'flyt', 'matrise'];
 
-const BUILDERS: Record<TestArea, (code: string) => TestPackageDef> = { sporsmal, beregning, rapport, media, oversettelse, flyt };
+const BUILDERS: Record<TestArea, (code: string) => TestPackageDef> = { sporsmal, beregning, rapport, media, oversettelse, flyt, matrise };
 
 export function testPackageCode(area: TestArea, date: string): string {
   return `andreastest-${area}-${date}`;

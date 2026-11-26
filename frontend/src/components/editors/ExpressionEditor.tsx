@@ -5,6 +5,7 @@
 import { PlusCircle, Trash2 } from 'lucide-react';
 import type { ShowExpression, HideExpression, SimpleStatement, Question } from '../../types/questionnaire';
 import { t, useUILang } from '../../i18n';
+import { expressionFingerprint, isCompoundXml } from '../../services/expression-raw';
 
 type AnyExpression = ShowExpression | HideExpression;
 
@@ -135,6 +136,10 @@ export function ExpressionEditor({ label, expression, questions, onChange }: Pro
   }
 
   const hasExpr = expression && expression.statements.length > 0;
+  // Uttrykk fra fila som er mer enn en flat OG/ELLER-liste: beholdes uendret til det redigeres her
+  const compound = !!expression?._raw
+    && expressionFingerprint(expression) === expression._raw.fingerprint
+    && isCompoundXml(expression._raw.xml);
 
   return (
     <div className="border border-cw-border rounded p-3 bg-cw-gray">
@@ -149,6 +154,12 @@ export function ExpressionEditor({ label, expression, questions, onChange }: Pro
           </button>
         )}
       </div>
+
+      {compound && (
+        <p className="text-xs text-cw-orange bg-cw-orange-soft border border-cw-orange/40 rounded px-2 py-1 mb-2" data-testid="compound-expression">
+          {t('compoundExpressionNote', uiLang)}
+        </p>
+      )}
 
       <div className="space-y-2">
         {expression?.statements.map((stmt, i) => (

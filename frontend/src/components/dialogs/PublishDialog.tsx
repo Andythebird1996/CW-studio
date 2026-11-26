@@ -2,7 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, Upload, XCircle } from 'lucide-react';
 import type { Questionnaire, MediaFile, PackageMetadata } from '../../types/questionnaire';
-import { buildPackageZip } from '../../services/package-builder';
+import { buildPackageZip, packageRelease, packageVersion } from '../../services/package-builder';
 import { importPackageFiles } from '../../services/package-import';
 import { compareVersions, findPreviousVersion, type VersionChange } from '../../services/version-diff';
 import { storeApi, type PackageSummary } from '../../services/store-api';
@@ -26,7 +26,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const { settings } = useSettingsStore();
   const lang = questionnaire.defaultLanguage;
 
-  const [release, setRelease] = useState(questionnaire.release ?? '0');
+  const [release, setRelease] = useState(packageRelease(questionnaire, packageMetadata));
   const [isPublic, setIsPublic] = useState(false);
   const [step, setStep] = useState<Step>('form');
   const [denials, setDenials] = useState<string[]>([]);
@@ -42,11 +42,17 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const [loadingPackages, setLoadingPackages] = useState(false);
   // Samme kode og synlighet i SOAP-identifier og manifest
   const pkgCode = packageMetadata?.code || questionnaire.code;
-  const pkgMeta = { ...packageMetadata, code: pkgCode, isPublic };
+  // Versjonen i store er pakkens (manifestet), som kan være ulik kartleggingens
+  const pkgVersion = packageVersion(questionnaire, packageMetadata);
+  const pkgName = packageMetadata?.name || questionnaire.name[lang] || questionnaire.code;
+  const pkgMeta = { ...packageMetadata, code: pkgCode, isPublic, release };
+  /** Importerte pakker har egen utgivelse i manifestet; kartleggingens release endres da ikke. */
+  const withRelease = (): Questionnaire =>
+    (packageMetadata?.release !== undefined ? questionnaire : { ...questionnaire, release });
 
   useEffect(() => {
     if (!open) return;
-    setRelease(questionnaire.release ?? '0');
+    setRelease(packageRelease(questionnaire, packageMetadata));
     setStep('form');
     setDenials([]);
     setCalcWarnings([]);
@@ -64,11 +70,11 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const overlap = existingPackages.find(
     (p) =>
       p.code === pkgCode &&
-      String(p.version) === String(questionnaire.version) &&
+      String(p.version) === String(pkgVersion) &&
       String(p.release) === String(release),
   );
 
-  const previous = findPreviousVersion(existingPackages, pkgCode, String(questionnaire.version), String(release));
+  const previous = findPreviousVersion(existingPackages, pkgCode, String(pkgVersion), String(release));
   const previousLabel = previous ? `${previous.version}.${previous.release}` : '';
 
   /** Sammenligner med forrige versjon i store. Varsler bare – stopper aldri publiseringen. */
@@ -89,7 +95,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setStep('validating');
     setDenials([]);
     try {
-      const q = { ...questionnaire, release };
+      const q = withRelease();
       await checkPreviousVersion();
       const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
       setCalcWarnings(pkg.calcsMissingQuestionnaireRef);
@@ -104,8 +110,8 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
       }
       const result = await storeApi.validate(settings, {
         code: pkgCode,
-        name: q.name[lang] ?? q.code,
-        version: q.version,
+        name: pkgName,
+        version: pkgVersion,
         release,
         isPublic,
         base64Zip: pkg.base64,
@@ -128,7 +134,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   async function handlePublish() {
     setStep('publishing');
     try {
-      const q = { ...questionnaire, release };
+      const q = withRelease();
       const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
       if (pkg.unsupportedMedia.length > 0) {
         setMediaErrors(pkg.unsupportedMedia);
@@ -137,8 +143,8 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
       }
       const result = await storeApi.publish(settings, {
         code: pkgCode,
-        name: q.name[lang] ?? q.code,
-        version: q.version,
+        name: pkgName,
+        version: pkgVersion,
         release,
         isPublic,
         base64Zip: pkg.base64,
@@ -171,10 +177,19 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
 
           {/* Package info */}
           <div className="bg-cw-gray rounded p-3 mb-4 text-sm space-y-1">
-            <div><span className="text-cw-gray-text">{t('code', uiLang)}:</span> <span className="font-mono">{questionnaire.code}</span></div>
-            <div><span className="text-cw-gray-text">{t('name', uiLang)}:</span> {questionnaire.name[lang]}</div>
-            <div><span className="text-cw-gray-text">{t('version', uiLang)}:</span> {questionnaire.version}</div>
+            <div><span className="text-cw-gray-text">{t('code', uiLang)}:</span> <span className="font-mono">{pkgCode}</span></div>
+            <div><span className="text-cw-gray-text">{t('name', uiLang)}:</span> {pkgName}</div>
+            <div><span className="text-cw-gray-text">{t('version', uiLang)}:</span> {pkgVersion}</div>
           </div>
+
+          {(packageMetadata?.extraQuestionnaires?.length ?? 0) > 0 && (
+            <p className="text-xs text-cw-gray-text mb-4" data-testid="extra-questionnaires">
+              {tf('extraQuestionnairesNote', uiLang, {
+                n: packageMetadata?.extraQuestionnaires?.length ?? 0,
+                names: (packageMetadata?.extraQuestionnaires ?? []).map((e) => e.fileName).join(', '),
+              })}
+            </p>
+          )}
 
           {step === 'done' ? (
             <div className="text-center py-6">
@@ -213,7 +228,7 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
                 <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
                   <p className="text-xs text-cw-orange">
-                    {tf('versionExists', uiLang, { version: `${questionnaire.version}.${release}`, code: questionnaire.code })}
+                    {tf('versionExists', uiLang, { version: `${pkgVersion}.${release}`, code: pkgCode })}
                   </p>
                 </div>
               )}

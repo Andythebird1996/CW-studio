@@ -6,6 +6,7 @@
  * serialize function so package-builder can create individual files.
  */
 
+import { expressionFingerprint } from './expression-raw';
 import type {
   Questionnaire,
   Section,
@@ -21,6 +22,14 @@ import type {
   Norm,
   TextOption,
   StringInputSize,
+  RawLayout,
+  StringInputQuestion,
+  NumericInputQuestion,
+  DateInputQuestion,
+  SliderQuestion,
+  RadiobuttonQuestion,
+  CheckboxQuestion,
+  ComboboxQuestion,
 } from '../types/questionnaire';
 
 // ─── XML escape ────────────────────────────────────────────────────────────
@@ -69,6 +78,10 @@ function serializeStatement(stmt: SimpleStatement): string {
 }
 
 function serializeExpression(expr: ShowExpression | HideExpression, tag: string): string {
+  // Uendret siden import: skriv uttrykket nøyaktig som det sto (også sammensatte uttrykk)
+  if (expr?._raw && expr._raw.xml.startsWith(`<${tag}`) && expressionFingerprint(expr) === expr._raw.fingerprint) {
+    return expr._raw.xml;
+  }
   if (!expr || expr.statements.length === 0) return '';
   const inner = expr.statements.length === 1
     ? serializeStatement(expr.statements[0])
@@ -114,6 +127,112 @@ export function stringInputSizeAttr(size: StringInputSize | undefined, multiline
   if (size === 'XLARGE') return 'story';
   if (size === 'LARGE' || multiline) return 'multiline';
   return 'line';
+}
+
+type WidgetOnlyQuestion = StringInputQuestion | NumericInputQuestion | DateInputQuestion | SliderQuestion;
+
+export function isWidgetOnly(q: Question): q is WidgetOnlyQuestion {
+  return q.type === 'stringInput' || q.type === 'numericInput' || q.type === 'dateInput' || q.type === 'slider';
+}
+
+/** Widget-attributter for felt uten svaralternativer. Spørsmålets felter er fasiten. */
+export function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> {
+  const wp: Record<string, string> = {};
+  // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
+  // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
+  // som flyttall ("0.0"), DateInput addDate/addTime, NumericSlider med full attributtliste.
+  if (qq.type === 'stringInput') {
+    wp.size = stringInputSizeAttr(qq.size, qq.multiline);
+  } else if (qq.type === 'numericInput') {
+    if (qq.min !== undefined) wp.minValue = emfFloat(qq.min);
+    if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
+    wp.step = emfFloat(stepFromDecimals(qq.decimals));
+  } else if (qq.type === 'dateInput') {
+    // Uten årsgrenser gir portalen min/max="Invalid date" (parseInt(undefined)); ekte pakker skriver
+    // ingen grenser, så de skrives bare når de er satt.
+    if (qq.minAbsoluteYear !== undefined) wp.minAbsoluteYear = String(qq.minAbsoluteYear);
+    if (qq.maxAbsoluteYear !== undefined) wp.maxAbsoluteYear = String(qq.maxAbsoluteYear);
+    if (qq.minRelativeYear !== undefined) wp.minRelativeYear = String(qq.minRelativeYear);
+    if (qq.maxRelativeYear !== undefined) wp.maxRelativeYear = String(qq.maxRelativeYear);
+    wp.addTime = String(qq.includeTime === true);
+    wp.addDate = 'true';
+  } else if (qq.type === 'slider') {
+    const step = qq.step ?? 1;
+    wp.minValue = emfFloat(qq.min);
+    wp.maxValue = emfFloat(qq.max);
+    wp.step = emfFloat(step);
+    wp.labelStep = emfFloat(qq.labelStep ?? step);
+    wp.showEndLabels = String(qq.showEndLabels ?? true);
+    wp.showScaleLabels = String(qq.showScaleLabels ?? true);
+    wp.valuePosition = 'after';
+    wp.labelPosition = 'after';
+    wp.direction = qq.direction ?? 'horizontal';
+    if (qq.sliderLength !== undefined) wp.length = qq.sliderLength;
+    wp.displayValue = String(qq.displayValue ?? false);
+    wp.showTicks = String(qq.showTicks ?? false);
+    wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
+    wp.showClear = String(qq.showClear ?? true);
+    wp.hairline = String(qq.hairline ?? false);
+  }
+  return wp;
+}
+
+type TemplatedQuestion = WidgetOnlyQuestion | RadiobuttonQuestion | CheckboxQuestion | ComboboxQuestion;
+
+function isTemplated(q: Question): q is TemplatedQuestion {
+  return isWidgetOnly(q) || q.type === 'radiobutton' || q.type === 'checkbox' || q.type === 'combobox';
+}
+
+/**
+ * Hva et spørsmål i en matrise deler med de andre radene: en delt svarmal, eller like innstillinger /
+ * like svaralternativer. Spørsmål med samme nøkkel kan stå i samme matrise. null = ikke et svarfelt.
+ */
+export function matrixKey(q: Question): string | null {
+  if (!isTemplated(q)) return null;
+  if (q.responseTemplateCode) return `tpl:${q.responseTemplateCode}`;
+  if (isWidgetOnly(q)) return `auto:${q.type}|${JSON.stringify(widgetParamsFor(q))}`;
+  const opts = (q.options ?? []).map((o) => [o.code, o.score ?? null, o.texts]);
+  return `inline:${q.type}|${JSON.stringify(opts)}`;
+}
+
+/**
+ * Delte svarmaler ved eksport:
+ * - I en matrise deler spørsmål uten svarmal, men med like innstillinger/alternativer, malen til
+ *   det første av dem (portalen viser matrisen ut fra én felles mal).
+ * - Felt som deler svarmal (f.eks. én StringInput-mal for alle radene) beholder den delte malen så
+ *   lenge innstillingene er like. Har et spørsmål fått andre innstillinger i editoren, får det sin
+ *   egen mal i stedet for å endre de andre spørsmålene.
+ */
+function shareTemplates(q: Questionnaire): Questionnaire {
+  const claimed = new Map<string, string>();
+  const shareInMatrix = (questions: Question[]): Question[] => {
+    const first = new Map<string, string>();
+    return questions.map((qq) => {
+      const key = matrixKey(qq);
+      if (!key || !isTemplated(qq) || qq.responseTemplateCode) return qq;
+      const owner = first.get(key);
+      if (owner === undefined) {
+        first.set(key, qq.code);
+        return isWidgetOnly(qq) ? { ...qq, responseTemplateCode: qq.code } : qq;
+      }
+      return { ...qq, responseTemplateCode: owner };
+    });
+  };
+  const fix = (sections: Section[]): Section[] => sections.map((sec) => ({
+    ...sec,
+    questions: (sec.matrix ? shareInMatrix(sec.questions) : sec.questions).map((qq) => {
+      if (!isWidgetOnly(qq) || !qq.responseTemplateCode) return qq;
+      const key = `${qq.type}|${JSON.stringify(widgetParamsFor(qq))}`;
+      const prev = claimed.get(qq.responseTemplateCode);
+      if (prev === undefined) {
+        claimed.set(qq.responseTemplateCode, key);
+        return qq;
+      }
+      return prev === key ? qq : { ...qq, responseTemplateCode: undefined };
+    }),
+    subSections: sec.subSections ? fix(sec.subSections) : sec.subSections,
+  }));
+  return { ...q, sections: fix(q.sections) };
 }
 
 function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): string {
@@ -164,50 +283,19 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
     }
   }
   for (const qq of allQs) {
-    if (qq.type === 'stringInput' || qq.type === 'numericInput' || qq.type === 'dateInput' || qq.type === 'slider') {
-      const wp: Record<string, string> = {};
-      // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
-      // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
-      // som flyttall ("0.0"), DateInput addDate/addTime, NumericSlider med full attributtliste.
-      if (qq.type === 'stringInput') {
-        wp.size = stringInputSizeAttr(qq.size, qq.multiline);
-      } else if (qq.type === 'numericInput') {
-        if (qq.min !== undefined) wp.minValue = emfFloat(qq.min);
-        if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
-        wp.step = emfFloat(stepFromDecimals(qq.decimals));
-      } else if (qq.type === 'dateInput') {
-        // Uten årsgrenser gir portalen min/max="Invalid date" (parseInt(undefined)); ekte pakker skriver
-        // ingen grenser, så de skrives bare når de er satt.
-        if (qq.minAbsoluteYear !== undefined) wp.minAbsoluteYear = String(qq.minAbsoluteYear);
-        if (qq.maxAbsoluteYear !== undefined) wp.maxAbsoluteYear = String(qq.maxAbsoluteYear);
-        if (qq.minRelativeYear !== undefined) wp.minRelativeYear = String(qq.minRelativeYear);
-        if (qq.maxRelativeYear !== undefined) wp.maxRelativeYear = String(qq.maxRelativeYear);
-        wp.addTime = String(qq.includeTime === true);
-        wp.addDate = 'true';
-      } else if (qq.type === 'slider') {
-        const step = qq.step ?? 1;
-        wp.minValue = emfFloat(qq.min);
-        wp.maxValue = emfFloat(qq.max);
-        wp.step = emfFloat(step);
-        wp.labelStep = emfFloat(qq.labelStep ?? step);
-        wp.showEndLabels = String(qq.showEndLabels ?? true);
-        wp.showScaleLabels = String(qq.showScaleLabels ?? true);
-        wp.valuePosition = 'after';
-        wp.labelPosition = 'after';
-        wp.direction = qq.direction ?? 'horizontal';
-        if (qq.sliderLength) wp.length = qq.sliderLength;
-        wp.displayValue = String(qq.displayValue ?? false);
-        wp.showTicks = String(qq.showTicks ?? false);
-        wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
-        wp.showClear = String(qq.showClear ?? true);
-        wp.hairline = String(qq.hairline ?? false);
-      }
-      templateMap.set(qq.code, {
-        code: qq.code,
-        name: qq.code,
-        options: [],
+    if (isWidgetOnly(qq)) {
+      const code = qq.responseTemplateCode ?? qq.code;
+      const existing = templateMap.get(code);
+      // Eldre Slider-mal med svaralternativer som skala: Studio redigerer den ikke, så den skrives uendret.
+      if (existing?.widgetType === 'Slider' && qq.type === 'slider') continue;
+      const wp = widgetParamsFor(qq);
+      templateMap.set(code, {
+        code,
+        name: existing?.name ?? code,
+        options: existing?.options ?? [],
         widgetType: WIDGET_TYPE_MAP[qq.type] ?? qq.type,
         widgetParams: Object.keys(wp).length > 0 ? wp : undefined,
+        ...(existing?._extraXml && { _extraXml: existing._extraXml }),
       });
     }
   }
@@ -220,13 +308,13 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
       .filter((qq) =>
         (qq.type === 'radiobutton' || qq.type === 'checkbox' || qq.type === 'combobox' || qq.type === 'rank' ||
          qq.type === 'stringInput' || qq.type === 'numericInput' || qq.type === 'dateInput' || qq.type === 'slider') &&
-        (('responseTemplateCode' in qq && qq.responseTemplateCode === tmpl.code) || qq.code === tmpl.code),
+        ('responseTemplateCode' in qq && qq.responseTemplateCode ? qq.responseTemplateCode : qq.code) === tmpl.code,
       )
       .map((qq) => qq.code)
       .join(' ');
 
     const opts = tmpl.options.map((o) =>
-      `      <option xsi:type="questionnaire:TextOption" code="${esc(o.code)}" value="${o.score ?? 0}" label="${esc(o.texts[lang] ?? '')}"/>`
+      `      <option xsi:type="questionnaire:TextOption" code="${esc(o.code)}" value="${o.score ?? 0}" label="${esc(o.texts[lang] ?? '')}"${o._extraXml ? `>${o._extraXml}</option>` : '/>'}`
     ).join('\n');
 
     // Determine widget xsi:type — prefer stored widgetType, else infer from options
@@ -235,9 +323,11 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
       ? ' ' + Object.entries(tmpl.widgetParams).map(([k, v]) => `${k}="${esc(v)}"`).join(' ')
       : '';
 
-    return `    <responseTemplate questions="${esc(related)}" code="${esc(tmpl.code)}">
+    const questionsAttr = related ? `questions="${esc(related)}" ` : '';
+    const nameAttr = tmpl.name !== undefined && tmpl.name !== tmpl.code ? ` name="${esc(tmpl.name)}"` : '';
+    return `    <responseTemplate ${questionsAttr}code="${esc(tmpl.code)}"${nameAttr}>
       <widget xsi:type="questionnaire:${widgetShortName}"${widgetAttrs}/>
-${opts}
+${opts}${tmpl._extraXml ? `\n      ${tmpl._extraXml}` : ''}
     </responseTemplate>`;
   }).join('\n');
 
@@ -245,6 +335,12 @@ ${opts}
 }
 
 // ─── Sections & questions ──────────────────────────────────────────────────
+
+function serializeRawLayout(tag: 'layout' | 'layoutData', l: RawLayout | undefined): string {
+  if (!l) return '';
+  const attrs = Object.entries(l.attrs ?? {}).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
+  return `<${tag} xsi:type="${esc(l.type)}"${attrs}/>`;
+}
 
 function serializeContains(q: Question, lang: LanguageType, indent = '    '): string {
   const shows = (q.showExpressions ?? []).map((e) => serializeExpression(e, 'show')).join('');
@@ -254,8 +350,16 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const alignAttr = q.align ? ` align="${q.align.toLowerCase()}"` : ' align="left"';
   const labelPosAttr = q.labelPosition ? ` labelPosition="${q.labelPosition}"` : '';
 
-  // Elementer (Text, ImageElement, AudioVideo) kan også ha vis/skjul-betingelser som barn.
-  const closeEl = (open: string) => (shows || hides ? `${open}>${shows}${hides}</contains>` : `${open}/>`);
+  const layoutData = serializeRawLayout('layoutData', q.layoutData);
+  // Attributter og barn fra fila som Studio ikke redigerer (textExpression, defaultOption …)
+  const extraAttrs = Object.entries(q._extraAttrs ?? {}).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
+  const extraXml = q._extraXml ?? '';
+
+  // Elementer (Text, ImageElement, AudioVideo) kan også ha vis/skjul-betingelser og layoutData som barn.
+  const closeEl = (open: string) =>
+    (shows || hides || layoutData || extraXml
+      ? `${open}${extraAttrs}>${shows}${hides}${layoutData}${extraXml}</contains>`
+      : `${open}${extraAttrs}/>`);
 
   if (q.type === 'text') {
     const style = q.contentStyle ? ` contentStyle="${esc(q.contentStyle)}"` : ' contentStyle="normal"';
@@ -274,7 +378,7 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   }
 
   if (q.type === 'country') {
-    return `${indent}<contains xsi:type="widgets:CountryWidget" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}"${alignAttr}${labelPosAttr}/>`;
+    return closeEl(`${indent}<contains xsi:type="widgets:CountryWidget" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}"${alignAttr}${labelPosAttr}`);
   }
 
   const templateCode = 'responseTemplateCode' in q ? (q.responseTemplateCode ?? q.code) : q.code;
@@ -284,7 +388,7 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const helpText = q.helpTexts?.[lang] ? ` helpText="${esc(q.helpTexts[lang])}"` : '';
   const maxRankAttr = (q.type === 'rank' && q.maxRank !== undefined) ? ` maxRank="${q.maxRank}"` : '';
 
-  return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}>${shows}${hides}${continueIfs}</contains>`;
+  return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}${extraAttrs}>${shows}${hides}${continueIfs}${layoutData}${extraXml}</contains>`;
 }
 
 /**
@@ -297,6 +401,28 @@ export function sectionTitleCode(sectionCode: string): string {
 }
 
 export const SECTION_TITLE_STYLE = 'heading2';
+
+type SectionChild = { kind: 'q'; q: Question } | { kind: 's'; s: Section };
+
+/**
+ * Spørsmål og underseksjoner i rekkefølgen fra fila (childOrder). Plassene for spørsmål og for
+ * underseksjoner beholdes og fylles i rekkefølgen fra editoren; flere elementer enn plasser havner
+ * etter den siste plassen av samme slag.
+ */
+export function orderedChildren(section: Section): SectionChild[] {
+  const qs: SectionChild[] = section.questions.map((q) => ({ kind: 'q', q }));
+  const ss: SectionChild[] = (section.subSections ?? []).map((s) => ({ kind: 's', s }));
+  const order = section.childOrder;
+  if (!order) return [...qs, ...ss];
+  const slots = (prefix: string) => order.flatMap((k, i) => (k.startsWith(prefix) ? [i] : []));
+  const place = (list: SectionChild[], free: number[]) => {
+    const end = free.length > 0 ? free[free.length - 1] : order.length;
+    return list.map((c, i) => ({ c, rank: i < free.length ? free[i] : end + (i + 1) / 10000 }));
+  };
+  return [...place(qs, slots('q:')), ...place(ss, slots('s:'))]
+    .sort((x, y) => x.rank - y.rank)
+    .map((r) => r.c);
+}
 
 function serializeSection(section: Section, lang: LanguageType, depth = 0): string {
   const indent = '  '.repeat(depth + 1);
@@ -314,16 +440,15 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
 
   const sectionCode = section.code ?? section.id;
   const titleText = section.titles[lang] ?? '';
-  const headingXml = titleText
+  const headingXml = titleText && !section.titleFromDescription
     ? `${innerIndent}<contains xsi:type="questionnaire:Text" code="${esc(sectionTitleCode(sectionCode))}" content="${esc(titleText)}" contentStyle="${SECTION_TITLE_STYLE}" align="left"/>`
     : '';
-  const questionsXml = [headingXml, ...section.questions.map((q) => serializeContains(q, lang, innerIndent))]
+  const childrenXml = [headingXml, ...orderedChildren(section).map((c) =>
+    (c.kind === 'q' ? serializeContains(c.q, lang, innerIndent) : serializeSection(c.s, lang, depth + 1)))]
     .filter(Boolean)
     .join('\n');
-
-  const subSectionsXml = (section.subSections ?? [])
-    .map((sub) => serializeSection(sub, lang, depth + 1))
-    .join('\n');
+  const layoutDataXml = depth > 0 && section.layoutData ? `${innerIndent}${serializeRawLayout('layoutData', section.layoutData)}\n` : '';
+  const layoutXml = section.layout ? `\n${innerIndent}${serializeRawLayout('layout', section.layout)}` : '';
 
   const sectionType = section.type ?? 'NORMAL';
   const sectionTypeAttr = sectionType !== 'NORMAL' ? ` sectionType="${sectionType}"` : '';
@@ -331,7 +456,7 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const requiresNewPageAttr = ` requiresNewPage="${section.requiresNewPage === true}"`;
   const backgroundAttr = section.backgroundImage
     ? ` backgroundImage="${esc(section.backgroundImage)}" backgroundRepeat="${esc(section.backgroundRepeat ?? 'noRepeat')}" backgroundPosition="${esc(section.backgroundPosition ?? 'right')}"`
-    : `${section.backgroundRepeat ? ` backgroundRepeat="${esc(section.backgroundRepeat)}"` : ''}${section.backgroundPosition ? ` backgroundPosition="${esc(section.backgroundPosition)}"` : ''}`;
+    : `${section.backgroundImage === '' ? ' backgroundImage=""' : ''}${section.backgroundRepeat ? ` backgroundRepeat="${esc(section.backgroundRepeat)}"` : ''}${section.backgroundPosition ? ` backgroundPosition="${esc(section.backgroundPosition)}"` : ''}`;
   // Seksjonsattributter fra modellen som Studio ikke redigerer ennå, men som skal overleve import/eksport
   const optBool = (name: string, v: boolean | undefined) => (v === undefined ? '' : ` ${name}="${v}"`);
   const layoutAttrs = optBool('noPageBreaks', section.noPageBreaks)
@@ -348,8 +473,8 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
 
   // Section-modellen har ikke 'title'. description beholdes for eldre lesere, men den synlige
   // overskriften er Text-elementet over (sectionTitleCode). Parseren godtar også 'title' fra eldre eksporter.
-  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${layoutAttrs}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
-${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
+  return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${layoutAttrs}${backgroundAttr}${titleText || section.titleFromDescription ? ` description="${esc(titleText)}"` : ''}>
+${showXml}${hideXml}${continueIfXml}${layoutDataXml}${childrenXml}${layoutXml}
 ${indent}</${closeTag}>`;
 }
 
@@ -366,7 +491,8 @@ function serializeDimensions(q: Questionnaire): string {
 
 // ─── Main questionnaire serializer ────────────────────────────────────────
 
-export function serializeQuestionnaire(q: Questionnaire): string {
+export function serializeQuestionnaire(input: Questionnaire): string {
+  const q = shareTemplates(input);
   const lang = q.defaultLanguage;
   const langStr = LANG_REVERSE[lang] ?? 'norwegian';
 
@@ -600,7 +726,7 @@ export function serializeTranslation(
     const secCode = sec.code ?? sec.id;
     if (titleStr && secCode) {
       // Overskriften vises fra Text-elementet; Section/description beholdes for eldre lesere.
-      lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content" translatedText="${esc(titleStr)}"/>`);
+      if (!sec.titleFromDescription) lines.push(`  <translation code="${esc(sectionTitleCode(secCode))}" entity="Text" property="content" translatedText="${esc(titleStr)}"/>`);
       lines.push(`  <translation code="${esc(secCode)}" entity="Section" property="description" translatedText="${esc(titleStr)}"/>`);
     }
   }
