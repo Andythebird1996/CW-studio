@@ -102,6 +102,7 @@ function sumCalc(code: string, name: string, questionCodes: string[], type: Calc
 function baseQuestionnaire(code: string, name: string, nameEn: string | undefined, sections: Section[]): Questionnaire {
   return {
     code,
+    visualizeProgress: 'Percentage',
     version: '1',
     release: '0',
     name: L(name, nameEn),

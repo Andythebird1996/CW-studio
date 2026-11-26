@@ -24,6 +24,10 @@ export interface SimpleStatement {
   questionCode: string;
   operator: 'EQ' | 'NEQ' | 'LT' | 'LTE' | 'GT' | 'GTE' | 'HAS_VALUE' | 'NO_VALUE';
   value?: string;
+  /** Funksjonen på venstre side når det ikke er questionResponseValue, f.eks. 'answered' / 'unanswered' */
+  fn?: string;
+  /** BooleanBasicType på høyre side, f.eks. answered(Q) == true */
+  boolValue?: boolean;
 }
 
 export interface HideExpression {
@@ -228,6 +232,15 @@ export interface Section {
   continueIfExpressions?: ContinueIfExpression[];
   repeatCode?: string;       // for REPEATED sections
   requiresNewPage?: boolean; // force page-break before this section (EMF Container.requiresNewPage)
+  /** EMF Section.matrix – spørsmålene vises som en matrise (felles svaralternativer som kolonner) */
+  matrix?: boolean;
+  noPageBreaks?: boolean;
+  autonumbering?: boolean;
+  numberingType?: string;
+  resetNumbering?: boolean;
+  startOn?: number;
+  returnToTOC?: boolean;
+  returnToElement?: string;
   /** Bildefil i media/ som vises i seksjonen (EMF Container.backgroundImage) */
   backgroundImage?: string;
   backgroundRepeat?: string;
@@ -251,7 +264,18 @@ export interface Norm {
   type: NormType;
   description?: string;
   origin?: string;
-  data: Array<{ score: number; normValue: number; age?: number; gender?: string }>;
+  data: Array<{
+    score: number;
+    normValue: number;
+    age?: number;
+    gender?: string;
+    /** lookupMax slik den stod i den importerte filen */
+    max?: number;
+    /** Intervalltype (Lookup@type), f.eks. «[)» */
+    intervalType?: string;
+  }>;
+  /** Importert norm: skriv grensene slik de var, i stedet for å regne ut lookupMax */
+  _preserveBounds?: boolean;
 }
 
 export interface Calculation {
@@ -264,6 +288,8 @@ export interface Calculation {
   remoteScoring?: { serviceCode: string; parameters: Record<string, string> };
   /** Preserved raw XML of the <calculationExpression> element for round-trip fidelity */
   _rawExpression?: string;
+  /** EMF Calculation.assignedByVariable, beholdes ved import/eksport */
+  assignedByVariable?: boolean;
 }
 
 export interface Calculations {
@@ -347,6 +373,8 @@ export interface Questionnaire {
   copyright?: string;
   /** Remote scoring configuration — sends results to external service after completion */
   remoteScoring?: RemoteScoring;
+  /** Rå XML for rotelementer Studio ikke redigerer (copyright, dictionary, calculations), beholdes ved eksport */
+  _rawRootElements?: { copyright?: string; dictionary?: string; calculations?: string };
 }
 
 // ─── Package metadata (from .manifest file) ───────────────────────────────

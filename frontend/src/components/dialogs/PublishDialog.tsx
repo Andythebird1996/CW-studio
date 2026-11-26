@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, Upload, XCircle } from 'lucide-react';
 import type { Questionnaire, MediaFile, PackageMetadata } from '../../types/questionnaire';
 import { buildPackageZip } from '../../services/package-builder';
+import { importPackageFiles } from '../../services/package-import';
+import { compareVersions, findPreviousVersion, type VersionChange } from '../../services/version-diff';
 import { storeApi, type PackageSummary } from '../../services/store-api';
 import type { RapLintIssue } from '../../services/rap-interpreter';
 import { useSettingsStore } from '../../stores/settings-store';
@@ -33,6 +35,8 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
   const [frameWarnings, setFrameWarnings] = useState<string[]>([]);
   const [mediaErrors, setMediaErrors] = useState<string[]>([]);
   const [rapLint, setRapLint] = useState<Record<string, RapLintIssue[]>>({});
+  const [versionChanges, setVersionChanges] = useState<VersionChange[]>([]);
+  const [versionCheckFailed, setVersionCheckFailed] = useState(false);
   const [error, setError] = useState('');
   const [existingPackages, setExistingPackages] = useState<PackageSummary[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
@@ -47,6 +51,8 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
     setDenials([]);
     setCalcWarnings([]);
     setRapWarnings([]);
+    setVersionChanges([]);
+    setVersionCheckFailed(false);
     setError('');
     setLoadingPackages(true);
     storeApi.listPackages(settings)
@@ -62,11 +68,29 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
       String(p.release) === String(release),
   );
 
+  const previous = findPreviousVersion(existingPackages, pkgCode, String(questionnaire.version), String(release));
+  const previousLabel = previous ? `${previous.version}.${previous.release}` : '';
+
+  /** Sammenligner med forrige versjon i store. Varsler bare – stopper aldri publiseringen. */
+  async function checkPreviousVersion() {
+    setVersionChanges([]);
+    setVersionCheckFailed(false);
+    if (!previous) return;
+    try {
+      const prevPkg = await storeApi.getPackage(settings, previous.uid);
+      const prevQ = importPackageFiles(prevPkg.files).questionnaire;
+      setVersionChanges(compareVersions(prevQ, questionnaire));
+    } catch {
+      setVersionCheckFailed(true);
+    }
+  }
+
   async function handleValidate() {
     setStep('validating');
     setDenials([]);
     try {
       const q = { ...questionnaire, release };
+      await checkPreviousVersion();
       const pkg = await buildPackageZip(q, rapFiles, mediaFiles, pkgMeta);
       setCalcWarnings(pkg.calcsMissingQuestionnaireRef);
       setRapWarnings(pkg.rapsMissingHeaders);
@@ -232,6 +256,30 @@ export function PublishDialog({ open, onClose, questionnaire, rapFiles, mediaFil
                       )))}
                     </ul>
                   </div>
+                </div>
+              )}
+
+              {versionChanges.length > 0 && (
+                <div className="bg-cw-orange-soft border border-cw-orange/40 rounded p-3 flex items-start gap-2" data-testid="version-changes">
+                  <AlertTriangle className="w-4 h-4 text-cw-orange mt-0.5 shrink-0" />
+                  <div className="text-xs text-cw-orange">
+                    <p className="font-medium">{tf('versionChangesTitle', uiLang, { version: previousLabel })}</p>
+                    <ul className="mt-1 space-y-0.5 max-h-40 overflow-y-auto">
+                      {versionChanges.map((c, i) => (
+                        <li key={`${c.kind}-${c.code}-${c.option ?? ''}-${i}`} className="font-mono">
+                          • {tf(`versionChange_${c.kind}`, uiLang, { code: c.code, option: c.option ?? '', from: c.from ?? '', to: c.to ?? '' })}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-1">{t('versionChangesHint', uiLang)}</p>
+                  </div>
+                </div>
+              )}
+
+              {versionCheckFailed && (
+                <div className="bg-cw-gray border border-cw-border rounded p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-cw-gray-text mt-0.5 shrink-0" />
+                  <p className="text-xs text-cw-gray-text">{tf('versionCheckFailed', uiLang, { version: previousLabel })}</p>
                 </div>
               )}
 

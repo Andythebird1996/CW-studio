@@ -62,7 +62,30 @@ cd frontend && bun run test          # kjør alle tester
 cd frontend && bun run test:watch    # watch-modus
 ```
 
-340 tester dekker: XML round-trip, RAP-tolker, pakkebygging, SOAP-klient, assessment-logikk, validering, kode-generering, import-logikk og gap-fixes.
+Testene dekker XML round-trip, RAP-tolker, pakkebygging, SOAP-klient, assessment-logikk, validering, kode-generering, import-logikk, versjonsvarsel og gap-fixes.
+
+### Testpakker og ende-til-ende-test før merge
+
+Testpakkene (`frontend/src/test-packages/`) er seks syntetiske `andreastest-<område>-<dato>`-pakker, én per funksjonsområde (spørsmål, beregning, rapport, media, oversettelse og flyt). Hver pakke har en `<kode>.expected.json` med svarsett og forventede verdier.
+
+```bash
+cd frontend && bun run test:suite                              # suite-testene lokalt, og så bygging til test-packages-out/
+cd frontend && bun run test-packages -- --date 20261126 --release 1   # bare bygging, med valgt dato og release
+```
+
+`test:suite` stopper hvis en test feiler. Etter at den har bygget, skal pakkene sjekkes på serveren før en PR som rører eksport, rapport eller simulator merges:
+
+1. Publiser pakkene i `test-packages-out/` som andreastest-pakker, med testbrukeren i store (VPN av). Ta vare på uid-ene.
+2. Kjør Claude Codes testskript i `~/cw-studio-test` mot smoketest (VPN på):
+
+   ```bash
+   cd ~/cw-studio-test
+   echo '<admin-passord>' | python3 run.py ~/checkware-studio-web/frontend/test-packages-out/*.expected.json \
+     --uid andreastest-sporsmal-<dato>=<uid> --uid andreastest-beregning-<dato>=<uid> …
+   ```
+
+   Bruk `--no-install` når pakkene allerede er installert. `probe.py` sjekker de visuelle punktene. Se `~/cw-studio-test/README.md`.
+3. Merge bare når alle sjekkene i `results/<tid>/rapport.md` er grønne.
 
 ## Bygging
 
