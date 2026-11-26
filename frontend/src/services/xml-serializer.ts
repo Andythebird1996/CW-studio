@@ -808,7 +808,8 @@ export function serializeTranslation(
   // Svaralternativer: både delte svarmaler og alternativer lagt direkte på spørsmålet
   const seenOptions = new Set<string>();
   const pushOption = (opt: TextOption) => {
-    if (!opt.texts?.[lang] || seenOptions.has(opt.code)) return;
+    // ImageOption har ingen label i modellen, så den har ingenting å oversette
+    if (opt.imageFile !== undefined || !opt.texts?.[lang] || seenOptions.has(opt.code)) return;
     seenOptions.add(opt.code);
     lines.push(`  <translation code="${esc(opt.code)}" entity="TextOption" property="label"${orig(opt.texts[src], opt.code, 'TextOption', 'label')} translatedText="${esc(opt.texts[lang])}"/>`);
   };

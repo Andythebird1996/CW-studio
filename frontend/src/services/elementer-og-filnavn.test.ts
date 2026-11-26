@@ -70,6 +70,13 @@ describe('endetekster på skyveknapp (TextValueLabel)', () => {
 });
 
 describe('vedlegg, lyd og dimensjonsnavn', () => {
+  it('bildealternativer (ImageOption) skrives uten label og oversettes ikke', () => {
+    const r = { id: 'b1', code: 'B1', type: 'radiobutton', required: true, texts: L('Velg', '[EN] Pick'), options: [
+      { code: 'B1_0', score: 0, imageFile: 'a.png', texts: L('Blå', '[EN] Blue') }] } as Question;
+    expect(serializeQuestionnaire(base([r]))).toContain('<option xsi:type="questionnaire:ImageOption" code="B1_0" value="0" imageFile="a.png"/>');
+    expect(serializeTranslation(base([r]), 'EN', 'EL')).not.toContain('code="B1_0"');
+  });
+
   it('Attachment med filtype og grenser overlever eksport og import', () => {
     const att = { id: 'v1', code: 'V1', type: 'attachment', fileType: 'DOCUMENT', maxFiles: 5, maxFileSize: 2000, required: false, texts: L('Last opp') } as Question;
     const xml = serializeQuestionnaire(base([att]));
