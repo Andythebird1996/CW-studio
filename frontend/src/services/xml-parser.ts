@@ -7,6 +7,7 @@
 
 import type {
   StringInputSize,
+  RawLayout,
   Questionnaire,
   QuestionnaireType,
   Section,
@@ -85,6 +86,15 @@ function firstChild(el: Element, tagLocalName: string): Element | null {
 
 function xsiType(el: Element): string {
   return el.getAttribute('xsi:type') ?? '';
+}
+
+function parseRawLayout(el: Element | null): RawLayout | undefined {
+  if (!el) return undefined;
+  const attrs: Record<string, string> = {};
+  for (const a of Array.from(el.attributes)) {
+    if (a.name !== 'xsi:type') attrs[a.name] = a.value;
+  }
+  return { type: xsiType(el), ...(Object.keys(attrs).length > 0 && { attrs }) };
 }
 
 // ─── Expression parsing ────────────────────────────────────────────────────
@@ -186,7 +196,7 @@ function parseResponseTemplate(el: Element, lang: LanguageType): ResponseTemplat
 
   return {
     code,
-    name: code,
+    name: el.getAttribute('name') ?? code,
     options,
     widgetType: widgetType || undefined,
     widgetParams: Object.keys(widgetParams).length > 0 ? widgetParams : undefined,
@@ -255,6 +265,7 @@ function parseContains(
   const hideExprs = qHideEl ? [parseShowExpression(qHideEl) as HideExpression] : undefined;
   const continueExprs = qContinueEl ? [{ ...parseShowExpression(qContinueEl) } as ContinueIfExpression] : undefined;
 
+  const layoutData = parseRawLayout(firstChild(el, 'layoutData'));
   const baseAttrs = {
     id,
     code,
@@ -269,6 +280,7 @@ function parseContains(
     ...(showExprs && { showExpressions: showExprs }),
     ...(hideExprs && { hideExpressions: hideExprs }),
     ...(continueExprs && { continueIfExpressions: continueExprs }),
+    ...(layoutData && { layoutData }),
   };
 
   // Stand-alone elements (not wrapped in questionnaire:Question)
@@ -346,6 +358,7 @@ function parseContains(
         return {
           ...base,
           type: 'stringInput',
+          responseTemplateCode: templateCode || undefined,
           size,
           multiline: wp.multiline === 'true' || rawSize === 'multiline' ? true : undefined,
         };
@@ -354,6 +367,7 @@ function parseContains(
         return {
           ...base,
           type: 'numericInput',
+          responseTemplateCode: templateCode || undefined,
           min: numAttr(wp.minValue ?? wp.min),
           max: numAttr(wp.maxValue ?? wp.max),
           decimals: wp.decimals !== undefined ? parseInt(wp.decimals, 10) : decimalsFromStep(wp.step),
@@ -363,6 +377,7 @@ function parseContains(
         return {
           ...base,
           type: 'dateInput',
+          responseTemplateCode: templateCode || undefined,
           includeTime: (wp.addTime ?? wp.includeTime) === 'true' ? true : undefined,
           minAbsoluteYear: numAttr(wp.minAbsoluteYear),
           maxAbsoluteYear: numAttr(wp.maxAbsoluteYear),
@@ -383,10 +398,10 @@ function parseContains(
         const showClear = wp.showClear !== undefined ? wp.showClear === 'true' : undefined;
         const displayValue = wp.displayValue !== undefined ? wp.displayValue === 'true' : undefined;
         const direction = (wp.direction === 'horizontal' || wp.direction === 'vertical') ? wp.direction as 'horizontal' | 'vertical' : undefined;
-        const sliderLength = wp.length || undefined;
+        const sliderLength = wp.length;
         const hairline = wp.hairline !== undefined ? wp.hairline === 'true' : undefined;
         return {
-          ...base, type: 'slider', min, max,
+          ...base, type: 'slider', min, max, responseTemplateCode: templateCode || undefined,
           ...(step !== undefined && { step }),
           ...(labelStep !== undefined && { labelStep }),
           ...(minLabel && { minLabel }),
@@ -398,7 +413,7 @@ function parseContains(
           ...(showClear !== undefined && { showClear }),
           ...(displayValue !== undefined && { displayValue }),
           ...(direction && { direction }),
-          ...(sliderLength && { sliderLength }),
+          ...(sliderLength !== undefined && { sliderLength }),
           ...(hairline !== undefined && { hairline }),
         };
       }
@@ -495,16 +510,26 @@ function parseSection(
     containsEls.shift();
   }
 
+  const childOrder: string[] = [];
   for (const containsEl of containsEls) {
     const t = xsiType(containsEl);
     if (t.includes('Section')) {
       // Nested section — recurse
-      subSections.push(parseSection(containsEl, lang, templates, templateWidgets));
+      const sub = parseSection(containsEl, lang, templates, templateWidgets);
+      subSections.push(sub);
+      childOrder.push(`s:${sub.code ?? sub.id}`);
     } else {
       const q = parseContains(containsEl, lang, templates, templateWidgets);
-      if (q) questions.push(q);
+      if (q) {
+        questions.push(q);
+        childOrder.push(`q:${q.code}`);
+      }
     }
   }
+  const layout = parseRawLayout(firstChild(secEl, 'layout'));
+  const layoutData = parseRawLayout(firstChild(secEl, 'layoutData'));
+  // Rekkefølgen trengs bare når underseksjoner og spørsmål er blandet
+  const mixed = childOrder.some((c, i) => c.startsWith('s:') && childOrder.slice(i + 1).some((d) => d.startsWith('q:')));
 
   return {
     id: secCode || crypto.randomUUID(),
@@ -519,6 +544,9 @@ function parseSection(
     repeatCode,
     requiresNewPage,
     ...sectionLayout,
+    ...(layout && { layout }),
+    ...(layoutData && { layoutData }),
+    ...(mixed && { childOrder }),
     ...(backgroundImage ? { backgroundImage } : {}),
     ...(attr(secEl, 'backgroundRepeat') ? { backgroundRepeat: attr(secEl, 'backgroundRepeat') } : {}),
     ...(attr(secEl, 'backgroundPosition') ? { backgroundPosition: attr(secEl, 'backgroundPosition') } : {}),

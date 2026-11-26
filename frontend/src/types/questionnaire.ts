@@ -82,6 +82,13 @@ export interface ResponseTemplates {
 
 // ─── Question types ───────────────────────────────────────────────────────
 
+/** Layout/LayoutData fra modellen (f.eks. GridLayout, GridData@horizontalSpan) – bevares uendret ved import/eksport. */
+export interface RawLayout {
+  /** xsi:type, f.eks. 'questionnaire:GridData' */
+  type: string;
+  attrs?: Record<string, string>;
+}
+
 interface BaseQuestion {
   id: string;
   code: string;
@@ -92,6 +99,8 @@ interface BaseQuestion {
   showExpressions?: ShowExpression[];
   continueIfExpressions?: ContinueIfExpression[];
   labelPosition?: LabelPosition;
+  /** Element.layoutData (f.eks. GridData med horizontalSpan) */
+  layoutData?: RawLayout;
   /** Element alignment within the form layout */
   align?: ElementAlignment;
   /** Question answer is optional (not counted toward mandatory completion) */
@@ -128,12 +137,16 @@ export interface ComboboxQuestion extends BaseQuestion {
 
 export interface StringInputQuestion extends BaseQuestion {
   type: 'stringInput';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   size: StringInputSize;
   multiline?: boolean;
 }
 
 export interface NumericInputQuestion extends BaseQuestion {
   type: 'numericInput';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   min?: number;
   max?: number;
   decimals?: number;
@@ -142,6 +155,8 @@ export interface NumericInputQuestion extends BaseQuestion {
 
 export interface DateInputQuestion extends BaseQuestion {
   type: 'dateInput';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   includeTime?: boolean;
   /** Årsgrenser (DateInput i questionnaire.ecore). Relativ = i forhold til inneværende år, f.eks. -120 / 0. */
   minAbsoluteYear?: number;
@@ -152,6 +167,8 @@ export interface DateInputQuestion extends BaseQuestion {
 
 export interface SliderQuestion extends BaseQuestion {
   type: 'slider';
+  /** Delt svarmal (f.eks. i en matrise). Uten denne får feltet sin egen mal ved eksport. */
+  responseTemplateCode?: string;
   min: number;
   max: number;
   step?: number;
@@ -241,6 +258,15 @@ export interface Section {
   startOn?: number;
   returnToTOC?: boolean;
   returnToElement?: string;
+  /** Container.layout (f.eks. GridLayout) */
+  layout?: RawLayout;
+  /** Element.layoutData når seksjonen ligger inne i en annen seksjon */
+  layoutData?: RawLayout;
+  /**
+   * Rekkefølgen på spørsmål og underseksjoner slik de lå i fila ('q:KODE' / 's:KODE').
+   * Uten denne skrives spørsmålene først og underseksjonene etter.
+   */
+  childOrder?: string[];
   /** Bildefil i media/ som vises i seksjonen (EMF Container.backgroundImage) */
   backgroundImage?: string;
   backgroundRepeat?: string;

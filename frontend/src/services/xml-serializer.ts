@@ -21,6 +21,11 @@ import type {
   Norm,
   TextOption,
   StringInputSize,
+  RawLayout,
+  StringInputQuestion,
+  NumericInputQuestion,
+  DateInputQuestion,
+  SliderQuestion,
 } from '../types/questionnaire';
 
 // ─── XML escape ────────────────────────────────────────────────────────────
@@ -116,6 +121,78 @@ export function stringInputSizeAttr(size: StringInputSize | undefined, multiline
   return 'line';
 }
 
+type WidgetOnlyQuestion = StringInputQuestion | NumericInputQuestion | DateInputQuestion | SliderQuestion;
+
+function isWidgetOnly(q: Question): q is WidgetOnlyQuestion {
+  return q.type === 'stringInput' || q.type === 'numericInput' || q.type === 'dateInput' || q.type === 'slider';
+}
+
+/** Widget-attributter for felt uten svaralternativer. Spørsmålets felter er fasiten. */
+function widgetParamsFor(qq: WidgetOnlyQuestion): Record<string, string> {
+  const wp: Record<string, string> = {};
+  // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
+  // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
+  // som flyttall ("0.0"), DateInput addDate/addTime, NumericSlider med full attributtliste.
+  if (qq.type === 'stringInput') {
+    wp.size = stringInputSizeAttr(qq.size, qq.multiline);
+  } else if (qq.type === 'numericInput') {
+    if (qq.min !== undefined) wp.minValue = emfFloat(qq.min);
+    if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
+    wp.step = emfFloat(stepFromDecimals(qq.decimals));
+  } else if (qq.type === 'dateInput') {
+    // Uten årsgrenser gir portalen min/max="Invalid date" (parseInt(undefined)); ekte pakker skriver
+    // ingen grenser, så de skrives bare når de er satt.
+    if (qq.minAbsoluteYear !== undefined) wp.minAbsoluteYear = String(qq.minAbsoluteYear);
+    if (qq.maxAbsoluteYear !== undefined) wp.maxAbsoluteYear = String(qq.maxAbsoluteYear);
+    if (qq.minRelativeYear !== undefined) wp.minRelativeYear = String(qq.minRelativeYear);
+    if (qq.maxRelativeYear !== undefined) wp.maxRelativeYear = String(qq.maxRelativeYear);
+    wp.addTime = String(qq.includeTime === true);
+    wp.addDate = 'true';
+  } else if (qq.type === 'slider') {
+    const step = qq.step ?? 1;
+    wp.minValue = emfFloat(qq.min);
+    wp.maxValue = emfFloat(qq.max);
+    wp.step = emfFloat(step);
+    wp.labelStep = emfFloat(qq.labelStep ?? step);
+    wp.showEndLabels = String(qq.showEndLabels ?? true);
+    wp.showScaleLabels = String(qq.showScaleLabels ?? true);
+    wp.valuePosition = 'after';
+    wp.labelPosition = 'after';
+    wp.direction = qq.direction ?? 'horizontal';
+    if (qq.sliderLength !== undefined) wp.length = qq.sliderLength;
+    wp.displayValue = String(qq.displayValue ?? false);
+    wp.showTicks = String(qq.showTicks ?? false);
+    wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
+    wp.showClear = String(qq.showClear ?? true);
+    wp.hairline = String(qq.hairline ?? false);
+  }
+  return wp;
+}
+
+/**
+ * Felt som deler svarmal (f.eks. én StringInput-mal for alle radene i en matrise) beholder den delte
+ * malen så lenge innstillingene er like. Har et spørsmål fått andre innstillinger i editoren, får det
+ * sin egen mal i stedet for å endre de andre spørsmålene.
+ */
+function shareWidgetTemplates(q: Questionnaire): Questionnaire {
+  const claimed = new Map<string, string>();
+  const fix = (sections: Section[]): Section[] => sections.map((sec) => ({
+    ...sec,
+    questions: sec.questions.map((qq) => {
+      if (!isWidgetOnly(qq) || !qq.responseTemplateCode) return qq;
+      const key = `${qq.type}|${JSON.stringify(widgetParamsFor(qq))}`;
+      const prev = claimed.get(qq.responseTemplateCode);
+      if (prev === undefined) {
+        claimed.set(qq.responseTemplateCode, key);
+        return qq;
+      }
+      return prev === key ? qq : { ...qq, responseTemplateCode: undefined };
+    }),
+    subSections: sec.subSections ? fix(sec.subSections) : sec.subSections,
+  }));
+  return { ...q, sections: fix(q.sections) };
+}
+
 function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): string {
   const allQs = flattenAllQuestions(q.sections);
   const templates = q.responseTemplates?.templates ?? [];
@@ -164,48 +241,16 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
     }
   }
   for (const qq of allQs) {
-    if (qq.type === 'stringInput' || qq.type === 'numericInput' || qq.type === 'dateInput' || qq.type === 'slider') {
-      const wp: Record<string, string> = {};
-      // Attributtnavn og verdiformat følger Checkware-modellen (questionnaire.ecore) og ekte
-      // store-pakker: StringInput size=line|multiline|story, NumericWidget minValue/maxValue
-      // som flyttall ("0.0"), DateInput addDate/addTime, NumericSlider med full attributtliste.
-      if (qq.type === 'stringInput') {
-        wp.size = stringInputSizeAttr(qq.size, qq.multiline);
-      } else if (qq.type === 'numericInput') {
-        if (qq.min !== undefined) wp.minValue = emfFloat(qq.min);
-        if (qq.max !== undefined) wp.maxValue = emfFloat(qq.max);
-        wp.step = emfFloat(stepFromDecimals(qq.decimals));
-      } else if (qq.type === 'dateInput') {
-        // Uten årsgrenser gir portalen min/max="Invalid date" (parseInt(undefined)); ekte pakker skriver
-        // ingen grenser, så de skrives bare når de er satt.
-        if (qq.minAbsoluteYear !== undefined) wp.minAbsoluteYear = String(qq.minAbsoluteYear);
-        if (qq.maxAbsoluteYear !== undefined) wp.maxAbsoluteYear = String(qq.maxAbsoluteYear);
-        if (qq.minRelativeYear !== undefined) wp.minRelativeYear = String(qq.minRelativeYear);
-        if (qq.maxRelativeYear !== undefined) wp.maxRelativeYear = String(qq.maxRelativeYear);
-        wp.addTime = String(qq.includeTime === true);
-        wp.addDate = 'true';
-      } else if (qq.type === 'slider') {
-        const step = qq.step ?? 1;
-        wp.minValue = emfFloat(qq.min);
-        wp.maxValue = emfFloat(qq.max);
-        wp.step = emfFloat(step);
-        wp.labelStep = emfFloat(qq.labelStep ?? step);
-        wp.showEndLabels = String(qq.showEndLabels ?? true);
-        wp.showScaleLabels = String(qq.showScaleLabels ?? true);
-        wp.valuePosition = 'after';
-        wp.labelPosition = 'after';
-        wp.direction = qq.direction ?? 'horizontal';
-        if (qq.sliderLength) wp.length = qq.sliderLength;
-        wp.displayValue = String(qq.displayValue ?? false);
-        wp.showTicks = String(qq.showTicks ?? false);
-        wp.showDigitalPoints = String(qq.showDigitalPoints ?? false);
-        wp.showClear = String(qq.showClear ?? true);
-        wp.hairline = String(qq.hairline ?? false);
-      }
-      templateMap.set(qq.code, {
-        code: qq.code,
-        name: qq.code,
-        options: [],
+    if (isWidgetOnly(qq)) {
+      const code = qq.responseTemplateCode ?? qq.code;
+      const existing = templateMap.get(code);
+      // Eldre Slider-mal med svaralternativer som skala: Studio redigerer den ikke, så den skrives uendret.
+      if (existing?.widgetType === 'Slider' && qq.type === 'slider') continue;
+      const wp = widgetParamsFor(qq);
+      templateMap.set(code, {
+        code,
+        name: existing?.name ?? code,
+        options: existing?.options ?? [],
         widgetType: WIDGET_TYPE_MAP[qq.type] ?? qq.type,
         widgetParams: Object.keys(wp).length > 0 ? wp : undefined,
       });
@@ -220,7 +265,7 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
       .filter((qq) =>
         (qq.type === 'radiobutton' || qq.type === 'checkbox' || qq.type === 'combobox' || qq.type === 'rank' ||
          qq.type === 'stringInput' || qq.type === 'numericInput' || qq.type === 'dateInput' || qq.type === 'slider') &&
-        (('responseTemplateCode' in qq && qq.responseTemplateCode === tmpl.code) || qq.code === tmpl.code),
+        ('responseTemplateCode' in qq && qq.responseTemplateCode ? qq.responseTemplateCode : qq.code) === tmpl.code,
       )
       .map((qq) => qq.code)
       .join(' ');
@@ -235,7 +280,9 @@ function serializeResponseTemplates(q: Questionnaire, lang: LanguageType): strin
       ? ' ' + Object.entries(tmpl.widgetParams).map(([k, v]) => `${k}="${esc(v)}"`).join(' ')
       : '';
 
-    return `    <responseTemplate questions="${esc(related)}" code="${esc(tmpl.code)}">
+    const questionsAttr = related ? `questions="${esc(related)}" ` : '';
+    const nameAttr = tmpl.name !== undefined && tmpl.name !== tmpl.code ? ` name="${esc(tmpl.name)}"` : '';
+    return `    <responseTemplate ${questionsAttr}code="${esc(tmpl.code)}"${nameAttr}>
       <widget xsi:type="questionnaire:${widgetShortName}"${widgetAttrs}/>
 ${opts}
     </responseTemplate>`;
@@ -246,6 +293,12 @@ ${opts}
 
 // ─── Sections & questions ──────────────────────────────────────────────────
 
+function serializeRawLayout(tag: 'layout' | 'layoutData', l: RawLayout | undefined): string {
+  if (!l) return '';
+  const attrs = Object.entries(l.attrs ?? {}).map(([k, v]) => ` ${k}="${esc(v)}"`).join('');
+  return `<${tag} xsi:type="${esc(l.type)}"${attrs}/>`;
+}
+
 function serializeContains(q: Question, lang: LanguageType, indent = '    '): string {
   const shows = (q.showExpressions ?? []).map((e) => serializeExpression(e, 'show')).join('');
   const hides = (q.hideExpressions ?? []).map((e) => serializeExpression(e, 'hide')).join('');
@@ -254,8 +307,11 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const alignAttr = q.align ? ` align="${q.align.toLowerCase()}"` : ' align="left"';
   const labelPosAttr = q.labelPosition ? ` labelPosition="${q.labelPosition}"` : '';
 
-  // Elementer (Text, ImageElement, AudioVideo) kan også ha vis/skjul-betingelser som barn.
-  const closeEl = (open: string) => (shows || hides ? `${open}>${shows}${hides}</contains>` : `${open}/>`);
+  const layoutData = serializeRawLayout('layoutData', q.layoutData);
+
+  // Elementer (Text, ImageElement, AudioVideo) kan også ha vis/skjul-betingelser og layoutData som barn.
+  const closeEl = (open: string) =>
+    (shows || hides || layoutData ? `${open}>${shows}${hides}${layoutData}</contains>` : `${open}/>`);
 
   if (q.type === 'text') {
     const style = q.contentStyle ? ` contentStyle="${esc(q.contentStyle)}"` : ' contentStyle="normal"';
@@ -284,7 +340,7 @@ function serializeContains(q: Question, lang: LanguageType, indent = '    '): st
   const helpText = q.helpTexts?.[lang] ? ` helpText="${esc(q.helpTexts[lang])}"` : '';
   const maxRankAttr = (q.type === 'rank' && q.maxRank !== undefined) ? ` maxRank="${q.maxRank}"` : '';
 
-  return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}>${shows}${hides}${continueIfs}</contains>`;
+  return `${indent}<contains xsi:type="questionnaire:Question" code="${esc(q.code)}" question="${esc(q.texts[lang] ?? '')}" mandatory="${q.required}" template="${esc(templateCode)}"${voluntary}${readOnly}${reversed}${helpText}${maxRankAttr}${alignAttr}${labelPosAttr}>${shows}${hides}${continueIfs}${layoutData}</contains>`;
 }
 
 /**
@@ -297,6 +353,28 @@ export function sectionTitleCode(sectionCode: string): string {
 }
 
 export const SECTION_TITLE_STYLE = 'heading2';
+
+type SectionChild = { kind: 'q'; q: Question } | { kind: 's'; s: Section };
+
+/**
+ * Spørsmål og underseksjoner i rekkefølgen fra fila (childOrder). Plassene for spørsmål og for
+ * underseksjoner beholdes og fylles i rekkefølgen fra editoren; flere elementer enn plasser havner
+ * etter den siste plassen av samme slag.
+ */
+export function orderedChildren(section: Section): SectionChild[] {
+  const qs: SectionChild[] = section.questions.map((q) => ({ kind: 'q', q }));
+  const ss: SectionChild[] = (section.subSections ?? []).map((s) => ({ kind: 's', s }));
+  const order = section.childOrder;
+  if (!order) return [...qs, ...ss];
+  const slots = (prefix: string) => order.flatMap((k, i) => (k.startsWith(prefix) ? [i] : []));
+  const place = (list: SectionChild[], free: number[]) => {
+    const end = free.length > 0 ? free[free.length - 1] : order.length;
+    return list.map((c, i) => ({ c, rank: i < free.length ? free[i] : end + (i + 1) / 10000 }));
+  };
+  return [...place(qs, slots('q:')), ...place(ss, slots('s:'))]
+    .sort((x, y) => x.rank - y.rank)
+    .map((r) => r.c);
+}
 
 function serializeSection(section: Section, lang: LanguageType, depth = 0): string {
   const indent = '  '.repeat(depth + 1);
@@ -317,13 +395,12 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   const headingXml = titleText
     ? `${innerIndent}<contains xsi:type="questionnaire:Text" code="${esc(sectionTitleCode(sectionCode))}" content="${esc(titleText)}" contentStyle="${SECTION_TITLE_STYLE}" align="left"/>`
     : '';
-  const questionsXml = [headingXml, ...section.questions.map((q) => serializeContains(q, lang, innerIndent))]
+  const childrenXml = [headingXml, ...orderedChildren(section).map((c) =>
+    (c.kind === 'q' ? serializeContains(c.q, lang, innerIndent) : serializeSection(c.s, lang, depth + 1)))]
     .filter(Boolean)
     .join('\n');
-
-  const subSectionsXml = (section.subSections ?? [])
-    .map((sub) => serializeSection(sub, lang, depth + 1))
-    .join('\n');
+  const layoutDataXml = depth > 0 && section.layoutData ? `${innerIndent}${serializeRawLayout('layoutData', section.layoutData)}\n` : '';
+  const layoutXml = section.layout ? `\n${innerIndent}${serializeRawLayout('layout', section.layout)}` : '';
 
   const sectionType = section.type ?? 'NORMAL';
   const sectionTypeAttr = sectionType !== 'NORMAL' ? ` sectionType="${sectionType}"` : '';
@@ -349,7 +426,7 @@ function serializeSection(section: Section, lang: LanguageType, depth = 0): stri
   // Section-modellen har ikke 'title'. description beholdes for eldre lesere, men den synlige
   // overskriften er Text-elementet over (sectionTitleCode). Parseren godtar også 'title' fra eldre eksporter.
   return `${indent}<${tag} code="${esc(sectionCode)}"${sectionTypeAttr}${repeatCodeAttr}${requiresNewPageAttr}${layoutAttrs}${backgroundAttr}${titleText ? ` description="${esc(titleText)}"` : ''}>
-${showXml}${hideXml}${continueIfXml}${questionsXml}${questionsXml && (subSectionsXml) ? '\n' : ''}${subSectionsXml}
+${showXml}${hideXml}${continueIfXml}${layoutDataXml}${childrenXml}${layoutXml}
 ${indent}</${closeTag}>`;
 }
 
@@ -366,7 +443,8 @@ function serializeDimensions(q: Questionnaire): string {
 
 // ─── Main questionnaire serializer ────────────────────────────────────────
 
-export function serializeQuestionnaire(q: Questionnaire): string {
+export function serializeQuestionnaire(input: Questionnaire): string {
+  const q = shareWidgetTemplates(input);
   const lang = q.defaultLanguage;
   const langStr = LANG_REVERSE[lang] ?? 'norwegian';
 
