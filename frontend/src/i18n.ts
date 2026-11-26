@@ -92,6 +92,7 @@ const strings = {
   qtCombobox:        { EN: 'Dropdown',                        NO: 'Nedtrekksliste'                   },
   qtImage:           { EN: 'Image',                           NO: 'Bilde'                            },
   qtCountry:         { EN: 'Country selector',                NO: 'Landvelger'                       },
+  qtAudioVideo:      { EN: 'Audio/video',                     NO: 'Lyd/video'                        },
 
   // ── General field labels ─────────────────────────────────────────────────────
   typeLabel:         { EN: 'Type',                            NO: 'Type'                             },
@@ -154,6 +155,9 @@ const strings = {
   multiline:         { EN: 'Multi-line',                      NO: 'Flerlinjet'                       },
   textareaLabel:     { EN: 'Text area',                       NO: 'Tekstområde'                      },
   includeTime:       { EN: 'Include time',                    NO: 'Inkluder klokkeslett'             },
+  minYear:           { EN: 'Earliest year',                   NO: 'Tidligste år'                     },
+  maxYear:           { EN: 'Latest year',                     NO: 'Seneste år'                       },
+  yearBoundsHint:    { EN: 'Without year limits the portal writes min/max="Invalid date" on the date field (harmless).', NO: 'Uten årsgrenser skriver portalen min/max="Invalid date" på datofeltet (ufarlig).' },
   stepLabel:         { EN: 'Step',                            NO: 'Steg'                             },
   minLabelField:     { EN: 'Min label',                       NO: 'Min-etikett'                      },
   maxLabelField:     { EN: 'Max label',                       NO: 'Maks-etikett'                     },
@@ -475,6 +479,7 @@ const strings = {
   rapLint_IF_LINE_TEXT: { EN: 'Text on the same line as [if(…){"…"}] is dropped – put it inside the quotes or on its own line', NO: 'Tekst på samme linje som [if(…){"…"}] forsvinner – legg den i anførselstegnene eller på egen linje' },
   rapLint_LOOKUP: { EN: 'LOOKUP/DIM_T needs legacy dimension norm tables and stops the report – no reports in the store use it', NO: 'LOOKUP/DIM_T krever gamle dimensjons-normtabeller og stopper rapporten – ingen rapporter i storen bruker det' },
   rapLint_GRAPH_INIT_ARG: { EN: 'Real reports use graph_init() without an argument', NO: 'Ekte rapporter bruker graph_init() uten argument' },
+  rapLint_MULTI_ECHO: { EN: 'Only the first [ECHO()] on a line is read by the report engine – its value is used for every ECHO on the line. Put one ECHO per line', NO: 'Rapportmotoren leser bare første [ECHO()] på en linje – verdien brukes i alle ECHO-ene på linjen. Skriv én ECHO per linje' },
   rapLint_GRAPH_SERIES: { EN: 'GRAPH_PLOT must use a variable from [$s = series(($v),("label"))] – otherwise no graph is drawn', NO: 'GRAPH_PLOT må bruke en variabel fra [$s = series(($v),("etikett"))] – ellers tegnes ingen graf' },
   rapMissingHeaders: { EN: 'Report(s) {codes} lack the $language or $version header. Checkware will fail to install the package ("Language not found").', NO: 'Rapport(er) {codes} mangler $language- eller $version-headeren. Checkware vil ikke klare å installere pakken («Language not found»).' },
   publishRejected:   { EN: 'The server rejected the publication', NO: 'Serveren avviste publiseringen' },
@@ -811,6 +816,8 @@ const strings = {
   printDate:         { EN: '[date]',                          NO: '[dato]'                           },
   printSlider:       { EN: '[slider {min}–{max}]',            NO: '[glidebryter {min}–{max}]'        },
   printImage:        { EN: '[image]',                         NO: '[bilde]'                          },
+  printAudio:        { EN: '[audio]',                         NO: '[lyd]'                            },
+  audioDisplayHint:  { EN: 'Audio/video player — refers to an mp3 file in the package or a URL', NO: 'Lyd-/videospiller — viser til en mp3-fil i pakken eller en URL' },
   printCountry:      { EN: '[country]',                       NO: '[land]'                           },
 
   // ── Respondent view (preview, simulator, print) ───────────────────────────

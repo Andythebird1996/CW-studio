@@ -200,7 +200,7 @@ function Rich({ text, className }: { text: string; className?: string }) {
 }
 
 function isNumbered(q: Question): boolean {
-  return q.type !== 'text' && q.type !== 'image';
+  return q.type !== 'text' && q.type !== 'image' && q.type !== 'audioVideo';
 }
 
 function isFilled(value: string | string[] | undefined): boolean {
@@ -230,6 +230,8 @@ function typeHint(q: Question, lang: UILang): string {
       return tf('printSlider', lang, { min: q.min, max: q.max });
     case 'image':
       return t('printImage', lang);
+    case 'audioVideo':
+      return t('printAudio', lang);
     case 'country':
       return t('printCountry', lang);
     default:
@@ -478,12 +480,22 @@ function QuestionBlock({
     if (!text && !expert) {
       return interactive ? <p className="cw-resp-muted">{t('textBlockEmpty', ui)}</p> : null;
     }
+    // Samme stiler som portalen (text-content/view.js): heading1–3, strong, important; 'header' fra eldre Studio
     const style = question.contentStyle;
-    if (style === 'header') {
+    if (style === 'heading1') {
+      return <h1 className="cw-resp-section-title"><Rich text={text} /></h1>;
+    }
+    if (style === 'heading2') {
+      return <h2 className="cw-resp-section-title"><Rich text={text} /></h2>;
+    }
+    if (style === 'heading3' || style === 'header') {
       return <h3 className="cw-resp-section-title"><Rich text={text} /></h3>;
     }
     return (
-      <div className="cw-resp-info" style={style === 'italic' ? { fontStyle: 'italic' } : undefined}>
+      <div
+        className="cw-resp-info"
+        style={style === 'italic' ? { fontStyle: 'italic' } : style === 'strong' || style === 'important' ? { fontWeight: 600 } : undefined}
+      >
         {expert && question.code ? <span className="cw-resp-code">{question.code}</span> : null}
         {text ? <Rich text={text} /> : <span className="cw-resp-muted">{t('textBlockEmpty', ui)}</span>}
       </div>
@@ -494,9 +506,21 @@ function QuestionBlock({
     return (
       <div className="cw-resp-q" data-qid={`${question.id}-${rep}`}>
         {question.imageSrc ? (
-          <img src={question.imageSrc} alt={question.altText?.[lang] || ''} style={{ maxWidth: '100%', borderRadius: 2 }} />
+          <img src={question.imageSrc} alt={question.imageSrc} style={{ maxWidth: '100%', borderRadius: 2 }} />
         ) : (
           <span className="cw-resp-muted">{expert ? t('printImage', ui) : t('noImageSpecified', ui)}</span>
+        )}
+      </div>
+    );
+  }
+
+  if (question.type === 'audioVideo') {
+    return (
+      <div className="cw-resp-q" data-qid={`${question.id}-${rep}`}>
+        {question.mediaFile ? (
+          <audio controls src={question.mediaFile} style={{ maxWidth: '100%' }} />
+        ) : (
+          <span className="cw-resp-muted">{t('printAudio', ui)}</span>
         )}
       </div>
     );

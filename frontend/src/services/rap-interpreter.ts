@@ -119,11 +119,28 @@ export function phpRound(value: number, dec: number): string {
   return String(Object.is(r, -0) ? 0 : r);
 }
 
+const ECHO_RE = /\[ECHO\((.*?)\)\]/gi;
+
+/**
+ * Rapportmotoren (report.class.php) tolker bare første [ECHO(...)] på en linje og setter den verdien
+ * inn i alle ECHO-ene på linjen (preg_match + preg_replace). Simulatoren gjør det samme.
+ */
+export function engineEchoPerLine(content: string): string {
+  return content
+    .split('\n')
+    .map((line) => {
+      const first = line.match(/\[ECHO\((.*?)\)\]/i);
+      if (!first || (line.match(ECHO_RE) ?? []).length < 2) return line;
+      return line.replace(ECHO_RE, `[ECHO(${first[1]})]`);
+    })
+    .join('\n');
+}
+
 export function interpretRap(rapContent: string, ctx: SimContext): string {
   _graphs = new Map();
   _series = new Map();
   try {
-    const preprocessed = normalizeIfLines(preprocessDefines(rapContent, ctx));
+    const preprocessed = normalizeIfLines(engineEchoPerLine(preprocessDefines(rapContent, ctx)));
     const functions = parseFunctions(preprocessed);
     const topLevel = stripFunctionDefs(stripCommentMeta(preprocessed));
     const tokens = tokenize(topLevel);
@@ -874,6 +891,26 @@ function handleLegacyLoop(
 
 // ─── Calculation helpers ────────────────────────────────────────────────────
 
+/**
+ * Skåren et svar gir i beregninger. Serveren snur reversedScore-spørsmål selv:
+ * skår = minste + største alternativskår − valgt skår (0–3: 1 → 2, 3 → 0).
+ */
+function calcScore(questionCode: string, score: number, ctx: SimContext): number {
+  for (const section of flattenSections(ctx.questionnaire.sections)) {
+    const q = section.questions.find((x) => x.code === questionCode);
+    if (!q) continue;
+    if (!q.reversedScore || (q.type !== 'radiobutton' && q.type !== 'checkbox' && q.type !== 'combobox')) return score;
+    let options = q.options ?? [];
+    if (options.length === 0 && q.responseTemplateCode && ctx.questionnaire.responseTemplates) {
+      options = ctx.questionnaire.responseTemplates.templates.find((t) => t.code === q.responseTemplateCode)?.options ?? [];
+    }
+    const scores = options.map((o) => o.score).filter((v): v is number => typeof v === 'number' && !isNaN(v));
+    if (scores.length === 0) return score;
+    return Math.min(...scores) + Math.max(...scores) - score;
+  }
+  return score;
+}
+
 function computeCalc(code: string, ctx: SimContext): number {
   const calc = ctx.questionnaire.calculations?.calculations.find((c) => c.code === code);
   if (!calc) return 0;
@@ -881,7 +918,7 @@ function computeCalc(code: string, ctx: SimContext): number {
     .map((ic) => {
       const ans = ctx.answers.get(ic.questionCode ?? '');
       if (ans == null) return NaN;
-      return ans.score * (ic.multiplier ?? 1);
+      return calcScore(ic.questionCode ?? '', ans.score, ctx) * (ic.multiplier ?? 1);
     })
     .filter((s) => !isNaN(s));
   switch (calc.type) {
@@ -910,6 +947,16 @@ function computeZscore(normCode: string, value: number, ctx: SimContext): number
   const sd = norm.data[0].normValue;
   if (sd === 0) return 0;
   return Math.round(((value - mean) / sd) * 100) / 100;
+}
+
+/** Beregnet verdi slik simulatoren regner den (brukes av testpakke-generatoren). */
+export function simulateCalculation(code: string, ctx: SimContext): number {
+  return computeCalc(code, ctx);
+}
+
+/** Om et flagg slår ut i simulatoren (brukes av testpakke-generatoren). */
+export function simulateFlag(code: string, ctx: SimContext): boolean {
+  return evaluateFlag(code, ctx);
 }
 
 function evaluateFlag(code: string, ctx: SimContext): boolean {
@@ -1488,6 +1535,7 @@ function normalizeIfLines(rap: string): string {
 // ─── Lint: konstruksjoner rapportmotoren i Checkware ikke støtter ───────────
 
 export type RapLintCode =
+  | 'MULTI_ECHO'
   | 'NO_FRAME' | 'FLAG' | 'ELSE_ENDIF' | 'IF_BODY' | 'IF_LINE_TEXT' | 'LOOKUP' | 'GRAPH_INIT_ARG' | 'GRAPH_SERIES';
 
 export interface RapLintIssue {
@@ -1507,6 +1555,7 @@ export function lintRap(content: string): RapLintIssue[] {
   code.split('\n').forEach((raw, i) => {
     const line = i + 1;
     if (/\bFLAG\s*\(/i.test(raw)) issues.push({ code: 'FLAG', line });
+    if ((raw.match(ECHO_RE) ?? []).length > 1) issues.push({ code: 'MULTI_ECHO', line });
     if (/\[\s*(else|endif)\s*\]/i.test(raw)) issues.push({ code: 'ELSE_ENDIF', line });
     if (/\b(LOOKUP|DIM_T)\s*\(/i.test(raw)) issues.push({ code: 'LOOKUP', line });
     const ifStart = raw.search(/\[if\(/i);
