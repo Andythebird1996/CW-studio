@@ -130,6 +130,10 @@ describe('testpakkene i ekte Checkware-format', () => {
     expect(f['calculations/NESTET.calculation']).toContain('<elements xsi:type="questionnaire:CalculationType" name="RAW"/>');
     expect(f['calculations/T_SKAR.calculation']).toContain('name="normLookup"');
     expect(Object.keys(f)).toContain('norms/NORM_T.norm');
+    expect(x).toMatch(/code="C1"[^>]*voluntary="true"/);
+    expect(x).toMatch(/<responseTemplate questions="RG1" code="RG1">\s*<widget xsi:type="questionnaire:Range" /);
+    expect(x).toMatch(/<responseTemplate questions="CS1" code="CS1">\s*<widget xsi:type="questionnaire:Slider" [^>]*direction="vertical"/);
+    expect(x).toMatch(/<widget xsi:type="questionnaire:NumericRange" minValue="0.0" maxValue="100.0" step="10.0" labelStep="50.0"/);
   });
 
   it('matrise: to nestede matriser med hver sin delte svarmal, tekst først i den andre', () => {
